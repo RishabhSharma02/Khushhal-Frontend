@@ -1,0 +1,106 @@
+{
+  "@@locale": "en",
+
+  "brandName": "Khushhal",
+  "@brandName": {
+    "description": "Wordmark under the logo on the language select screen (1a)."
+  },
+  "brandTagline": "Your business ka health card",
+  "@brandTagline": {
+    "description": "Line under the wordmark on the language select screen (1a)."
+  },
+
+  "languageHeading": "Choose your language",
+  "@languageHeading": {
+    "description": "Heading of the language select screen (1a)."
+  },
+  "languageSubheading": "You can change this later in Settings.",
+  "@languageSubheading": {
+    "description": "Supporting line under the language heading (1a)."
+  },
+  "languageSubtitleHindi": "Hindi",
+  "@languageSubtitleHindi": {
+    "description": "Subtitle on the Hindi card (1a). The card title itself stays in Devanagari."
+  },
+  "languageSubtitleEnglish": "English (India)",
+  "@languageSubtitleEnglish": {
+    "description": "Subtitle on the English card (1a)."
+  },
+  "languageMoreComingSoon": "More languages coming soon",
+  "@languageMoreComingSoon": {
+    "description": "Note below the language cards (1a)."
+  },
+  "languageContinue": "Continue",
+  "@languageContinue": {
+    "description": "Primary action on the language select screen (1a)."
+  },
+  "languageOfflineFootnote": "Works without internet after setup",
+  "@languageOfflineFootnote": {
+    "description": "Reassurance line under the Continue button (1a)."
+  },
+
+  "onboardingContinue": "Continue",
+  "@onboardingContinue": {
+    "description": "The one way out of the USP carousel (1b-1e). It stays on screen while the cards scroll themselves, so there is no Skip or Next alongside it."
+  },
+  "onboardingStepOf": "Step {current} of {total}",
+  "@onboardingStepOf": {
+    "description": "Screen-reader label for the carousel position dots.",
+    "placeholders": {
+      "current": { "type": "int", "example": "2" },
+      "total": { "type": "int", "example": "4" }
+    }
+  },
+
+  "uspForecastTitle": "See 6 months ahead",
+  "@uspForecastTitle": {
+    "description": "Headline of USP slide 1 (1b)."
+  },
+  "uspForecastBody": "Your next 6 months of cash — inflow, kharcha and EMI — predicted from your daily entries.",
+  "@uspForecastBody": {
+    "description": "Body of USP slide 1 (1b)."
+  },
+  "uspForecastImage": "Rising chart sprouting leaves",
+  "@uspForecastImage": {
+    "description": "Description of the USP slide 1 artwork (1b)."
+  },
+
+  "uspOnePlaceTitle": "Everything in one place",
+  "@uspOnePlaceTitle": {
+    "description": "Headline of USP slide 2 (1c)."
+  },
+  "uspOnePlaceBody": "Sales, kharcha, loans, stock — your whole business on one health card.",
+  "@uspOnePlaceBody": {
+    "description": "Body of USP slide 2 (1c)."
+  },
+  "uspOnePlaceImage": "Palm holding a card, icons around it",
+  "@uspOnePlaceImage": {
+    "description": "Description of the USP slide 2 artwork (1c)."
+  },
+
+  "uspActionsTitle": "Clear steps to lower risk",
+  "@uspActionsTitle": {
+    "description": "Headline of USP slide 3 (1d)."
+  },
+  "uspActionsBody": "Every warning comes with what to do next — simple actions, in plain words.",
+  "@uspActionsBody": {
+    "description": "Body of USP slide 3 (1d)."
+  },
+  "uspActionsImage": "Checklist with leaf ticks",
+  "@uspActionsImage": {
+    "description": "Description of the USP slide 3 artwork (1d)."
+  },
+
+  "uspOfflineTitle": "Works without internet",
+  "@uspOfflineTitle": {
+    "description": "Headline of USP slide 4 (1e)."
+  },
+  "uspOfflineBody": "Record entries all day with no network. Everything syncs when signal returns.",
+  "@uspOfflineBody": {
+    "description": "Body of USP slide 4 (1e)."
+  },
+  "uspOfflineImage": "Phone with a sprout, no-signal calm",
+  "@uspOfflineImage": {
+    "description": "Description of the USP slide 4 artwork (1e)."
+  }
+}
