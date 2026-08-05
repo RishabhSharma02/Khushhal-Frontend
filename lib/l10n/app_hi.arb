@@ -1,0 +1,33 @@
+{
+  "@@locale": "hi",
+
+  "brandName": "खुशहाल",
+  "brandTagline": "आपके बिज़नेस का हेल्थ कार्ड",
+
+  "languageHeading": "अपनी भाषा चुनें",
+  "languageSubheading": "इसे बाद में सेटिंग्स में बदल सकते हैं।",
+  "languageSubtitleHindi": "हिंदी (भारत)",
+  "languageSubtitleEnglish": "अंग्रेज़ी",
+  "languageMoreComingSoon": "और भाषाएँ जल्द आ रही हैं",
+  "languageContinue": "आगे बढ़ें",
+  "languageOfflineFootnote": "सेटअप के बाद बिना इंटरनेट चलेगा",
+
+  "onboardingContinue": "आगे बढ़ें",
+  "onboardingStepOf": "{total} में से {current} कदम",
+
+  "uspForecastTitle": "6 महीने आगे देखें",
+  "uspForecastBody": "आपकी रोज़ की एंट्री से अगले 6 महीने का पैसा — आमदनी, खर्चा और EMI — पहले से दिख जाएगा।",
+  "uspForecastImage": "बढ़ता चार्ट, जिसमें से पत्तियाँ निकल रही हैं",
+
+  "uspOnePlaceTitle": "सब कुछ एक जगह",
+  "uspOnePlaceBody": "बिक्री, खर्चा, कर्ज़, स्टॉक — आपका पूरा बिज़नेस एक ही हेल्थ कार्ड पर।",
+  "uspOnePlaceImage": "हथेली पर कार्ड, चारों ओर छोटे आइकन",
+
+  "uspActionsTitle": "जोखिम कम करने के आसान कदम",
+  "uspActionsBody": "हर चेतावनी के साथ यह भी कि आगे क्या करना है — आसान कदम, सीधी भाषा में।",
+  "uspActionsImage": "पत्ती के निशान वाली चेकलिस्ट",
+
+  "uspOfflineTitle": "बिना इंटरनेट भी चलता है",
+  "uspOfflineBody": "बिना नेटवर्क पूरे दिन एंट्री करें। सिग्नल आते ही सब अपने आप सिंक हो जाएगा।",
+  "uspOfflineImage": "फ़ोन पर अंकुर, बिना सिग्नल के शांत दृश्य"
+}

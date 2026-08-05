@@ -1,15 +1,34 @@
 import 'package:flutter/material.dart';
 
 import 'core/theme/theme.dart';
+import 'features/onboarding/domain/app_language.dart';
+import 'features/onboarding/presentation/onboarding_flow.dart';
+import 'l10n/app_localizations.dart';
 
 void main() {
   runApp(const MyApp());
 }
 
 /// Root widget for the Khushhal application.
-class MyApp extends StatelessWidget {
+///
+/// Owns the app locale so the language chosen on design 1a takes effect
+/// immediately across the whole tree.
+class MyApp extends StatefulWidget {
   /// Creates the root app widget.
   const MyApp({super.key});
+
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  /// Starts on the device language when it is one we ship, so a Hindi handset
+  /// opens design 1a already in Hindi. The user can still switch on the card.
+  AppLanguage _language = AppLanguage.fromLocale(
+    WidgetsBinding.instance.platformDispatcher.locale,
+  );
+
+  bool _onboarded = false;
 
   @override
   Widget build(BuildContext context) {
@@ -17,60 +36,53 @@ class MyApp extends StatelessWidget {
       title: 'Khushhal',
       theme: AppTheme.light,
       darkTheme: AppTheme.dark,
-      themeMode: ThemeMode.system,
-      home: const MyHomePage(title: 'Khushhal'),
+      // The entry flow is drawn on a fixed light backdrop, so it stays in the
+      // light theme until the rest of the app exists.
+      themeMode: ThemeMode.light,
+      locale: _language.locale,
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+      home: _onboarded
+          ? _LoginPlaceholder(language: _language)
+          : OnboardingFlow(
+              language: _language,
+              onLanguageSelected: (AppLanguage chosen) {
+                setState(() => _language = chosen);
+              },
+              onCompleted: () => setState(() => _onboarded = true),
+            ),
     );
   }
 }
 
-/// Placeholder home screen used while features are scaffolded.
-class MyHomePage extends StatefulWidget {
-  /// Creates the home page.
-  const MyHomePage({super.key, required this.title});
+/// Stands in for the login screen (design 1f), which is not built yet.
+class _LoginPlaceholder extends StatelessWidget {
+  const _LoginPlaceholder({required this.language});
 
-  /// Title shown in the app bar.
-  final String title;
-
-  @override
-  State<MyHomePage> createState() => _MyHomePageState();
-}
-
-class _MyHomePageState extends State<MyHomePage> {
-  final ValueNotifier<int> _counter = ValueNotifier<int>(0);
-
-  @override
-  void dispose() {
-    _counter.dispose();
-    super.dispose();
-  }
+  final AppLanguage language;
 
   @override
   Widget build(BuildContext context) {
     final TextTheme textTheme = Theme.of(context).textTheme;
 
     return Scaffold(
-      appBar: AppBar(title: Text(widget.title)),
       body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            Text(
-              'You have pushed the button this many times:',
-              style: textTheme.bodyMedium,
-            ),
-            ValueListenableBuilder<int>(
-              valueListenable: _counter,
-              builder: (BuildContext context, int value, Widget? child) {
-                return Text('$value', style: textTheme.headlineMedium);
-              },
-            ),
-          ],
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              Text('Login — design 1f', style: textTheme.titleLarge),
+              const SizedBox(height: 8),
+              Text(
+                'Not implemented yet. Onboarding finished in '
+                '${language.endonym} (${language.code}).',
+                textAlign: TextAlign.center,
+                style: textTheme.bodyMedium,
+              ),
+            ],
+          ),
         ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => _counter.value++,
-        tooltip: 'Increment',
-        child: const Icon(Icons.add),
       ),
     );
   }
