@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 
 import '../../../l10n/app_localizations.dart';
 import '../domain/usp_slide.dart';
-import 'widgets/gradient_cta_button.dart';
+import '../../../core/widgets/gradient_cta_button.dart';
 import 'widgets/onboarding_backdrop.dart';
 import 'widgets/usp_carousel.dart';
 

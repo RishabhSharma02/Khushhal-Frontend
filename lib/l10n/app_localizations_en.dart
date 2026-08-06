@@ -82,4 +82,681 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get uspOfflineImage => 'Phone with a sprout, no-signal calm';
+
+  @override
+  String setupStepOf(int step, int total) {
+    return 'Step $step of $total';
+  }
+
+  @override
+  String setupStepOfBusiness(int step, int total, String business) {
+    return 'Step $step of $total · $business';
+  }
+
+  @override
+  String businessN(int n) {
+    return 'Business $n';
+  }
+
+  @override
+  String get locationHeading => 'Where is your business?';
+
+  @override
+  String get locationUseMine => 'Use my location';
+
+  @override
+  String get locationOneTap => '1 tap';
+
+  @override
+  String get locationMapHint => 'Map — pin drops here';
+
+  @override
+  String get locationDetectedLabel => 'Detected';
+
+  @override
+  String get locationDetectedValue => 'Vill. Rampur · Sitapur · UP';
+
+  @override
+  String get locationDetectedMandi => 'Nearest mandi: Sitapur (4 km)';
+
+  @override
+  String get locationPickByHand => 'Or pick by hand:';
+
+  @override
+  String get locationState => 'State';
+
+  @override
+  String get locationDistrict => 'District';
+
+  @override
+  String get locationVillage => 'Village';
+
+  @override
+  String get locationWhy =>
+      'Why location? Local mandi prices, weather alerts and seasonality feed your forecast.';
+
+  @override
+  String get locationConfirmCta => 'Confirm location';
+
+  @override
+  String get countHeading => 'How many businesses do you run?';
+
+  @override
+  String get countFourPlus => '4+';
+
+  @override
+  String get countNote =>
+      'Just the count — you set up each business one by one on the next screen.';
+
+  @override
+  String get setupNextCta => 'Next';
+
+  @override
+  String get hubTitle => 'Set up businesses';
+
+  @override
+  String hubDoneOf(int done, int total) {
+    return '$done of $total done';
+  }
+
+  @override
+  String get hubHeading => 'Set up each business';
+
+  @override
+  String get hubStatusNotStarted => 'Not started';
+
+  @override
+  String get hubStatusDone => 'Done';
+
+  @override
+  String get hubTaskKind => 'Type & sector';
+
+  @override
+  String get hubTaskDetails => 'Details — name, since, staff';
+
+  @override
+  String get hubTaskMoney => 'Monthly money';
+
+  @override
+  String get hubTaskPending => 'pending';
+
+  @override
+  String get hubStartCta => 'Start setup';
+
+  @override
+  String get hubFinishCta => 'Finish';
+
+  @override
+  String get hubFinishHint =>
+      'You can finish with 1 done and add the rest later';
+
+  @override
+  String get kindHeading => 'What kind of business?';
+
+  @override
+  String get segmentPrompt => 'I am a…';
+
+  @override
+  String get segmentShg => 'SHG';
+
+  @override
+  String get segmentFpo => 'FPO';
+
+  @override
+  String get segmentOwn => 'Own';
+
+  @override
+  String get sectorPrompt => 'My work is…';
+
+  @override
+  String get sectorDairy => 'Dairy';
+
+  @override
+  String get sectorPoultry => 'Poultry';
+
+  @override
+  String get sectorFoodProcessing => 'Food proc.';
+
+  @override
+  String get sectorCrafts => 'Crafts';
+
+  @override
+  String get sectorShop => 'Shop';
+
+  @override
+  String get sectorOther => 'Other';
+
+  @override
+  String get kindDairyHint =>
+      'Dairy picked: winter flush season and Sitapur fodder prices load automatically.';
+
+  @override
+  String get detailsHeading => 'About your business';
+
+  @override
+  String get detailsNameLabel => 'Business name';
+
+  @override
+  String get detailsSinceLabel => 'Running since';
+
+  @override
+  String get tenureUnderOneYear => '< 1 yr';
+
+  @override
+  String get tenureOneToThree => '1–3 yrs';
+
+  @override
+  String get tenureThreeToTen => '3–10 yrs';
+
+  @override
+  String get tenureTenPlus => '10+ yrs';
+
+  @override
+  String get detailsStaffLabel => 'People working (including you)';
+
+  @override
+  String get moneyHeading => 'Your money each month';
+
+  @override
+  String get moneyModeRough => 'Rough estimate';
+
+  @override
+  String get moneyModeRecords => 'From my records';
+
+  @override
+  String get moneyInLabel => 'Money IN (sales)';
+
+  @override
+  String moneyInMonthLabel(String month) {
+    return 'Money IN (sales) · $month';
+  }
+
+  @override
+  String get moneyOutLabel => 'Money OUT (costs)';
+
+  @override
+  String get moneyEmiLabel => 'Loan EMI';
+
+  @override
+  String get moneySavingsLabel => 'Savings today';
+
+  @override
+  String get moneyRecordsNote => 'Type last month\'s totals from your diary.';
+
+  @override
+  String get moneyMoreMonths =>
+      'Have more months? Add them after setup — more months = better forecast.';
+
+  @override
+  String get moneySeeCardCta => 'See my health card';
+
+  @override
+  String get homeSwitchHint => 'Tap business name to switch';
+
+  @override
+  String get chipSynced => 'Synced';
+
+  @override
+  String get chipSyncing => 'Syncing…';
+
+  @override
+  String get chipOffline => 'Offline';
+
+  @override
+  String scoreAsOn(String date) {
+    return 'Score as on $date';
+  }
+
+  @override
+  String get scoreNew => 'New';
+
+  @override
+  String healthHeadline(String name) {
+    return '$name: HEALTHY 🙂';
+  }
+
+  @override
+  String healthSummary(int score) {
+    return 'Business is doing well · Score $score/100';
+  }
+
+  @override
+  String scoreOutOf(int score) {
+    return 'Score $score/100';
+  }
+
+  @override
+  String get riskLowBadge => 'Low risk';
+
+  @override
+  String homeNextUpdate(String date) {
+    return 'Next update $date';
+  }
+
+  @override
+  String homeDaysWritten(int written, int days) {
+    return '$written of $days days written';
+  }
+
+  @override
+  String homeMonthJustStarted(String month) {
+    return '$month just started';
+  }
+
+  @override
+  String get homeScoreNote =>
+      'Score changes once a month. Daily entries build the next one.';
+
+  @override
+  String get tileMoneyIn => 'Money IN';
+
+  @override
+  String get tileMoneyOut => 'Money OUT';
+
+  @override
+  String get tileThisMonth => 'this month';
+
+  @override
+  String get tileSavings => 'Savings';
+
+  @override
+  String get tileLoan => 'Loan';
+
+  @override
+  String get tileTapToEdit => 'tap to edit';
+
+  @override
+  String get homeWatch => 'Watch';
+
+  @override
+  String watchTitle(String month) {
+    return '$month may be tight';
+  }
+
+  @override
+  String get watchReasonMandi => 'fodder price rising in Sitapur.';
+
+  @override
+  String get watchReasonForecast => 'from the new forecast.';
+
+  @override
+  String get watchAction => 'Do this: buy fodder early with your group';
+
+  @override
+  String get homeWriteEntryCta => 'Write today\'s entry';
+
+  @override
+  String homeMonthClosedBanner(String month) {
+    return '$month is closed — new score ready';
+  }
+
+  @override
+  String get homeSeeChangedCta => 'See what changed';
+
+  @override
+  String get navHome => 'Home';
+
+  @override
+  String get navHistory => 'History';
+
+  @override
+  String get navSettings => 'Settings';
+
+  @override
+  String offlineBanner(int count) {
+    return 'No network — everything still works. $count entries will sync later.';
+  }
+
+  @override
+  String get offlineHealthHeadline => 'Business is HEALTHY';
+
+  @override
+  String offlineScoreLine(int score, String date) {
+    return 'Score $score/100 · as on $date';
+  }
+
+  @override
+  String offlineMandiStale(int days) {
+    return 'Mandi prices as of $days days ago';
+  }
+
+  @override
+  String get addEntryTitle => 'Add entry';
+
+  @override
+  String get addEntrySavesOffline => 'Saves offline';
+
+  @override
+  String get entryIn => 'IN';
+
+  @override
+  String get entryOut => 'OUT';
+
+  @override
+  String get addEntryAmount => 'Amount';
+
+  @override
+  String get addEntryWhatFor => 'What for?';
+
+  @override
+  String get categoryMilkSale => 'Milk sale';
+
+  @override
+  String get categoryFodder => 'Fodder';
+
+  @override
+  String get categoryVet => 'Vet';
+
+  @override
+  String get categoryEmi => 'EMI';
+
+  @override
+  String get categoryOther => 'Other';
+
+  @override
+  String addEntryMonthNote(String month, String date) {
+    return 'Adds to $month · your score updates on $date';
+  }
+
+  @override
+  String get saveCta => 'Save';
+
+  @override
+  String forecastMadeOn(String date, String next) {
+    return 'Made on $date · next forecast $next';
+  }
+
+  @override
+  String get forecastHeading => 'Next 6 months of your money';
+
+  @override
+  String forecastInsightTitle(String month) {
+    return 'In $month, money OUT may be more than money IN.';
+  }
+
+  @override
+  String forecastInsightWhy(String amount) {
+    return 'Why? Fodder prices rising + festival costs. Savings would drop to $amount.';
+  }
+
+  @override
+  String get whatIfNormal => 'Normal';
+
+  @override
+  String get whatIfSpike => 'Price spike?';
+
+  @override
+  String get whatIfWeather => 'Bad weather?';
+
+  @override
+  String get forecastWhatCta => 'What should I do?';
+
+  @override
+  String updateTitle(String month) {
+    return 'Your $month update';
+  }
+
+  @override
+  String updateScoreLabel(String name) {
+    return '$name · Health score';
+  }
+
+  @override
+  String updateDeltaFrom(int points, String month) {
+    return '$points from $month';
+  }
+
+  @override
+  String get updateWhyMoved => 'Why it moved';
+
+  @override
+  String reasonMilkIncome(String amount, String month) {
+    return 'Milk income rose $amount over $month.';
+  }
+
+  @override
+  String reasonSteadyEntries(int written, int days) {
+    return 'You wrote entries on $written of $days days — steady records count.';
+  }
+
+  @override
+  String reasonFodderCost(String amount) {
+    return 'Fodder cost up $amount — it held the score back.';
+  }
+
+  @override
+  String get updateBandLabel => 'Band';
+
+  @override
+  String get updateSeeForecastCta => 'See the new 6-month forecast';
+
+  @override
+  String updateFixedNote(String date) {
+    return 'Your score is fixed until $date — nothing you do today changes it';
+  }
+
+  @override
+  String get alertsTitle => 'Alerts';
+
+  @override
+  String alertsFilterAll(int count) {
+    return 'All ($count)';
+  }
+
+  @override
+  String alertsFilterUrgent(int count) {
+    return 'Urgent ($count)';
+  }
+
+  @override
+  String get alertsFilterInfo => 'Info';
+
+  @override
+  String alertSavingsTitle(String month) {
+    return 'Savings may run low in $month';
+  }
+
+  @override
+  String alertSavingsDetail(String amount, String date) {
+    return 'Forecast shows $amount left · $date';
+  }
+
+  @override
+  String get alertSavingsAction => 'See 3 things to do';
+
+  @override
+  String get alertFodderTitle => 'Fodder price up 14% in Sitapur mandi';
+
+  @override
+  String alertFodderDetail(String date) {
+    return 'Affects your monthly costs · $date';
+  }
+
+  @override
+  String get alertRainTitle => 'Heavy rain expected this week';
+
+  @override
+  String get alertRainDetail => 'Protect fodder stock · weather dept.';
+
+  @override
+  String get alertsSmsNote =>
+      'Alerts also arrive as SMS when the app is offline';
+
+  @override
+  String get talkToOfficerCta => 'Talk to field officer';
+
+  @override
+  String planTitle(String month) {
+    return '$month plan';
+  }
+
+  @override
+  String planTightTitle(String month) {
+    return '$month looks tight';
+  }
+
+  @override
+  String planTightSubtitle(String from, String to) {
+    return 'Savings could fall from $from to $to';
+  }
+
+  @override
+  String get planDoThese => 'Do these 3 things:';
+
+  @override
+  String get planFodderTitle => 'Buy fodder early, with your group';
+
+  @override
+  String planFodderBenefit(String amount) {
+    return 'Saves ~$amount before prices rise';
+  }
+
+  @override
+  String planWeeklyTitle(String amount) {
+    return 'Keep $amount/week aside from now';
+  }
+
+  @override
+  String planWeeklyBenefit(String amount, String month) {
+    return 'Adds $amount buffer by $month';
+  }
+
+  @override
+  String get planEmiTitle =>
+      'Ask the bank to move your EMI date to milk-payment week';
+
+  @override
+  String get planEmiNote => 'Show this screen at the branch';
+
+  @override
+  String get planDoneChip => 'Done';
+
+  @override
+  String planNote(String month, String amount) {
+    return 'Do 1 & 2 and $month savings stay above $amount. The forecast updates live as you mark things done.';
+  }
+
+  @override
+  String get savingsLoanTitle => 'Savings & loan';
+
+  @override
+  String get changeCta => 'Change';
+
+  @override
+  String get savingsHint => 'Tap Change to correct the amount anytime';
+
+  @override
+  String get loanHint => 'As told by you';
+
+  @override
+  String get cancelCta => 'Cancel';
+
+  @override
+  String get historyTitle => 'History';
+
+  @override
+  String get historyFilterAll => 'All';
+
+  @override
+  String get historyFilterSalary => 'Salary';
+
+  @override
+  String historyInMonth(String month) {
+    return 'IN · $month';
+  }
+
+  @override
+  String historyOutMonth(String month) {
+    return 'OUT · $month';
+  }
+
+  @override
+  String get historyLoanPaid => 'Loan paid';
+
+  @override
+  String get historyToday => 'Today';
+
+  @override
+  String get historyYesterday => 'Yesterday';
+
+  @override
+  String get historyByVoice => 'by voice';
+
+  @override
+  String get historyWillSync => 'will sync';
+
+  @override
+  String get historyTapToCorrect => 'Tap an entry to correct it';
+
+  @override
+  String get syncTitle => 'Sync';
+
+  @override
+  String syncSending(int count) {
+    return 'Sending $count saved entries…';
+  }
+
+  @override
+  String get syncWaitingHeader => 'Waiting to send';
+
+  @override
+  String get syncStatusSent => 'Sent';
+
+  @override
+  String get syncStatusSending => 'Sending…';
+
+  @override
+  String get syncStatusWaiting => 'waiting';
+
+  @override
+  String get syncAutoNote =>
+      'Auto-syncs when network returns — you never need this screen. Uses about 50 KB a week; works on 2G.';
+
+  @override
+  String get syncLastFull => 'Last full sync';
+
+  @override
+  String get syncNowCta => 'Sync now';
+
+  @override
+  String get settingsTitle => 'Settings';
+
+  @override
+  String get settingsEdit => 'Edit';
+
+  @override
+  String get settingsMyBusinesses => 'My businesses';
+
+  @override
+  String get settingsAddBusiness => 'Add new business';
+
+  @override
+  String get settingsPreferences => 'Preferences';
+
+  @override
+  String get settingsLanguage => 'Language';
+
+  @override
+  String get settingsNotifications => 'Notifications';
+
+  @override
+  String get settingsNotificationsValue => 'SMS + in-app alerts on';
+
+  @override
+  String get settingsSupport => 'Support';
+
+  @override
+  String get settingsContact => 'Contact us';
+
+  @override
+  String get settingsAbout => 'About Khushhal';
+
+  @override
+  String get settingsVersion => 'v1.0.0';
+
+  @override
+  String get settingsLogOut => 'Log out';
+
+  @override
+  String get settingsPlaceValue => 'Sitapur UP';
 }

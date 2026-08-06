@@ -82,4 +82,680 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get uspOfflineImage => 'फ़ोन पर अंकुर, बिना सिग्नल के शांत दृश्य';
+
+  @override
+  String setupStepOf(int step, int total) {
+    return '$total में से $step कदम';
+  }
+
+  @override
+  String setupStepOfBusiness(int step, int total, String business) {
+    return '$total में से $step कदम · $business';
+  }
+
+  @override
+  String businessN(int n) {
+    return 'बिज़नेस $n';
+  }
+
+  @override
+  String get locationHeading => 'आपका बिज़नेस कहाँ है?';
+
+  @override
+  String get locationUseMine => 'मेरी लोकेशन इस्तेमाल करें';
+
+  @override
+  String get locationOneTap => '1 टैप';
+
+  @override
+  String get locationMapHint => 'नक्शा — पिन यहाँ गिरेगा';
+
+  @override
+  String get locationDetectedLabel => 'मिली लोकेशन';
+
+  @override
+  String get locationDetectedValue => 'गाँव रामपुर · सीतापुर · यूपी';
+
+  @override
+  String get locationDetectedMandi => 'सबसे पास की मंडी: सीतापुर (4 किमी)';
+
+  @override
+  String get locationPickByHand => 'या खुद चुनें:';
+
+  @override
+  String get locationState => 'राज्य';
+
+  @override
+  String get locationDistrict => 'ज़िला';
+
+  @override
+  String get locationVillage => 'गाँव';
+
+  @override
+  String get locationWhy =>
+      'लोकेशन क्यों? आपकी मंडी के भाव, मौसम की चेतावनी और सीज़न — सब आपके अनुमान में काम आते हैं।';
+
+  @override
+  String get locationConfirmCta => 'लोकेशन पक्की करें';
+
+  @override
+  String get countHeading => 'आप कितने बिज़नेस चलाते हैं?';
+
+  @override
+  String get countFourPlus => '4+';
+
+  @override
+  String get countNote =>
+      'बस गिनती बताएँ — अगली स्क्रीन पर हर बिज़नेस एक-एक करके सेट होगा।';
+
+  @override
+  String get setupNextCta => 'आगे';
+
+  @override
+  String get hubTitle => 'बिज़नेस सेट करें';
+
+  @override
+  String hubDoneOf(int done, int total) {
+    return '$total में से $done पूरे';
+  }
+
+  @override
+  String get hubHeading => 'हर बिज़नेस सेट करें';
+
+  @override
+  String get hubStatusNotStarted => 'अभी शुरू नहीं';
+
+  @override
+  String get hubStatusDone => 'हो गया';
+
+  @override
+  String get hubTaskKind => 'किस्म और काम';
+
+  @override
+  String get hubTaskDetails => 'जानकारी — नाम, कब से, लोग';
+
+  @override
+  String get hubTaskMoney => 'महीने का पैसा';
+
+  @override
+  String get hubTaskPending => 'बाकी';
+
+  @override
+  String get hubStartCta => 'सेटअप शुरू करें';
+
+  @override
+  String get hubFinishCta => 'पूरा करें';
+
+  @override
+  String get hubFinishHint =>
+      '1 पूरा होने पर भी आगे बढ़ सकते हैं, बाकी बाद में जोड़ लें';
+
+  @override
+  String get kindHeading => 'कैसा बिज़नेस है?';
+
+  @override
+  String get segmentPrompt => 'मैं हूँ…';
+
+  @override
+  String get segmentShg => 'SHG';
+
+  @override
+  String get segmentFpo => 'FPO';
+
+  @override
+  String get segmentOwn => 'अपना';
+
+  @override
+  String get sectorPrompt => 'मेरा काम है…';
+
+  @override
+  String get sectorDairy => 'डेयरी';
+
+  @override
+  String get sectorPoultry => 'मुर्गी पालन';
+
+  @override
+  String get sectorFoodProcessing => 'फ़ूड प्रोसेसिंग';
+
+  @override
+  String get sectorCrafts => 'हस्तशिल्प';
+
+  @override
+  String get sectorShop => 'दुकान';
+
+  @override
+  String get sectorOther => 'और कुछ';
+
+  @override
+  String get kindDairyHint =>
+      'डेयरी चुनी: सर्दी का फ्लश सीज़न और सीतापुर के चारे के भाव अपने आप जुड़ गए।';
+
+  @override
+  String get detailsHeading => 'अपने बिज़नेस के बारे में';
+
+  @override
+  String get detailsNameLabel => 'बिज़नेस का नाम';
+
+  @override
+  String get detailsSinceLabel => 'कब से चल रहा है';
+
+  @override
+  String get tenureUnderOneYear => '1 साल से कम';
+
+  @override
+  String get tenureOneToThree => '1–3 साल';
+
+  @override
+  String get tenureThreeToTen => '3–10 साल';
+
+  @override
+  String get tenureTenPlus => '10+ साल';
+
+  @override
+  String get detailsStaffLabel => 'काम करने वाले लोग (आप मिलाकर)';
+
+  @override
+  String get moneyHeading => 'आपका हर महीने का पैसा';
+
+  @override
+  String get moneyModeRough => 'मोटा अंदाज़ा';
+
+  @override
+  String get moneyModeRecords => 'मेरे हिसाब से';
+
+  @override
+  String get moneyInLabel => 'पैसा आया (बिक्री)';
+
+  @override
+  String moneyInMonthLabel(String month) {
+    return 'पैसा आया (बिक्री) · $month';
+  }
+
+  @override
+  String get moneyOutLabel => 'पैसा गया (खर्चा)';
+
+  @override
+  String get moneyEmiLabel => 'कर्ज़ की EMI';
+
+  @override
+  String get moneySavingsLabel => 'आज की बचत';
+
+  @override
+  String get moneyRecordsNote => 'अपनी डायरी से पिछले महीने के कुल लिखें।';
+
+  @override
+  String get moneyMoreMonths =>
+      'और महीने हैं? सेटअप के बाद जोड़ें — जितने महीने, उतना सही अनुमान।';
+
+  @override
+  String get moneySeeCardCta => 'मेरा हेल्थ कार्ड देखें';
+
+  @override
+  String get homeSwitchHint => 'बिज़नेस बदलने के लिए नाम पर टैप करें';
+
+  @override
+  String get chipSynced => 'सिंक हो गया';
+
+  @override
+  String get chipSyncing => 'सिंक हो रहा है…';
+
+  @override
+  String get chipOffline => 'ऑफ़लाइन';
+
+  @override
+  String scoreAsOn(String date) {
+    return '$date का स्कोर';
+  }
+
+  @override
+  String get scoreNew => 'नया';
+
+  @override
+  String healthHeadline(String name) {
+    return '$name: सेहतमंद 🙂';
+  }
+
+  @override
+  String healthSummary(int score) {
+    return 'बिज़नेस अच्छा चल रहा है · स्कोर $score/100';
+  }
+
+  @override
+  String scoreOutOf(int score) {
+    return 'स्कोर $score/100';
+  }
+
+  @override
+  String get riskLowBadge => 'कम जोखिम';
+
+  @override
+  String homeNextUpdate(String date) {
+    return 'अगला अपडेट $date';
+  }
+
+  @override
+  String homeDaysWritten(int written, int days) {
+    return '$days में से $written दिन लिखे';
+  }
+
+  @override
+  String homeMonthJustStarted(String month) {
+    return '$month अभी शुरू हुआ है';
+  }
+
+  @override
+  String get homeScoreNote =>
+      'स्कोर महीने में एक बार बदलता है। रोज़ की एंट्री अगला स्कोर बनाती है।';
+
+  @override
+  String get tileMoneyIn => 'पैसा आया';
+
+  @override
+  String get tileMoneyOut => 'पैसा गया';
+
+  @override
+  String get tileThisMonth => 'इस महीने';
+
+  @override
+  String get tileSavings => 'बचत';
+
+  @override
+  String get tileLoan => 'कर्ज़';
+
+  @override
+  String get tileTapToEdit => 'बदलने के लिए टैप करें';
+
+  @override
+  String get homeWatch => 'नज़र रखें';
+
+  @override
+  String watchTitle(String month) {
+    return '$month में तंगी हो सकती है';
+  }
+
+  @override
+  String get watchReasonMandi => 'सीतापुर में चारे का भाव बढ़ रहा है।';
+
+  @override
+  String get watchReasonForecast => 'नए अनुमान के हिसाब से।';
+
+  @override
+  String get watchAction => 'यह करें: समूह के साथ चारा पहले ही खरीद लें';
+
+  @override
+  String get homeWriteEntryCta => 'आज की एंट्री लिखें';
+
+  @override
+  String homeMonthClosedBanner(String month) {
+    return '$month पूरा हुआ — नया स्कोर तैयार है';
+  }
+
+  @override
+  String get homeSeeChangedCta => 'देखें क्या बदला';
+
+  @override
+  String get navHome => 'होम';
+
+  @override
+  String get navHistory => 'हिसाब';
+
+  @override
+  String get navSettings => 'सेटिंग्स';
+
+  @override
+  String offlineBanner(int count) {
+    return 'नेटवर्क नहीं है — फिर भी सब चलता है। $count एंट्री बाद में सिंक होंगी।';
+  }
+
+  @override
+  String get offlineHealthHeadline => 'बिज़नेस सेहतमंद है';
+
+  @override
+  String offlineScoreLine(int score, String date) {
+    return 'स्कोर $score/100 · $date का';
+  }
+
+  @override
+  String offlineMandiStale(int days) {
+    return 'मंडी के भाव $days दिन पुराने';
+  }
+
+  @override
+  String get addEntryTitle => 'एंट्री जोड़ें';
+
+  @override
+  String get addEntrySavesOffline => 'ऑफ़लाइन भी सेव';
+
+  @override
+  String get entryIn => 'आया';
+
+  @override
+  String get entryOut => 'गया';
+
+  @override
+  String get addEntryAmount => 'रकम';
+
+  @override
+  String get addEntryWhatFor => 'किस लिए?';
+
+  @override
+  String get categoryMilkSale => 'दूध बिक्री';
+
+  @override
+  String get categoryFodder => 'चारा';
+
+  @override
+  String get categoryVet => 'पशु डॉक्टर';
+
+  @override
+  String get categoryEmi => 'EMI';
+
+  @override
+  String get categoryOther => 'और कुछ';
+
+  @override
+  String addEntryMonthNote(String month, String date) {
+    return '$month में जुड़ेगा · स्कोर $date को बदलेगा';
+  }
+
+  @override
+  String get saveCta => 'सेव करें';
+
+  @override
+  String forecastMadeOn(String date, String next) {
+    return '$date को बना · अगला अनुमान $next';
+  }
+
+  @override
+  String get forecastHeading => 'आपके पैसे के अगले 6 महीने';
+
+  @override
+  String forecastInsightTitle(String month) {
+    return '$month में पैसा गया, पैसा आया से ज़्यादा हो सकता है।';
+  }
+
+  @override
+  String forecastInsightWhy(String amount) {
+    return 'क्यों? चारे के भाव बढ़ रहे हैं + त्योहार का खर्चा। बचत घटकर $amount रह जाएगी।';
+  }
+
+  @override
+  String get whatIfNormal => 'सामान्य';
+
+  @override
+  String get whatIfSpike => 'भाव बढ़े तो?';
+
+  @override
+  String get whatIfWeather => 'मौसम बिगड़े तो?';
+
+  @override
+  String get forecastWhatCta => 'मैं क्या करूँ?';
+
+  @override
+  String updateTitle(String month) {
+    return 'आपका $month का अपडेट';
+  }
+
+  @override
+  String updateScoreLabel(String name) {
+    return '$name · हेल्थ स्कोर';
+  }
+
+  @override
+  String updateDeltaFrom(int points, String month) {
+    return '$month से $points ऊपर';
+  }
+
+  @override
+  String get updateWhyMoved => 'क्यों बदला';
+
+  @override
+  String reasonMilkIncome(String amount, String month) {
+    return 'दूध की कमाई $month के मुकाबले $amount बढ़ी।';
+  }
+
+  @override
+  String reasonSteadyEntries(int written, int days) {
+    return 'आपने $days में से $written दिन एंट्री लिखी — लगातार लिखना काम आता है।';
+  }
+
+  @override
+  String reasonFodderCost(String amount) {
+    return 'चारे का खर्चा $amount बढ़ा — इसने स्कोर रोका।';
+  }
+
+  @override
+  String get updateBandLabel => 'श्रेणी';
+
+  @override
+  String get updateSeeForecastCta => 'नया 6 महीने का अनुमान देखें';
+
+  @override
+  String updateFixedNote(String date) {
+    return 'आपका स्कोर $date तक वही रहेगा — आज कुछ भी करने से नहीं बदलेगा';
+  }
+
+  @override
+  String get alertsTitle => 'चेतावनी';
+
+  @override
+  String alertsFilterAll(int count) {
+    return 'सब ($count)';
+  }
+
+  @override
+  String alertsFilterUrgent(int count) {
+    return 'ज़रूरी ($count)';
+  }
+
+  @override
+  String get alertsFilterInfo => 'जानकारी';
+
+  @override
+  String alertSavingsTitle(String month) {
+    return '$month में बचत कम पड़ सकती है';
+  }
+
+  @override
+  String alertSavingsDetail(String amount, String date) {
+    return 'अनुमान: $amount बचेंगे · $date';
+  }
+
+  @override
+  String get alertSavingsAction => '3 काम देखें';
+
+  @override
+  String get alertFodderTitle => 'सीतापुर मंडी में चारा 14% महँगा';
+
+  @override
+  String alertFodderDetail(String date) {
+    return 'आपके महीने के खर्चे पर असर · $date';
+  }
+
+  @override
+  String get alertRainTitle => 'इस हफ़्ते तेज़ बारिश के आसार';
+
+  @override
+  String get alertRainDetail => 'चारे का स्टॉक बचाएँ · मौसम विभाग';
+
+  @override
+  String get alertsSmsNote => 'ऐप ऑफ़लाइन हो तो चेतावनी SMS से भी आती है';
+
+  @override
+  String get talkToOfficerCta => 'फ़ील्ड अफ़सर से बात करें';
+
+  @override
+  String planTitle(String month) {
+    return '$month की योजना';
+  }
+
+  @override
+  String planTightTitle(String month) {
+    return '$month में तंगी दिख रही है';
+  }
+
+  @override
+  String planTightSubtitle(String from, String to) {
+    return 'बचत $from से घटकर $to रह सकती है';
+  }
+
+  @override
+  String get planDoThese => 'ये 3 काम करें:';
+
+  @override
+  String get planFodderTitle => 'समूह के साथ चारा पहले ही खरीद लें';
+
+  @override
+  String planFodderBenefit(String amount) {
+    return 'भाव बढ़ने से पहले करीब $amount बचेंगे';
+  }
+
+  @override
+  String planWeeklyTitle(String amount) {
+    return 'अब से हर हफ़्ते $amount अलग रखें';
+  }
+
+  @override
+  String planWeeklyBenefit(String amount, String month) {
+    return '$month तक $amount की बचत जुड़ेगी';
+  }
+
+  @override
+  String get planEmiTitle =>
+      'बैंक से EMI की तारीख़ दूध-पेमेंट वाले हफ़्ते में करवाएँ';
+
+  @override
+  String get planEmiNote => 'बैंक में यह स्क्रीन दिखाएँ';
+
+  @override
+  String get planDoneChip => 'हो गया';
+
+  @override
+  String planNote(String month, String amount) {
+    return 'काम 1 और 2 करें तो $month की बचत $amount से ऊपर रहेगी। जैसे-जैसे काम पूरे करेंगे, अनुमान तुरंत बदलेगा।';
+  }
+
+  @override
+  String get savingsLoanTitle => 'बचत और कर्ज़';
+
+  @override
+  String get changeCta => 'बदलें';
+
+  @override
+  String get savingsHint => 'रकम कभी भी ठीक करने के लिए \'बदलें\' दबाएँ';
+
+  @override
+  String get loanHint => 'आपके बताए अनुसार';
+
+  @override
+  String get cancelCta => 'रहने दें';
+
+  @override
+  String get historyTitle => 'हिसाब';
+
+  @override
+  String get historyFilterAll => 'सब';
+
+  @override
+  String get historyFilterSalary => 'पगार';
+
+  @override
+  String historyInMonth(String month) {
+    return 'आया · $month';
+  }
+
+  @override
+  String historyOutMonth(String month) {
+    return 'गया · $month';
+  }
+
+  @override
+  String get historyLoanPaid => 'कर्ज़ चुकाया';
+
+  @override
+  String get historyToday => 'आज';
+
+  @override
+  String get historyYesterday => 'कल';
+
+  @override
+  String get historyByVoice => 'बोलकर';
+
+  @override
+  String get historyWillSync => 'सिंक होगा';
+
+  @override
+  String get historyTapToCorrect => 'एंट्री ठीक करने के लिए उस पर टैप करें';
+
+  @override
+  String get syncTitle => 'सिंक';
+
+  @override
+  String syncSending(int count) {
+    return '$count सेव एंट्री भेज रहे हैं…';
+  }
+
+  @override
+  String get syncWaitingHeader => 'भेजने बाकी';
+
+  @override
+  String get syncStatusSent => 'भेज दी';
+
+  @override
+  String get syncStatusSending => 'भेज रहे…';
+
+  @override
+  String get syncStatusWaiting => 'बाकी';
+
+  @override
+  String get syncAutoNote =>
+      'नेटवर्क आते ही अपने आप सिंक होता है — यह स्क्रीन खोलने की ज़रूरत नहीं। हफ़्ते में करीब 50 KB लगता है; 2G पर भी चलता है।';
+
+  @override
+  String get syncLastFull => 'पिछला पूरा सिंक';
+
+  @override
+  String get syncNowCta => 'अभी सिंक करें';
+
+  @override
+  String get settingsTitle => 'सेटिंग्स';
+
+  @override
+  String get settingsEdit => 'बदलें';
+
+  @override
+  String get settingsMyBusinesses => 'मेरे बिज़नेस';
+
+  @override
+  String get settingsAddBusiness => 'नया बिज़नेस जोड़ें';
+
+  @override
+  String get settingsPreferences => 'पसंद';
+
+  @override
+  String get settingsLanguage => 'भाषा';
+
+  @override
+  String get settingsNotifications => 'सूचनाएँ';
+
+  @override
+  String get settingsNotificationsValue => 'SMS + ऐप में चेतावनी चालू';
+
+  @override
+  String get settingsSupport => 'मदद';
+
+  @override
+  String get settingsContact => 'हमसे बात करें';
+
+  @override
+  String get settingsAbout => 'खुशहाल के बारे में';
+
+  @override
+  String get settingsVersion => 'v1.0.0';
+
+  @override
+  String get settingsLogOut => 'लॉग आउट';
+
+  @override
+  String get settingsPlaceValue => 'सीतापुर यूपी';
 }
