@@ -8,7 +8,7 @@ import '../../../l10n/app_localizations.dart';
 import '../domain/app_language.dart';
 import '../domain/usp_slide.dart' show OnboardingAssets;
 import 'onboarding_palette.dart';
-import 'widgets/gradient_cta_button.dart';
+import '../../../core/widgets/gradient_cta_button.dart';
 import 'widgets/language_option_card.dart';
 import 'widgets/onboarding_backdrop.dart';
 

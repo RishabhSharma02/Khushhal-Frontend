@@ -102,5 +102,453 @@
   "uspOfflineImage": "Phone with a sprout, no-signal calm",
   "@uspOfflineImage": {
     "description": "Description of the USP slide 4 artwork (1e)."
-  }
+  },
+
+  "setupStepOf": "Step {step} of {total}",
+  "@setupStepOf": {
+    "description": "Progress line at the top of guided setup screens (1h, 1i).",
+    "placeholders": {
+      "step": { "type": "int", "example": "1" },
+      "total": { "type": "int", "example": "5" }
+    }
+  },
+  "setupStepOfBusiness": "Step {step} of {total} · {business}",
+  "@setupStepOfBusiness": {
+    "description": "Progress line on per-business setup screens (1k-1m).",
+    "placeholders": {
+      "step": { "type": "int", "example": "3" },
+      "total": { "type": "int", "example": "5" },
+      "business": { "type": "String", "example": "Business 1" }
+    }
+  },
+  "businessN": "Business {n}",
+  "@businessN": {
+    "description": "Placeholder name for a business before it is named (1j).",
+    "placeholders": {
+      "n": { "type": "int", "example": "1" }
+    }
+  },
+
+  "locationHeading": "Where is your business?",
+  "locationUseMine": "Use my location",
+  "locationOneTap": "1 tap",
+  "locationMapHint": "Map — pin drops here",
+  "locationDetectedLabel": "Detected",
+  "locationDetectedValue": "Vill. Rampur · Sitapur · UP",
+  "locationDetectedMandi": "Nearest mandi: Sitapur (4 km)",
+  "locationPickByHand": "Or pick by hand:",
+  "locationState": "State",
+  "locationDistrict": "District",
+  "locationVillage": "Village",
+  "locationWhy": "Why location? Local mandi prices, weather alerts and seasonality feed your forecast.",
+  "locationConfirmCta": "Confirm location",
+
+  "countHeading": "How many businesses do you run?",
+  "countFourPlus": "4+",
+  "countNote": "Just the count — you set up each business one by one on the next screen.",
+  "setupNextCta": "Next",
+
+  "hubTitle": "Set up businesses",
+  "hubDoneOf": "{done} of {total} done",
+  "@hubDoneOf": {
+    "placeholders": {
+      "done": { "type": "int", "example": "0" },
+      "total": { "type": "int", "example": "2" }
+    }
+  },
+  "hubHeading": "Set up each business",
+  "hubStatusNotStarted": "Not started",
+  "hubStatusDone": "Done",
+  "hubTaskKind": "Type & sector",
+  "hubTaskDetails": "Details — name, since, staff",
+  "hubTaskMoney": "Monthly money",
+  "hubTaskPending": "pending",
+  "hubStartCta": "Start setup",
+  "hubFinishCta": "Finish",
+  "hubFinishHint": "You can finish with 1 done and add the rest later",
+
+  "kindHeading": "What kind of business?",
+  "segmentPrompt": "I am a…",
+  "segmentShg": "SHG",
+  "segmentFpo": "FPO",
+  "segmentOwn": "Own",
+  "sectorPrompt": "My work is…",
+  "sectorDairy": "Dairy",
+  "sectorPoultry": "Poultry",
+  "sectorFoodProcessing": "Food proc.",
+  "sectorCrafts": "Crafts",
+  "sectorShop": "Shop",
+  "sectorOther": "Other",
+  "kindDairyHint": "Dairy picked: winter flush season and Sitapur fodder prices load automatically.",
+
+  "detailsHeading": "About your business",
+  "detailsNameLabel": "Business name",
+  "detailsSinceLabel": "Running since",
+  "tenureUnderOneYear": "< 1 yr",
+  "tenureOneToThree": "1–3 yrs",
+  "tenureThreeToTen": "3–10 yrs",
+  "tenureTenPlus": "10+ yrs",
+  "detailsStaffLabel": "People working (including you)",
+
+  "moneyHeading": "Your money each month",
+  "moneyModeRough": "Rough estimate",
+  "moneyModeRecords": "From my records",
+  "moneyInLabel": "Money IN (sales)",
+  "moneyInMonthLabel": "Money IN (sales) · {month}",
+  "@moneyInMonthLabel": {
+    "description": "Records-mode label naming the month being typed in (1n).",
+    "placeholders": {
+      "month": { "type": "String", "example": "July" }
+    }
+  },
+  "moneyOutLabel": "Money OUT (costs)",
+  "moneyEmiLabel": "Loan EMI",
+  "moneySavingsLabel": "Savings today",
+  "moneyRecordsNote": "Type last month's totals from your diary.",
+  "moneyMoreMonths": "Have more months? Add them after setup — more months = better forecast.",
+  "moneySeeCardCta": "See my health card",
+
+  "homeSwitchHint": "Tap business name to switch",
+  "chipSynced": "Synced",
+  "chipSyncing": "Syncing…",
+  "chipOffline": "Offline",
+  "scoreAsOn": "Score as on {date}",
+  "@scoreAsOn": {
+    "placeholders": {
+      "date": { "type": "String", "example": "1 Oct" }
+    }
+  },
+  "scoreNew": "New",
+  "healthHeadline": "{name}: HEALTHY 🙂",
+  "@healthHeadline": {
+    "description": "Health card headline for a healthy score (1o).",
+    "placeholders": {
+      "name": { "type": "String", "example": "Shanti Dairy" }
+    }
+  },
+  "healthSummary": "Business is doing well · Score {score}/100",
+  "@healthSummary": {
+    "placeholders": {
+      "score": { "type": "int", "example": "72" }
+    }
+  },
+  "scoreOutOf": "Score {score}/100",
+  "@scoreOutOf": {
+    "placeholders": {
+      "score": { "type": "int", "example": "76" }
+    }
+  },
+  "riskLowBadge": "Low risk",
+  "homeNextUpdate": "Next update {date}",
+  "@homeNextUpdate": {
+    "placeholders": {
+      "date": { "type": "String", "example": "1 Nov" }
+    }
+  },
+  "homeDaysWritten": "{written} of {days} days written",
+  "@homeDaysWritten": {
+    "placeholders": {
+      "written": { "type": "int", "example": "22" },
+      "days": { "type": "int", "example": "31" }
+    }
+  },
+  "homeMonthJustStarted": "{month} just started",
+  "@homeMonthJustStarted": {
+    "placeholders": {
+      "month": { "type": "String", "example": "November" }
+    }
+  },
+  "homeScoreNote": "Score changes once a month. Daily entries build the next one.",
+  "tileMoneyIn": "Money IN",
+  "tileMoneyOut": "Money OUT",
+  "tileThisMonth": "this month",
+  "tileSavings": "Savings",
+  "tileLoan": "Loan",
+  "tileTapToEdit": "tap to edit",
+  "homeWatch": "Watch",
+  "watchTitle": "{month} may be tight",
+  "@watchTitle": {
+    "placeholders": {
+      "month": { "type": "String", "example": "Nov" }
+    }
+  },
+  "watchReasonMandi": "fodder price rising in Sitapur.",
+  "watchReasonForecast": "from the new forecast.",
+  "watchAction": "Do this: buy fodder early with your group",
+  "homeWriteEntryCta": "Write today's entry",
+  "homeMonthClosedBanner": "{month} is closed — new score ready",
+  "@homeMonthClosedBanner": {
+    "placeholders": {
+      "month": { "type": "String", "example": "October" }
+    }
+  },
+  "homeSeeChangedCta": "See what changed",
+  "navHome": "Home",
+  "navHistory": "History",
+  "navSettings": "Settings",
+
+  "offlineBanner": "No network — everything still works. {count} entries will sync later.",
+  "@offlineBanner": {
+    "placeholders": {
+      "count": { "type": "int", "example": "3" }
+    }
+  },
+  "offlineHealthHeadline": "Business is HEALTHY",
+  "offlineScoreLine": "Score {score}/100 · as on {date}",
+  "@offlineScoreLine": {
+    "placeholders": {
+      "score": { "type": "int", "example": "72" },
+      "date": { "type": "String", "example": "1 Oct" }
+    }
+  },
+  "offlineMandiStale": "Mandi prices as of {days} days ago",
+  "@offlineMandiStale": {
+    "placeholders": {
+      "days": { "type": "int", "example": "2" }
+    }
+  },
+
+  "addEntryTitle": "Add entry",
+  "addEntrySavesOffline": "Saves offline",
+  "entryIn": "IN",
+  "entryOut": "OUT",
+  "addEntryAmount": "Amount",
+  "addEntryWhatFor": "What for?",
+  "categoryMilkSale": "Milk sale",
+  "categoryFodder": "Fodder",
+  "categoryVet": "Vet",
+  "categoryEmi": "EMI",
+  "categoryOther": "Other",
+  "addEntryMonthNote": "Adds to {month} · your score updates on {date}",
+  "@addEntryMonthNote": {
+    "placeholders": {
+      "month": { "type": "String", "example": "October" },
+      "date": { "type": "String", "example": "1 Nov" }
+    }
+  },
+  "saveCta": "Save",
+
+  "forecastMadeOn": "Made on {date} · next forecast {next}",
+  "@forecastMadeOn": {
+    "placeholders": {
+      "date": { "type": "String", "example": "1 Nov" },
+      "next": { "type": "String", "example": "1 Dec" }
+    }
+  },
+  "forecastHeading": "Next 6 months of your money",
+  "forecastInsightTitle": "In {month}, money OUT may be more than money IN.",
+  "@forecastInsightTitle": {
+    "placeholders": {
+      "month": { "type": "String", "example": "November" }
+    }
+  },
+  "forecastInsightWhy": "Why? Fodder prices rising + festival costs. Savings would drop to {amount}.",
+  "@forecastInsightWhy": {
+    "placeholders": {
+      "amount": { "type": "String", "example": "₹9,000" }
+    }
+  },
+  "whatIfNormal": "Normal",
+  "whatIfSpike": "Price spike?",
+  "whatIfWeather": "Bad weather?",
+  "forecastWhatCta": "What should I do?",
+
+  "updateTitle": "Your {month} update",
+  "@updateTitle": {
+    "placeholders": {
+      "month": { "type": "String", "example": "October" }
+    }
+  },
+  "updateScoreLabel": "{name} · Health score",
+  "@updateScoreLabel": {
+    "placeholders": {
+      "name": { "type": "String", "example": "Shanti Dairy" }
+    }
+  },
+  "updateDeltaFrom": "{points} from {month}",
+  "@updateDeltaFrom": {
+    "description": "Score delta chip on 1q2; the ▲ glyph is drawn by the widget.",
+    "placeholders": {
+      "points": { "type": "int", "example": "4" },
+      "month": { "type": "String", "example": "October" }
+    }
+  },
+  "updateWhyMoved": "Why it moved",
+  "reasonMilkIncome": "Milk income rose {amount} over {month}.",
+  "@reasonMilkIncome": {
+    "placeholders": {
+      "amount": { "type": "String", "example": "₹4,200" },
+      "month": { "type": "String", "example": "September" }
+    }
+  },
+  "reasonSteadyEntries": "You wrote entries on {written} of {days} days — steady records count.",
+  "@reasonSteadyEntries": {
+    "placeholders": {
+      "written": { "type": "int", "example": "28" },
+      "days": { "type": "int", "example": "31" }
+    }
+  },
+  "reasonFodderCost": "Fodder cost up {amount} — it held the score back.",
+  "@reasonFodderCost": {
+    "placeholders": {
+      "amount": { "type": "String", "example": "₹1,900" }
+    }
+  },
+  "updateBandLabel": "Band",
+  "updateSeeForecastCta": "See the new 6-month forecast",
+  "updateFixedNote": "Your score is fixed until {date} — nothing you do today changes it",
+  "@updateFixedNote": {
+    "placeholders": {
+      "date": { "type": "String", "example": "1 Dec" }
+    }
+  },
+
+  "alertsTitle": "Alerts",
+  "alertsFilterAll": "All ({count})",
+  "@alertsFilterAll": {
+    "placeholders": {
+      "count": { "type": "int", "example": "3" }
+    }
+  },
+  "alertsFilterUrgent": "Urgent ({count})",
+  "@alertsFilterUrgent": {
+    "placeholders": {
+      "count": { "type": "int", "example": "1" }
+    }
+  },
+  "alertsFilterInfo": "Info",
+  "alertSavingsTitle": "Savings may run low in {month}",
+  "@alertSavingsTitle": {
+    "placeholders": {
+      "month": { "type": "String", "example": "November" }
+    }
+  },
+  "alertSavingsDetail": "Forecast shows {amount} left · {date}",
+  "@alertSavingsDetail": {
+    "placeholders": {
+      "amount": { "type": "String", "example": "₹9,000" },
+      "date": { "type": "String", "example": "12 Oct" }
+    }
+  },
+  "alertSavingsAction": "See 3 things to do",
+  "alertFodderTitle": "Fodder price up 14% in Sitapur mandi",
+  "alertFodderDetail": "Affects your monthly costs · {date}",
+  "@alertFodderDetail": {
+    "placeholders": {
+      "date": { "type": "String", "example": "10 Oct" }
+    }
+  },
+  "alertRainTitle": "Heavy rain expected this week",
+  "alertRainDetail": "Protect fodder stock · weather dept.",
+  "alertsSmsNote": "Alerts also arrive as SMS when the app is offline",
+  "talkToOfficerCta": "Talk to field officer",
+
+  "planTitle": "{month} plan",
+  "@planTitle": {
+    "placeholders": {
+      "month": { "type": "String", "example": "November" }
+    }
+  },
+  "planTightTitle": "{month} looks tight",
+  "@planTightTitle": {
+    "placeholders": {
+      "month": { "type": "String", "example": "November" }
+    }
+  },
+  "planTightSubtitle": "Savings could fall from {from} to {to}",
+  "@planTightSubtitle": {
+    "placeholders": {
+      "from": { "type": "String", "example": "₹41,000" },
+      "to": { "type": "String", "example": "₹9,000" }
+    }
+  },
+  "planDoThese": "Do these 3 things:",
+  "planFodderTitle": "Buy fodder early, with your group",
+  "planFodderBenefit": "Saves ~{amount} before prices rise",
+  "@planFodderBenefit": {
+    "placeholders": {
+      "amount": { "type": "String", "example": "₹2,500" }
+    }
+  },
+  "planWeeklyTitle": "Keep {amount}/week aside from now",
+  "@planWeeklyTitle": {
+    "placeholders": {
+      "amount": { "type": "String", "example": "₹500" }
+    }
+  },
+  "planWeeklyBenefit": "Adds {amount} buffer by {month}",
+  "@planWeeklyBenefit": {
+    "placeholders": {
+      "amount": { "type": "String", "example": "₹6,000" },
+      "month": { "type": "String", "example": "November" }
+    }
+  },
+  "planEmiTitle": "Ask the bank to move your EMI date to milk-payment week",
+  "planEmiNote": "Show this screen at the branch",
+  "planDoneChip": "Done",
+  "planNote": "Do 1 & 2 and {month} savings stay above {amount}. The forecast updates live as you mark things done.",
+  "@planNote": {
+    "placeholders": {
+      "month": { "type": "String", "example": "November" },
+      "amount": { "type": "String", "example": "₹17,000" }
+    }
+  },
+
+  "savingsLoanTitle": "Savings & loan",
+  "changeCta": "Change",
+  "savingsHint": "Tap Change to correct the amount anytime",
+  "loanHint": "As told by you",
+  "cancelCta": "Cancel",
+
+  "historyTitle": "History",
+  "historyFilterAll": "All",
+  "historyFilterSalary": "Salary",
+  "historyInMonth": "IN · {month}",
+  "@historyInMonth": {
+    "placeholders": {
+      "month": { "type": "String", "example": "Oct" }
+    }
+  },
+  "historyOutMonth": "OUT · {month}",
+  "@historyOutMonth": {
+    "placeholders": {
+      "month": { "type": "String", "example": "Oct" }
+    }
+  },
+  "historyLoanPaid": "Loan paid",
+  "historyToday": "Today",
+  "historyYesterday": "Yesterday",
+  "historyByVoice": "by voice",
+  "historyWillSync": "will sync",
+  "historyTapToCorrect": "Tap an entry to correct it",
+
+  "syncTitle": "Sync",
+  "syncSending": "Sending {count} saved entries…",
+  "@syncSending": {
+    "placeholders": {
+      "count": { "type": "int", "example": "3" }
+    }
+  },
+  "syncWaitingHeader": "Waiting to send",
+  "syncStatusSent": "Sent",
+  "syncStatusSending": "Sending…",
+  "syncStatusWaiting": "waiting",
+  "syncAutoNote": "Auto-syncs when network returns — you never need this screen. Uses about 50 KB a week; works on 2G.",
+  "syncLastFull": "Last full sync",
+  "syncNowCta": "Sync now",
+
+  "settingsTitle": "Settings",
+  "settingsEdit": "Edit",
+  "settingsMyBusinesses": "My businesses",
+  "settingsAddBusiness": "Add new business",
+  "settingsPreferences": "Preferences",
+  "settingsLanguage": "Language",
+  "settingsNotifications": "Notifications",
+  "settingsNotificationsValue": "SMS + in-app alerts on",
+  "settingsSupport": "Support",
+  "settingsContact": "Contact us",
+  "settingsAbout": "About Khushhal",
+  "settingsVersion": "v1.0.0",
+  "settingsLogOut": "Log out",
+  "settingsPlaceValue": "Sitapur UP"
 }
