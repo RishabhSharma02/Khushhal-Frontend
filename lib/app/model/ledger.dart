@@ -49,6 +49,7 @@ class LedgerEntry {
     required this.recordedAt,
     this.source = EntrySource.manual,
     this.syncState = EntrySyncState.synced,
+    this.backendId,
   });
 
   /// Direction.
@@ -69,6 +70,10 @@ class LedgerEntry {
   /// Sync status.
   final EntrySyncState syncState;
 
+  /// Server-side id if this entry has been persisted. Null for
+  /// offline-only rows that haven't reached `/entries` yet.
+  final int? backendId;
+
   /// A copy with a different sync status.
   LedgerEntry withSyncState(EntrySyncState state) {
     return LedgerEntry(
@@ -78,6 +83,7 @@ class LedgerEntry {
       recordedAt: recordedAt,
       source: source,
       syncState: state,
+      backendId: backendId,
     );
   }
 }

@@ -39,4 +39,39 @@ class Geocoder {
       return null;
     }
   }
+
+  /// Reverse-geocode a device GPS fix into `{state, district, village}`.
+  /// Any field can come back null when Nominatim doesn't know that level
+  /// for the given coordinate.
+  Future<ReverseResult?> reverse(LatLng at) async {
+    try {
+      final resp = await _dio.get<Map<String, dynamic>>('/reverse', queryParameters: {
+        'lat': at.latitude, 'lon': at.longitude,
+        'format': 'json', 'addressdetails': 1, 'zoom': 12,
+      });
+      final data = resp.data;
+      if (data == null) return null;
+      final addr = (data['address'] as Map?)?.cast<String, dynamic>() ?? const {};
+      return ReverseResult(
+        state: addr['state'] as String?,
+        district: (addr['state_district'] as String?)
+            ?? (addr['county'] as String?)
+            ?? (addr['city_district'] as String?),
+        village: (addr['village'] as String?)
+            ?? (addr['town'] as String?)
+            ?? (addr['hamlet'] as String?)
+            ?? (addr['suburb'] as String?)
+            ?? (addr['city'] as String?),
+      );
+    } catch (_) {
+      return null;
+    }
+  }
+}
+
+class ReverseResult {
+  const ReverseResult({this.state, this.district, this.village});
+  final String? state;
+  final String? district;
+  final String? village;
 }

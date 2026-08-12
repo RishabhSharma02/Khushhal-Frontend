@@ -249,7 +249,13 @@ class _AuthGate extends StatelessWidget {
               root._session.loanInr = me.loanInr;
             });
             return _LockGate(
+              // Keying by user id forces a fresh _PhaseFlowState (and a
+              // fresh _LockGateState) when a *different* user signs in —
+              // otherwise a returning new-user session would inherit the
+              // prior user's `_phase = home` and skip onboarding.
+              key: ValueKey<int?>(state.me?.id),
               child: _PhaseFlow(
+                key: ValueKey<(int?, bool)>((state.me?.id, state.isNew)),
                 language: root!._language,
                 onLanguageSelected: root._setLanguage,
                 onLogout: root._logout,
@@ -270,7 +276,7 @@ class _AuthGate extends StatelessWidget {
 /// If no LockCubit is provided (e.g. in a test that pumps the app without
 /// mpinRepository), we let the child through untouched.
 class _LockGate extends StatefulWidget {
-  const _LockGate({required this.child});
+  const _LockGate({super.key, required this.child});
   final Widget child;
 
   @override
@@ -279,6 +285,10 @@ class _LockGate extends StatefulWidget {
 
 class _LockGateState extends State<_LockGate> {
   bool _hasCubit = false;
+  // Set to true after the user finishes NameCaptureScreen (or on unlock
+  // when their profile already has a name). Prevents re-prompting on
+  // every widget rebuild inside the session.
+  bool _nameCaptured = false;
 
   @override
   void initState() {
@@ -314,6 +324,16 @@ class _LockGateState extends State<_LockGate> {
           case LockStatus.requiresUnlock:
             return const MpinUnlockScreen();
           case LockStatus.unlocked:
+            // First-time users have no name yet — prompt once between
+            // mPIN setup and the rest of the flow. On every subsequent
+            // unlock the session already carries a name from `/me`.
+            final session = SessionScope.of(context);
+            final hasName = (session.ownerName ?? '').trim().isNotEmpty;
+            if (!_nameCaptured && !hasName) {
+              return NameCaptureScreen(
+                onDone: () => setState(() => _nameCaptured = true),
+              );
+            }
             return widget.child;
           case LockStatus.lockedOut:
             // Listener above will trigger logout + snackbar; render a
@@ -328,6 +348,7 @@ class _LockGateState extends State<_LockGate> {
 /// The three-stage flow (onboarding → setup → home) that runs after auth.
 class _PhaseFlow extends StatefulWidget {
   const _PhaseFlow({
+    super.key,
     required this.language,
     required this.onLanguageSelected,
     required this.onLogout,
@@ -353,6 +374,23 @@ class _PhaseFlowState extends State<_PhaseFlow> {
 
   @override
   Widget build(BuildContext context) {
+    final session = SessionScope.of(context);
+
+    // `_AuthGate` decides the starting phase from `is_new`, but that's not
+    // enough — if a returning user re-signs in without ever completing
+    // setup, `is_new=false` would drop them onto Home with nothing to show.
+    // Once `InsightsLoader` confirms there are 0 businesses on the server,
+    // detour into the setup flow so they can create one.
+    if (_phase == _AppPhase.home
+        && session.businessesFetched
+        && session.businesses.isEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && _phase == _AppPhase.home) {
+          setState(() => _phase = _AppPhase.onboarding);
+        }
+      });
+    }
+
     final Widget screen = switch (_phase) {
       _AppPhase.onboarding => OnboardingFlow(
           key: const ValueKey(_AppPhase.onboarding),

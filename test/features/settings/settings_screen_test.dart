@@ -38,6 +38,7 @@ Widget _settings(
                 child: SettingsScreen(
                   onLanguageSelected: onLanguageSelected ?? (_) {},
                   onLogout: onLogout ?? () {},
+                  onShowHome: () {},
                 ),
               ),
             ),
@@ -69,7 +70,7 @@ void main() {
       expect(find.text(en.settingsLogOut), findsOneWidget);
     });
 
-    testWidgets('the language sheet hands back the chosen language', (
+    testWidgets('the inline language toggle hands back the chosen language', (
       WidgetTester tester,
     ) async {
       AppLanguage? chosen;
@@ -80,9 +81,10 @@ void main() {
         ),
       );
 
-      await tester.tap(find.text(en.settingsLanguage));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text(AppLanguage.hindi.endonym));
+      // Both segments are on screen at once — no sheet to open first.
+      expect(find.text(AppLanguage.english.shortEndonym), findsOneWidget);
+
+      await tester.tap(find.text(AppLanguage.hindi.shortEndonym));
       await tester.pumpAndSettle();
 
       expect(chosen, AppLanguage.hindi);

@@ -24,6 +24,11 @@ final AppLocalizationsHi hi = AppLocalizationsHi();
 /// A session in the everyday state (1o) — demo minus the pending update.
 AppSession _settledSession() => AppSession.demo()..acceptMonthlyUpdate();
 
+/// The health headline as HealthCard renders it: the band's wording plus the
+/// face for a green band scoring under 80.
+String _headline(AppLocalizations l10n, String name) =>
+    '${l10n.healthHeadlineLow(name)} 🙂';
+
 const Business _secondBusiness = Business(
   name: 'Sunita Kirana Store',
   segment: BusinessSegment.own,
@@ -94,8 +99,8 @@ void main() {
     ) async {
       await tester.pumpWidget(_homeOnly(_settledSession()));
 
-      expect(find.text(en.healthHeadline('Shanti Dairy Farm')), findsOneWidget);
-      expect(find.text(en.healthSummary(76)), findsOneWidget);
+      expect(find.text(_headline(en, 'Shanti Dairy Farm')), findsOneWidget);
+      expect(find.text(en.healthSummaryLow(76)), findsOneWidget);
       expect(find.text(en.tileMoneyIn), findsOneWidget);
       expect(find.text(en.tileMoneyOut), findsOneWidget);
       expect(find.text('${en.tileSavings} ✎'), findsOneWidget);
@@ -122,8 +127,8 @@ void main() {
     testWidgets('health card opens the forecast', (WidgetTester tester) async {
       await tester.pumpWidget(_homeOnly(_settledSession()));
 
-      await tester.ensureVisible(find.text(en.healthSummary(76)));
-      await tester.tap(find.text(en.healthSummary(76)));
+      await tester.ensureVisible(find.text(en.healthSummaryLow(76)));
+      await tester.tap(find.text(en.healthSummaryLow(76)));
       await tester.pumpAndSettle();
 
       expect(find.byType(ForecastScreen), findsOneWidget);
@@ -178,7 +183,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(
-        find.text(en.healthHeadline('Sunita Kirana Store')),
+        find.text(_headline(en, 'Sunita Kirana Store')),
         findsOneWidget,
       );
     });
@@ -219,7 +224,7 @@ void main() {
 
       expect(find.text(en.homeMonthClosedBanner('October')), findsNothing);
       expect(find.text(en.scoreNew.toUpperCase()), findsNothing);
-      expect(find.text(en.healthSummary(76)), findsOneWidget);
+      expect(find.text(en.healthSummaryLow(76)), findsOneWidget);
       expect(find.text(en.homeWriteEntryCta), findsOneWidget);
     });
   });
@@ -275,7 +280,7 @@ void main() {
       expect(find.text(hi.navHome), findsOneWidget);
       expect(find.text(hi.navHistory), findsOneWidget);
       expect(find.text(hi.homeWriteEntryCta), findsOneWidget);
-      expect(find.text(hi.healthHeadline('Shanti Dairy Farm')), findsOneWidget);
+      expect(find.text(_headline(hi, 'Shanti Dairy Farm')), findsOneWidget);
     });
 
     testWidgets('fits a small screen at the largest text size', (

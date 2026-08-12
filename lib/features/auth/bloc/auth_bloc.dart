@@ -196,7 +196,14 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   Future<void> _onFirebaseUserChanged(_FirebaseUserChanged e, Emitter<AuthState> emit) async {
     // If firebase_auth reports a user (e.g., auto-verified from SMS retrieval)
     // and we haven't yet exchanged with the backend, do so now.
-    if (e.user != null && state.status != AuthStatus.authenticated) {
+    //
+    // Skip when a verify/start flow is already exchanging — otherwise two
+    // concurrent `/auth/session` calls race the user-insert and one loses on
+    // the firebase_uid UNIQUE constraint.
+    final busy = state.status == AuthStatus.verifying
+        || state.status == AuthStatus.sendingCode
+        || state.status == AuthStatus.codeSent;
+    if (e.user != null && state.status != AuthStatus.authenticated && !busy) {
       try {
         final result = await _repo.exchangeSessionWithBackend();
         emit(state.copyWith(

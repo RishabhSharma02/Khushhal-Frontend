@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../../app/model/insights.dart';
 import '../../../app/session.dart';
 import '../../../core/formatting.dart';
 import '../../../core/theme/theme.dart';
@@ -134,12 +135,23 @@ class _AlertDetailScreenState extends State<AlertDetailScreen> {
     }
   }
 
+  /// The month this plan is *about*, not the month it was stamped in.
+  ///
+  /// `alert.asOn` is the stamp — for an August edition it always reads
+  /// "August", never the month the model actually flagged. Fall back to it
+  /// only when the live forecast flags nothing.
+  String _monthLabel(BuildContext context, RemoteAlert alert) {
+    final ForecastMonth? flagged =
+        SessionScope.of(context).forecast.flaggedRiskMonth;
+    return monthName(context, flagged?.month ?? alert.asOn);
+  }
+
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = AppLocalizations.of(context)!;
     final alert = _detail;
     final headerMonth = alert != null
-        ? monthName(context, alert.asOn)
+        ? _monthLabel(context, alert)
         : (l10n.brandName);
 
     return Scaffold(
@@ -174,7 +186,7 @@ class _AlertDetailScreenState extends State<AlertDetailScreen> {
   }
 
   Widget _buildBody(BuildContext context, AppLocalizations l10n, RemoteAlert alert) {
-    final month = monthName(context, alert.asOn);
+    final month = _monthLabel(context, alert);
     // Prefer owner-facing actions if present; fall back to any actions on
     // the alert (some overlays are field-officer only).
     final ownerActions = alert.planActions.where((a) => a.role == 'owner').toList();

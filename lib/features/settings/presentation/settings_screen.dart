@@ -19,21 +19,26 @@ import '../../sync/presentation/sync_screen.dart';
 /// The settings tab: who is signed in, their businesses, and the few
 /// preferences the app has.
 ///
-/// The language row re-renders the whole app on the spot, same as the
-/// language select screen — one language on screen at any time.
+/// The language row carries an inline `Eng | हिंदी` toggle that re-renders
+/// the whole app on the spot — one language on screen at any time.
 class SettingsScreen extends StatelessWidget {
   /// Creates the settings tab.
   const SettingsScreen({
     super.key,
     required this.onLanguageSelected,
     required this.onLogout,
+    required this.onShowHome,
   });
 
-  /// Called when the language sheet picks a different app language.
+  /// Called when the language toggle picks a different app language.
   final ValueChanged<AppLanguage> onLanguageSelected;
 
   /// Called by "Log out" — resets the app to onboarding.
   final VoidCallback onLogout;
+
+  /// Switches the shell to the Home tab. Used after "Add new business", so
+  /// the wizard's "See my health card" lands on the card it promised.
+  final VoidCallback onShowHome;
 
   /// Icon standing in for a sector on the business rows.
   static const Map<BusinessSector, IconData> _sectorIcons =
@@ -47,14 +52,22 @@ class SettingsScreen extends StatelessWidget {
       };
 
   Future<void> _openAddBusiness(BuildContext context) async {
+    final int before = SessionScope.of(context).businesses.length;
     await Navigator.of(context, rootNavigator: true).push(
       MaterialPageRoute<void>(
-        builder: (_) => SetupFlow(
+        // `pop`, not `maybePop`: SetupFlow wraps itself in a PopScope that
+        // turns an attempted pop into "one step back", so maybePop would
+        // rewind to the details step instead of closing the wizard.
+        builder: (BuildContext routeContext) => SetupFlow(
           startAtKind: true,
-          onFinished: () => Navigator.of(context, rootNavigator: true).maybePop(),
+          onFinished: () => Navigator.of(routeContext).pop(),
         ),
       ),
     );
+    if (!context.mounted) return;
+    // Backing out of the wizard leaves the count alone; only a completed
+    // setup should pull the user off the Settings tab.
+    if (SessionScope.of(context).businesses.length > before) onShowHome();
   }
 
   Future<void> _openEditBusinessSheet(
@@ -66,7 +79,7 @@ class SettingsScreen extends StatelessWidget {
     final backendId = index < session.backendBusinessIds.length
         ? session.backendBusinessIds[index]
         : null;
-    await showModalBottomSheet<bool>(
+    final Business? saved = await showModalBottomSheet<Business>(
       context: context,
       isScrollControlled: true,
       backgroundColor: AppPalette.onPrimary,
@@ -75,67 +88,9 @@ class SettingsScreen extends StatelessWidget {
       ),
       builder: (_) => EditBusinessSheet(business: business, backendId: backendId),
     );
-  }
-
-  void _showLanguageSheet(BuildContext context) {
-    final AppLanguage current = AppLanguage.fromLocale(
-      Localizations.localeOf(context),
-    );
-
-    showModalBottomSheet<void>(
-      context: context,
-      backgroundColor: AppPalette.onPrimary,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
-      ),
-      builder: (BuildContext sheetContext) {
-        return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 10),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: <Widget>[
-                for (final AppLanguage language in AppLanguage.values)
-                  InkWell(
-                    onTap: () {
-                      Navigator.of(sheetContext).pop();
-                      onLanguageSelected(language);
-                    },
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 22,
-                        vertical: 14,
-                      ),
-                      child: Row(
-                        children: <Widget>[
-                          Expanded(
-                            child: Text(
-                              language.endonym,
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: language == current
-                                    ? FontWeight.w600
-                                    : FontWeight.w400,
-                                color: AppPalette.cardInk,
-                              ),
-                            ),
-                          ),
-                          if (language == current)
-                            const Icon(
-                              Icons.check_rounded,
-                              size: 20,
-                              color: AppPalette.leaf,
-                            ),
-                        ],
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
+    // Mirror the saved edit into the session so Home's name pill and health
+    // card headline pick up the new name without waiting for a cold restart.
+    if (saved != null) session.updateBusiness(index, saved);
   }
 
   @override
@@ -231,9 +186,11 @@ class SettingsScreen extends StatelessWidget {
                     _SettingsRow(
                       well: const _IconWell(icon: Icons.translate_rounded),
                       title: l10n.settingsLanguage,
-                      subtitle: language.endonym,
                       divider: true,
-                      onTap: () => _showLanguageSheet(context),
+                      trailing: _LanguageToggle(
+                        current: language,
+                        onSelected: onLanguageSelected,
+                      ),
                     ),
                     _SettingsRow(
                       well: const _IconWell(icon: Icons.notifications_rounded),
@@ -438,6 +395,7 @@ class _SettingsRow extends StatelessWidget {
     this.titleColor = AppPalette.cardInk,
     this.divider = false,
     this.onTap,
+    this.trailing,
   });
 
   final Widget well;
@@ -446,6 +404,9 @@ class _SettingsRow extends StatelessWidget {
   final Color titleColor;
   final bool divider;
   final VoidCallback? onTap;
+
+  /// Replaces the chevron for rows that act in place instead of navigating.
+  final Widget? trailing;
 
   @override
   Widget build(BuildContext context) {
@@ -487,12 +448,91 @@ class _SettingsRow extends StatelessWidget {
                 ],
               ),
             ),
-            const Icon(
-              Icons.chevron_right_rounded,
-              size: 18,
-              color: AppPalette.idle,
-            ),
+            trailing ??
+                const Icon(
+                  Icons.chevron_right_rounded,
+                  size: 18,
+                  color: AppPalette.idle,
+                ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+/// The `Eng | हिंदी` segmented button that sits in the language row.
+///
+/// Switching language re-renders the whole app on the spot, so the toggle
+/// doubles as the current-value display — there is no separate picker.
+class _LanguageToggle extends StatelessWidget {
+  const _LanguageToggle({required this.current, required this.onSelected});
+
+  /// English first, matching the label order in the design. [AppLanguage]
+  /// declares Hindi first because that is the onboarding default.
+  static const List<AppLanguage> _order = <AppLanguage>[
+    AppLanguage.english,
+    AppLanguage.hindi,
+  ];
+
+  final AppLanguage current;
+  final ValueChanged<AppLanguage> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(2),
+      decoration: BoxDecoration(
+        color: AppPalette.mintNote,
+        border: Border.all(color: AppPalette.line),
+        borderRadius: BorderRadius.circular(99),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          for (final AppLanguage language in _order)
+            _LanguageSegment(
+              label: language.shortEndonym,
+              selected: language == current,
+              onTap: language == current ? null : () => onSelected(language),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+/// One half of the language toggle.
+class _LanguageSegment extends StatelessWidget {
+  const _LanguageSegment({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool selected;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: selected ? AppPalette.forest : Colors.transparent,
+      shape: const StadiumBorder(),
+      child: InkWell(
+        onTap: onTap,
+        customBorder: const StadiumBorder(),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: 12.5,
+              fontWeight: FontWeight.w600,
+              color: selected ? AppPalette.onPrimary : AppPalette.forest,
+              height: 1.3,
+            ),
+          ),
         ),
       ),
     );

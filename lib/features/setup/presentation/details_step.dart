@@ -22,6 +22,7 @@ class DetailsStep extends StatefulWidget {
     required this.draft,
     required this.businessNumber,
     required this.onNext,
+    this.standalone = false,
   });
 
   /// The draft being filled in.
@@ -32,6 +33,9 @@ class DetailsStep extends StatefulWidget {
 
   /// Advances to monthly money (1m).
   final VoidCallback onNext;
+
+  /// True when opened as Settings → Add business (see [KindStep.standalone]).
+  final bool standalone;
 
   @override
   State<DetailsStep> createState() => _DetailsStepState();
@@ -56,11 +60,12 @@ class _DetailsStepState extends State<DetailsStep> {
     return StepPage(
       header: SetupProgressHeader(
         label: l10n.setupStepOfBusiness(
-          4,
-          5,
+          widget.standalone ? 2 : 4,
+          widget.standalone ? 3 : 5,
           l10n.businessN(widget.businessNumber),
         ),
-        filled: 4,
+        filled: widget.standalone ? 2 : 4,
+        total: widget.standalone ? 3 : 5,
       ),
       cta: GradientCtaButton(
         label: l10n.setupNextCta,

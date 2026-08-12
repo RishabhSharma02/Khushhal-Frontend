@@ -656,17 +656,41 @@ abstract class AppLocalizations {
   /// **'New'**
   String get scoreNew;
 
-  /// Health card headline for a healthy score (1o).
+  /// Health card headline on a green band (1o). The emoji is appended by HealthCard so it can follow the score, not just the band.
   ///
   /// In en, this message translates to:
-  /// **'{name}: HEALTHY 🙂'**
-  String healthHeadline(String name);
+  /// **'{name}: HEALTHY'**
+  String healthHeadlineLow(String name);
 
-  /// No description provided for @healthSummary.
+  /// Health card headline on an amber band (1o).
+  ///
+  /// In en, this message translates to:
+  /// **'{name}: NEEDS CARE'**
+  String healthHeadlineMedium(String name);
+
+  /// Health card headline on a red band (1o).
+  ///
+  /// In en, this message translates to:
+  /// **'{name}: AT RISK'**
+  String healthHeadlineHigh(String name);
+
+  /// Health card summary line on a green band (1o).
   ///
   /// In en, this message translates to:
   /// **'Business is doing well · Score {score}/100'**
-  String healthSummary(int score);
+  String healthSummaryLow(int score);
+
+  /// Health card summary line on an amber band (1o).
+  ///
+  /// In en, this message translates to:
+  /// **'Business needs some care · Score {score}/100'**
+  String healthSummaryMedium(int score);
+
+  /// Health card summary line on a red band (1o).
+  ///
+  /// In en, this message translates to:
+  /// **'Business is under strain · Score {score}/100'**
+  String healthSummaryHigh(int score);
 
   /// No description provided for @scoreOutOf.
   ///
@@ -680,6 +704,18 @@ abstract class AppLocalizations {
   /// **'Low risk'**
   String get riskLowBadge;
 
+  /// No description provided for @riskMediumBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'Medium risk'**
+  String get riskMediumBadge;
+
+  /// No description provided for @riskHighBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'High risk'**
+  String get riskHighBadge;
+
   /// No description provided for @homeNextUpdate.
   ///
   /// In en, this message translates to:
@@ -692,6 +728,18 @@ abstract class AppLocalizations {
   /// **'{written} of {days} days written'**
   String homeDaysWritten(int written, int days);
 
+  /// No description provided for @homeDayOf30.
+  ///
+  /// In en, this message translates to:
+  /// **'Day {day} of 30'**
+  String homeDayOf30(int day);
+
+  /// No description provided for @homeScoreAsOf.
+  ///
+  /// In en, this message translates to:
+  /// **'Score as of {date}'**
+  String homeScoreAsOf(String date);
+
   /// No description provided for @homeMonthJustStarted.
   ///
   /// In en, this message translates to:
@@ -701,7 +749,7 @@ abstract class AppLocalizations {
   /// No description provided for @homeScoreNote.
   ///
   /// In en, this message translates to:
-  /// **'Score changes once a month. Daily entries build the next one.'**
+  /// **'Score refreshes every 30 days. Keep writing entries — they build the next one.'**
   String get homeScoreNote;
 
   /// No description provided for @tileMoneyIn.
@@ -926,11 +974,23 @@ abstract class AppLocalizations {
   /// **'In {month}, money OUT may be more than money IN.'**
   String forecastInsightTitle(String month);
 
-  /// No description provided for @forecastInsightWhy.
+  /// Why the flagged month is tight. The amount is savings on hand today, not a forecast figure.
   ///
   /// In en, this message translates to:
-  /// **'Why? Fodder prices rising + festival costs. Savings would drop to {amount}.'**
+  /// **'Money OUT is forecast above money IN that month. You have {amount} saved today — that is the buffer it would draw on.'**
   String forecastInsightWhy(String amount);
+
+  /// Forecast insight title when the model flagged no month at all — shown instead of naming a month.
+  ///
+  /// In en, this message translates to:
+  /// **'No tight month in the next 6 months.'**
+  String get forecastNoRiskTitle;
+
+  /// Forecast insight body when the model flagged no month at all.
+  ///
+  /// In en, this message translates to:
+  /// **'Money IN stays ahead of money OUT right across the window. Keep writing entries — next month\'s forecast can change this.'**
+  String get forecastNoRiskWhy;
 
   /// No description provided for @whatIfNormal.
   ///
@@ -1046,11 +1106,23 @@ abstract class AppLocalizations {
   /// **'Savings may run low in {month}'**
   String alertSavingsTitle(String month);
 
-  /// No description provided for @alertSavingsDetail.
+  /// Savings alert title when the forecast flags no particular month.
   ///
   /// In en, this message translates to:
-  /// **'Forecast shows {amount} left · {date}'**
-  String alertSavingsDetail(String amount, String date);
+  /// **'Savings may run low'**
+  String get alertSavingsTitleNoMonth;
+
+  /// Savings alert detail. Only the raised date is a real figure, so no rupee amount is quoted.
+  ///
+  /// In en, this message translates to:
+  /// **'From your latest forecast · raised {date}'**
+  String alertSavingsDetail(String date);
+
+  /// Savings alert detail for a feed that carries no raised date.
+  ///
+  /// In en, this message translates to:
+  /// **'From your latest forecast'**
+  String get alertSavingsDetailUndated;
 
   /// No description provided for @alertSavingsAction.
   ///

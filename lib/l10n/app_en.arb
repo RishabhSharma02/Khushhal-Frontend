@@ -219,17 +219,46 @@
     }
   },
   "scoreNew": "New",
-  "healthHeadline": "{name}: HEALTHY 🙂",
-  "@healthHeadline": {
-    "description": "Health card headline for a healthy score (1o).",
+  "healthHeadlineLow": "{name}: HEALTHY",
+  "@healthHeadlineLow": {
+    "description": "Health card headline on a green band (1o). The emoji is appended by HealthCard so it can follow the score, not just the band.",
     "placeholders": {
       "name": { "type": "String", "example": "Shanti Dairy" }
     }
   },
-  "healthSummary": "Business is doing well · Score {score}/100",
-  "@healthSummary": {
+  "healthHeadlineMedium": "{name}: NEEDS CARE",
+  "@healthHeadlineMedium": {
+    "description": "Health card headline on an amber band (1o).",
+    "placeholders": {
+      "name": { "type": "String", "example": "Shanti Dairy" }
+    }
+  },
+  "healthHeadlineHigh": "{name}: AT RISK",
+  "@healthHeadlineHigh": {
+    "description": "Health card headline on a red band (1o).",
+    "placeholders": {
+      "name": { "type": "String", "example": "Shanti Dairy" }
+    }
+  },
+  "healthSummaryLow": "Business is doing well · Score {score}/100",
+  "@healthSummaryLow": {
+    "description": "Health card summary line on a green band (1o).",
     "placeholders": {
       "score": { "type": "int", "example": "72" }
+    }
+  },
+  "healthSummaryMedium": "Business needs some care · Score {score}/100",
+  "@healthSummaryMedium": {
+    "description": "Health card summary line on an amber band (1o).",
+    "placeholders": {
+      "score": { "type": "int", "example": "54" }
+    }
+  },
+  "healthSummaryHigh": "Business is under strain · Score {score}/100",
+  "@healthSummaryHigh": {
+    "description": "Health card summary line on a red band (1o).",
+    "placeholders": {
+      "score": { "type": "int", "example": "36" }
     }
   },
   "scoreOutOf": "Score {score}/100",
@@ -239,6 +268,8 @@
     }
   },
   "riskLowBadge": "Low risk",
+  "riskMediumBadge": "Medium risk",
+  "riskHighBadge": "High risk",
   "homeNextUpdate": "Next update {date}",
   "@homeNextUpdate": {
     "placeholders": {
@@ -252,13 +283,25 @@
       "days": { "type": "int", "example": "31" }
     }
   },
+  "homeDayOf30": "Day {day} of 30",
+  "@homeDayOf30": {
+    "placeholders": {
+      "day": { "type": "int", "example": "12" }
+    }
+  },
+  "homeScoreAsOf": "Score as of {date}",
+  "@homeScoreAsOf": {
+    "placeholders": {
+      "date": { "type": "String", "example": "1 Nov" }
+    }
+  },
   "homeMonthJustStarted": "{month} just started",
   "@homeMonthJustStarted": {
     "placeholders": {
       "month": { "type": "String", "example": "November" }
     }
   },
-  "homeScoreNote": "Score changes once a month. Daily entries build the next one.",
+  "homeScoreNote": "Score refreshes every 30 days. Keep writing entries — they build the next one.",
   "tileMoneyIn": "Money IN",
   "tileMoneyOut": "Money OUT",
   "tileThisMonth": "this month",
@@ -342,11 +385,20 @@
       "month": { "type": "String", "example": "November" }
     }
   },
-  "forecastInsightWhy": "Why? Fodder prices rising + festival costs. Savings would drop to {amount}.",
+  "forecastInsightWhy": "Money OUT is forecast above money IN that month. You have {amount} saved today — that is the buffer it would draw on.",
   "@forecastInsightWhy": {
+    "description": "Why the flagged month is tight. The amount is savings on hand today, not a forecast figure.",
     "placeholders": {
-      "amount": { "type": "String", "example": "₹9,000" }
+      "amount": { "type": "String", "example": "₹41,200" }
     }
+  },
+  "forecastNoRiskTitle": "No tight month in the next 6 months.",
+  "@forecastNoRiskTitle": {
+    "description": "Forecast insight title when the model flagged no month at all — shown instead of naming a month."
+  },
+  "forecastNoRiskWhy": "Money IN stays ahead of money OUT right across the window. Keep writing entries — next month's forecast can change this.",
+  "@forecastNoRiskWhy": {
+    "description": "Forecast insight body when the model flagged no month at all."
   },
   "whatIfNormal": "Normal",
   "whatIfSpike": "Price spike?",
@@ -423,12 +475,20 @@
       "month": { "type": "String", "example": "November" }
     }
   },
-  "alertSavingsDetail": "Forecast shows {amount} left · {date}",
+  "alertSavingsTitleNoMonth": "Savings may run low",
+  "@alertSavingsTitleNoMonth": {
+    "description": "Savings alert title when the forecast flags no particular month."
+  },
+  "alertSavingsDetail": "From your latest forecast · raised {date}",
   "@alertSavingsDetail": {
+    "description": "Savings alert detail. Only the raised date is a real figure, so no rupee amount is quoted.",
     "placeholders": {
-      "amount": { "type": "String", "example": "₹9,000" },
       "date": { "type": "String", "example": "12 Oct" }
     }
+  },
+  "alertSavingsDetailUndated": "From your latest forecast",
+  "@alertSavingsDetailUndated": {
+    "description": "Savings alert detail for a feed that carries no raised date."
   },
   "alertSavingsAction": "See 3 things to do",
   "alertFodderTitle": "Fodder price up 14% in Sitapur mandi",

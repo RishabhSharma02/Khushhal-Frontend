@@ -51,6 +51,21 @@ class _SetupFlowState extends State<SetupFlow> {
   /// Scratch state for the business currently in the 1k–1m subflow.
   BusinessDraft _draft = BusinessDraft();
 
+  /// "Business N" for the draft in flight. Frozen rather than derived so the
+  /// header doesn't jump when [_submitBusiness] appends to the session while
+  /// the closing animation still shows the last step.
+  int? _draftNumber;
+
+  /// Set once the flow has handed control back to its caller, so a pop that
+  /// races the closing animation isn't mistaken for a back gesture.
+  bool _closing = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _draftNumber ??= SessionScope.of(context).businesses.length + 1;
+  }
+
   void _advance(_SetupStage next) {
     setState(() => _stage = next);
   }
@@ -77,42 +92,51 @@ class _SetupFlowState extends State<SetupFlow> {
 
   Future<void> _submitBusiness(AppSession session, Business business) async {
     session.addBusiness(business);
-    if (widget.startAtKind) {
-      // Add-from-Settings path: no Hub to return to — pop straight back.
-      widget.onFinished();
-    } else {
-      setState(() {
-        _draft = BusinessDraft();
-        _stage = _SetupStage.hub;
-      });
-    }
 
-    // Best-effort backend persistence — the demo state is now updated so the
-    // UI moves on immediately; if the network call succeeds we register the
-    // backend id so subsequent ledger entries know where to land, otherwise
-    // we surface a snackbar and leave the local state alone.
+    // Backend save FIRST — otherwise the add-from-Settings path pops the
+    // route before the async POST fires and `context.read` fails silently.
     BusinessRepository? repo;
     try {
       repo = context.read<BusinessRepository>();
     } catch (_) {
-      return;
+      repo = null;
     }
-    try {
-      final remote = await repo.create(business);
-      if (!mounted) return;
-      session.registerBackendBusinessId(remote.id);
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Business saved locally — sync failed: $e')),
-      );
+    if (repo != null) {
+      try {
+        final remote = await repo.create(business);
+        if (!mounted) return;
+        session.registerBackendBusinessId(remote.id);
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Business saved locally — sync failed: $e')),
+          );
+        }
+      }
+    }
+
+    if (!mounted) return;
+    if (widget.startAtKind) {
+      // Add-from-Settings path: no Hub to return to — pop straight back.
+      // Make the new business active so the caller lands on its health
+      // card. Onboarding deliberately doesn't do this: it walks several
+      // businesses through the hub and finishes on the first one.
+      session.selectBusiness(session.businesses.length - 1);
+      _closing = true;
+      widget.onFinished();
+    } else {
+      setState(() {
+        _draft = BusinessDraft();
+        _draftNumber = session.businesses.length + 1;
+        _stage = _SetupStage.hub;
+      });
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final AppSession session = SessionScope.of(context);
-    final int businessNumber = session.businesses.length + 1;
+    final int businessNumber = _draftNumber ?? session.businesses.length + 1;
 
     final Widget step = switch (_stage) {
       _SetupStage.location => LocationStep(
@@ -137,23 +161,26 @@ class _SetupFlowState extends State<SetupFlow> {
         draft: _draft,
         businessNumber: businessNumber,
         onNext: () => _advance(_SetupStage.details),
+        standalone: widget.startAtKind,
       ),
       _SetupStage.details => DetailsStep(
         draft: _draft,
         businessNumber: businessNumber,
         onNext: () => _advance(_SetupStage.money),
+        standalone: widget.startAtKind,
       ),
       _SetupStage.money => MoneyStep(
         draft: _draft,
         businessNumber: businessNumber,
         onSubmit: (Business business) => _submitBusiness(session, business),
+        standalone: widget.startAtKind,
       ),
     };
 
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (bool didPop, Object? result) {
-        if (!didPop) {
+        if (!didPop && !_closing) {
           _back();
         }
       },
@@ -165,7 +192,7 @@ class _SetupFlowState extends State<SetupFlow> {
           child: AnimatedSwitcher(
             duration: const Duration(milliseconds: 260),
             child: KeyedSubtree(
-              key: ValueKey<String>('$_stage-${session.businesses.length}'),
+              key: ValueKey<String>('$_stage-$businessNumber'),
               child: step,
             ),
           ),

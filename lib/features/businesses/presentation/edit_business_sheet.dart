@@ -11,8 +11,9 @@ import '../data/business_repository.dart';
 /// staff count, tenure. Segment + sector stay locked because changing them
 /// invalidates every stamped health score.
 ///
-/// Pops `true` if a save committed, `false` (or null) otherwise — callers
-/// can refresh their list based on the return value.
+/// Pops the edited [Business] once Save commits — including when the edit
+/// could only be applied locally — or null when the sheet is dismissed.
+/// Callers mirror the returned record into `AppSession`.
 class EditBusinessSheet extends StatefulWidget {
   const EditBusinessSheet({super.key, required this.business, required this.backendId});
 
@@ -36,18 +37,24 @@ class _EditBusinessSheetState extends State<EditBusinessSheet> {
     super.dispose();
   }
 
+  Business get _edited => widget.business.copyWith(
+        name: _name.text.trim(),
+        staffCount: _staff,
+        tenure: _tenure,
+      );
+
   Future<void> _save() async {
     if (widget.backendId == null) {
-      // Local-only edit — no backend id yet (offline setup). Just pop true
-      // and let the caller reconcile.
-      Navigator.of(context).pop(true);
+      // Local-only edit — no backend id yet (offline setup). The next
+      // `GET /businesses` reconciles it.
+      Navigator.of(context).pop(_edited);
       return;
     }
     BusinessRepository? repo;
     try {
       repo = context.read<BusinessRepository>();
     } catch (_) {
-      Navigator.of(context).pop(true);
+      Navigator.of(context).pop(_edited);
       return;
     }
     setState(() {
@@ -62,7 +69,7 @@ class _EditBusinessSheetState extends State<EditBusinessSheet> {
         tenure: BusinessApiMapper.tenure(_tenure),
       );
       if (!mounted) return;
-      Navigator.of(context).pop(true);
+      Navigator.of(context).pop(_edited);
     } catch (e) {
       if (!mounted) return;
       setState(() {

@@ -3,7 +3,6 @@ library;
 
 import 'package:flutter/material.dart';
 
-import '../../../app/demo_data.dart';
 import '../../../app/model/insights.dart';
 import '../../../app/session.dart';
 import '../../../core/formatting.dart';
@@ -40,13 +39,8 @@ class _ForecastScreenState extends State<ForecastScreen> {
     final AppLocalizations l10n = AppLocalizations.of(context)!;
     final AppSession session = SessionScope.of(context);
     final List<ForecastMonth> months = session.forecast;
-    // Empty forecast on fresh install → skip the risk-month label entirely.
-    final ForecastMonth? risk = months.isEmpty
-        ? null
-        : months.firstWhere(
-            (ForecastMonth m) => m.isRiskMonth,
-            orElse: () => months.last,
-          );
+    final ForecastMonth? risk = months.flaggedRiskMonth;
+    final HealthSnapshot? health = session.health;
 
     return Scaffold(
       body: PageBackdrop(
@@ -59,45 +53,47 @@ class _ForecastScreenState extends State<ForecastScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
                     const SizedBox(height: 12),
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 11,
-                      ),
-                      decoration: BoxDecoration(
-                        color: AppPalette.mintChip,
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                      child: Row(
-                        children: <Widget>[
-                          const Icon(
-                            Icons.event_rounded,
-                            size: 16,
-                            color: AppPalette.leaf,
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              l10n.forecastMadeOn(
-                                dayMonth(context, DemoData.pendingHealth.asOn),
-                                dayMonth(
-                                  context,
-                                  DemoData.pendingHealth.nextUpdate,
+                    // The stamp dates are the health snapshot's — the
+                    // forecast is stamped in the same run as the score.
+                    // Nothing to date the edition by until one exists.
+                    if (health != null) ...<Widget>[
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 11,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppPalette.mintChip,
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                        child: Row(
+                          children: <Widget>[
+                            const Icon(
+                              Icons.event_rounded,
+                              size: 16,
+                              color: AppPalette.leaf,
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                l10n.forecastMadeOn(
+                                  dayMonth(context, health.asOn),
+                                  dayMonth(context, health.nextUpdate),
+                                ),
+                                style: const TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppPalette.leaf,
+                                  height: 1.3,
                                 ),
                               ),
-                              style: const TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
-                                color: AppPalette.leaf,
-                                height: 1.3,
-                              ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 12),
+                      const SizedBox(height: 12),
+                    ],
                     KhushhalCard(
                       radius: 18,
                       padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
@@ -152,9 +148,11 @@ class _ForecastScreenState extends State<ForecastScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: <Widget>[
                           Text(
-                            l10n.forecastInsightTitle(
-                              risk != null ? monthName(context, risk.month) : '—',
-                            ),
+                            risk == null
+                                ? l10n.forecastNoRiskTitle
+                                : l10n.forecastInsightTitle(
+                                    monthName(context, risk.month),
+                                  ),
                             style: const TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.w600,
@@ -164,9 +162,11 @@ class _ForecastScreenState extends State<ForecastScreen> {
                           ),
                           const SizedBox(height: 5),
                           Text(
-                            l10n.forecastInsightWhy(
-                              rupees(context, DemoData.forecastSavingsFloor),
-                            ),
+                            risk == null
+                                ? l10n.forecastNoRiskWhy
+                                : l10n.forecastInsightWhy(
+                                    rupees(context, session.savingsInr),
+                                  ),
                             style: const TextStyle(
                               fontSize: 12.5,
                               color: AppPalette.muted,

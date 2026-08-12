@@ -88,4 +88,24 @@ class LedgerRepository {
     );
     return (resp['items'] as List<dynamic>).cast<Map<String, dynamic>>();
   }
+
+  /// Edit an existing entry. Backend `PATCH /entries/{id}` supports
+  /// amount / category / recorded_at — pass nulls for fields you don't
+  /// want to change.
+  Future<void> updateEntry({
+    required int businessId,
+    required int entryId,
+    int? amountInr,
+    String? categoryWire,
+    DateTime? recordedAt,
+  }) async {
+    await _api.patchJson(
+      '/api/v1/businesses/$businessId/entries/$entryId',
+      body: {
+        'amount_inr': ?amountInr,
+        'category': ?categoryWire,
+        'recorded_at': ?recordedAt?.toUtc().toIso8601String(),
+      },
+    );
+  }
 }

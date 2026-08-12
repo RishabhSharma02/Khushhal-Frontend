@@ -4,7 +4,6 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../../app/session.dart';
 import '../../../core/network/api_client.dart';
-import '../../../core/theme/theme.dart';
 import '../../../core/widgets/gradient_cta_button.dart';
 import 'widgets/auth_backdrop.dart';
 
@@ -64,7 +63,6 @@ class _NameCaptureScreenState extends State<NameCaptureScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final khushhal = Theme.of(context).extension<KhushhalColors>()!;
     return Scaffold(
       body: AuthBackdrop(
         child: Padding(
@@ -73,16 +71,18 @@ class _NameCaptureScreenState extends State<NameCaptureScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               const SizedBox(height: 40),
-              Text('What should we call you?',
+              Text('Hurray! Welcome to Khushhal',
                   style: GoogleFonts.lexend(
                     fontSize: 22,
                     fontWeight: FontWeight.w600,
                     color: const Color(0xFF123B27),
                   )),
               const SizedBox(height: 5),
-              Text('Your name shows up on the home card and settings.',
+              Text('What should we call you?',
                   style: GoogleFonts.lexend(
-                    fontSize: 13.5, height: 1.5, color: const Color(0xFF5C6B62),
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                    color: const Color(0xFF1C2B24),
                   )),
               const SizedBox(height: 28),
               _NameField(controller: _first, label: 'First name', autofocus: true, onChanged: (_) => setState(() {})),
@@ -103,11 +103,6 @@ class _NameCaptureScreenState extends State<NameCaptureScreen> {
               ),
               // Keeps the color right when disabled — hint to the eye.
               if (!_isValid) const SizedBox(height: 4),
-              const SizedBox(height: 4),
-              Center(
-                child: Text('Uses your Firebase phone; only your name is sent.',
-                    style: TextStyle(fontSize: 11.5, color: khushhal.muted)),
-              ),
             ],
           ),
         ),
@@ -146,6 +141,11 @@ class _NameField extends StatelessWidget {
         style: GoogleFonts.lexend(fontSize: 17, fontWeight: FontWeight.w500, color: const Color(0xFF1C2B24)),
         decoration: InputDecoration(
           border: InputBorder.none,
+          enabledBorder: InputBorder.none,
+          focusedBorder: InputBorder.none,
+          disabledBorder: InputBorder.none,
+          errorBorder: InputBorder.none,
+          focusedErrorBorder: InputBorder.none,
           labelText: label,
           labelStyle: GoogleFonts.lexend(fontSize: 13, color: const Color(0xFF5C6B62)),
         ),

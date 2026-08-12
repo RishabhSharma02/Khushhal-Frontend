@@ -41,6 +41,16 @@ class HealthCard extends StatelessWidget {
     final AppLocalizations l10n = AppLocalizations.of(context)!;
     final HealthSnapshot shown = pending ?? health;
     final bool fresh = pending != null;
+    final _BandStyle band = _BandStyle.forSnapshot(shown, businessName, l10n);
+
+    // The score refreshes every 30 days from `asOn`. Show progress as days
+    // elapsed since the last stamp — the label and bar move forward each
+    // day even though the numeric score only changes on `nextUpdate`.
+    final int windowDays = shown.nextUpdate.difference(shown.asOn).inDays;
+    final int totalDays = windowDays > 0 ? windowDays : 30;
+    final int elapsed = DateTime.now().difference(shown.asOn).inDays
+        .clamp(0, totalDays);
+    final double windowFraction = elapsed / totalDays;
 
     return KhushhalCard(
       radius: 20,
@@ -92,7 +102,7 @@ class HealthCard extends StatelessWidget {
           ),
           const SizedBox(height: 6),
           Text(
-            l10n.healthHeadline(businessName),
+            band.headline,
             textAlign: TextAlign.center,
             style: const TextStyle(
               fontSize: 20,
@@ -144,7 +154,7 @@ class HealthCard extends StatelessWidget {
             )
           else
             Text(
-              l10n.healthSummary(shown.score),
+              band.summary,
               textAlign: TextAlign.center,
               style: const TextStyle(
                 fontSize: 12.5,
@@ -157,17 +167,17 @@ class HealthCard extends StatelessWidget {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
               decoration: BoxDecoration(
-                color: AppPalette.mintChip,
-                border: Border.all(color: AppPalette.riskLowBorder),
+                color: band.background,
+                border: Border.all(color: band.border),
                 borderRadius: BorderRadius.circular(99),
               ),
               child: Text(
-                l10n.riskLowBadge.toUpperCase(),
-                style: const TextStyle(
+                band.label.toUpperCase(),
+                style: TextStyle(
                   fontSize: 11.5,
                   fontWeight: FontWeight.w600,
                   letterSpacing: 0.46,
-                  color: AppPalette.leaf,
+                  color: band.ink,
                   height: 1.3,
                 ),
               ),
@@ -213,9 +223,7 @@ class HealthCard extends StatelessWidget {
                   children: <Widget>[
                     Flexible(
                       child: Text(
-                        l10n.homeNextUpdate(
-                          dayMonth(context, shown.nextUpdate),
-                        ),
+                        l10n.homeScoreAsOf(dayMonth(context, shown.asOn)),
                         style: const TextStyle(
                           fontSize: 11.5,
                           color: AppPalette.muted,
@@ -226,10 +234,7 @@ class HealthCard extends StatelessWidget {
                     const SizedBox(width: 8),
                     Flexible(
                       child: Text(
-                        l10n.homeDaysWritten(
-                          shown.daysWritten,
-                          shown.daysInMonth,
-                        ),
+                        l10n.homeDayOf30(elapsed),
                         textAlign: TextAlign.end,
                         style: const TextStyle(
                           fontSize: 11.5,
@@ -241,12 +246,17 @@ class HealthCard extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 6),
-                _DaysProgressBar(
-                  fraction: shown.daysInMonth == 0
-                      ? 0
-                      : shown.daysWritten / shown.daysInMonth,
-                ),
+                _DaysProgressBar(fraction: windowFraction),
                 const SizedBox(height: 6),
+                Text(
+                  l10n.homeNextUpdate(dayMonth(context, shown.nextUpdate)),
+                  style: const TextStyle(
+                    fontSize: 11,
+                    color: AppPalette.faint,
+                    height: 1.4,
+                  ),
+                ),
+                const SizedBox(height: 4),
                 Text(
                   l10n.homeScoreNote,
                   style: const TextStyle(
@@ -260,6 +270,83 @@ class HealthCard extends StatelessWidget {
         ],
       ),
     );
+  }
+}
+
+/// Everything on the card that follows the band: the headline, the summary
+/// line, and the colours of the risk pill.
+///
+/// Backend returns a `RiskLevel` (low / medium / high) — we map each band to
+/// the same palette used elsewhere in the app: mint for low, amber for
+/// medium, danger for high.
+class _BandStyle {
+  const _BandStyle({
+    required this.label,
+    required this.headline,
+    required this.summary,
+    required this.background,
+    required this.border,
+    required this.ink,
+  });
+
+  final String label;
+
+  /// Business name, the band's word, and the face — the face is added here
+  /// rather than baked into the ARB string so it can follow the score too.
+  final String headline;
+
+  final String summary;
+  final Color background;
+  final Color border;
+  final Color ink;
+
+  /// Two faces per band, the brighter one from the given score upwards.
+  ///
+  /// The only place the tiers live: a band alone is too coarse (36 and 59
+  /// are both red-adjacent but feel different to their owner), and a single
+  /// score ladder would fight the band the backend already decided on.
+  static String _face(RiskLevel level, int score) => switch (level) {
+    RiskLevel.low => score >= 80 ? '😄' : '🙂',
+    RiskLevel.medium => score >= 50 ? '😐' : '😕',
+    RiskLevel.high => score >= 30 ? '😟' : '😰',
+  };
+
+  factory _BandStyle.forSnapshot(
+    HealthSnapshot health,
+    String businessName,
+    AppLocalizations l10n,
+  ) {
+    final String face = _face(health.risk, health.score);
+
+    switch (health.risk) {
+      case RiskLevel.low:
+        return _BandStyle(
+          label: l10n.riskLowBadge,
+          headline: '${l10n.healthHeadlineLow(businessName)} $face',
+          summary: l10n.healthSummaryLow(health.score),
+          background: AppPalette.mintChip,
+          border: AppPalette.riskLowBorder,
+          ink: AppPalette.leaf,
+        );
+      case RiskLevel.medium:
+        return _BandStyle(
+          label: l10n.riskMediumBadge,
+          headline: '${l10n.healthHeadlineMedium(businessName)} $face',
+          summary: l10n.healthSummaryMedium(health.score),
+          background: AppPalette.amberWash,
+          border: AppPalette.amberBorder,
+          ink: AppPalette.amberInk,
+        );
+      case RiskLevel.high:
+        return _BandStyle(
+          label: l10n.riskHighBadge,
+          headline: '${l10n.healthHeadlineHigh(businessName)} $face',
+          summary: l10n.healthSummaryHigh(health.score),
+          background: const Color(0xFFFDECEB),
+          border: AppPalette.dangerBorder,
+          ink: AppPalette.danger,
+        );
+    }
   }
 }
 

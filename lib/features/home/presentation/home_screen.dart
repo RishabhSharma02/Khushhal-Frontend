@@ -51,14 +51,7 @@ class HomeScreen extends StatelessWidget {
     final bool offline = session.connectivity == ConnectivityStatus.offline;
     final bool updateReady = session.updateReady;
 
-    // Safe against an empty forecast (fresh install, no ML score yet).
-    ForecastMonth? riskMonth;
-    if (session.forecast.isNotEmpty) {
-      riskMonth = session.forecast.firstWhere(
-        (ForecastMonth m) => m.isRiskMonth,
-        orElse: () => session.forecast.last,
-      );
-    }
+    final ForecastMonth? riskMonth = session.forecast.flaggedRiskMonth;
 
     final List<Widget> body;
 

@@ -48,6 +48,7 @@ extension RemoteLedgerEntry on Map<String, dynamic> {
       recordedAt: DateTime.parse(this['recorded_at'] as String),
       source: LedgerApiMapper.sourceFromWire(this['source'] as String),
       syncState: EntrySyncState.synced,
+      backendId: this['id'] as int?,
     );
   }
 }

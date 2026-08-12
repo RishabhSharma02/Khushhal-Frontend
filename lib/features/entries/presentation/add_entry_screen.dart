@@ -17,6 +17,7 @@ import '../../../core/widgets/gradient_cta_button.dart';
 import '../../../core/widgets/khushhal_card.dart';
 import '../../../core/widgets/page_backdrop.dart';
 import '../../../l10n/app_localizations.dart';
+import '../data/ledger_api.dart';
 import '../data/ledger_repository.dart';
 
 /// The IN/OUT, amount and category entry form.
@@ -26,7 +27,13 @@ import '../data/ledger_repository.dart';
 /// in the corner promises up front.
 class AddEntryScreen extends StatefulWidget {
   /// Creates the screen.
-  const AddEntryScreen({super.key});
+  ///
+  /// [editing] pre-fills the form with an existing entry's amount / kind /
+  /// category — save issues `PATCH /entries/{id}` instead of `POST`. The
+  /// entry must carry a `backendId`; if it doesn't we fall back to POST.
+  const AddEntryScreen({super.key, this.editing});
+
+  final LedgerEntry? editing;
 
   @override
   State<AddEntryScreen> createState() => _AddEntryScreenState();
@@ -35,8 +42,16 @@ class AddEntryScreen extends StatefulWidget {
 class _AddEntryScreenState extends State<AddEntryScreen> {
   final TextEditingController _amount = TextEditingController();
 
-  EntryKind _kind = EntryKind.moneyIn;
-  EntryCategory _category = EntryCategory.milkSale;
+  late EntryKind _kind = widget.editing?.kind ?? EntryKind.moneyIn;
+  late EntryCategory _category = widget.editing?.category ?? EntryCategory.milkSale;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.editing != null) {
+      _amount.text = widget.editing!.amountInr.toString();
+    }
+  }
 
   @override
   void dispose() {
@@ -45,9 +60,31 @@ class _AddEntryScreenState extends State<AddEntryScreen> {
   }
 
   int get _amountValue => int.tryParse(_amount.text.trim()) ?? 0;
+  bool get _isEditing => widget.editing?.backendId != null;
 
   void _save() {
     if (_amountValue <= 0) {
+      return;
+    }
+
+    final session = SessionScope.of(context);
+    final businessId = session.activeBackendBusinessId;
+
+    if (_isEditing && businessId != null) {
+      // PATCH /entries/{id}
+      final entryId = widget.editing!.backendId!;
+      try {
+        final repo = context.read<LedgerRepository>();
+        // ignore: discarded_futures
+        repo.updateEntry(
+          businessId: businessId,
+          entryId: entryId,
+          amountInr: _amountValue,
+          categoryWire: LedgerApiMapper.category(_category),
+          recordedAt: widget.editing!.recordedAt,
+        );
+      } catch (_) {}
+      Navigator.of(context).pop(true);
       return;
     }
 
@@ -62,12 +99,10 @@ class _AddEntryScreenState extends State<AddEntryScreen> {
       recordedAt: now,
     );
 
-    final session = SessionScope.of(context);
     session.addEntry(entry);
 
     // Fire-and-forget backend submit via outbox — safe offline, idempotent
     // via client_entry_id. Nothing blocks the pop() below.
-    final businessId = session.activeBackendBusinessId;
     if (businessId != null) {
       try {
         final repo = context.read<LedgerRepository>();
@@ -78,7 +113,7 @@ class _AddEntryScreenState extends State<AddEntryScreen> {
       }
     }
 
-    Navigator.of(context).pop();
+    Navigator.of(context).pop(true);
   }
 
   @override
@@ -91,7 +126,7 @@ class _AddEntryScreenState extends State<AddEntryScreen> {
         child: Column(
           children: <Widget>[
             BackHeader(
-              title: l10n.addEntryTitle,
+              title: _isEditing ? 'Edit entry' : l10n.addEntryTitle,
               trailing: _SavesOfflineChip(label: l10n.addEntrySavesOffline),
             ),
             Expanded(

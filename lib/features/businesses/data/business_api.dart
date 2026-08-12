@@ -45,6 +45,7 @@ class RemoteBusiness {
     required this.staffCount,
     required this.isNewBusiness,
     required this.yearsInOperation,
+    this.latestSnapshot,
   });
 
   final int id;
@@ -56,7 +57,25 @@ class RemoteBusiness {
   final bool isNewBusiness;
   final int yearsInOperation;
 
+  /// The most recent monthly baseline the backend has for this business —
+  /// usually the setup-wizard row. Used to seed Home's money tiles before
+  /// any live ledger entries land.
+  final MonthlyMoney? latestSnapshot;
+
   factory RemoteBusiness.fromJson(Map<String, dynamic> json) {
+    final rawSnap = json['latest_snapshot'];
+    MonthlyMoney? snap;
+    if (rawSnap is Map<String, dynamic>) {
+      snap = MonthlyMoney(
+        moneyIn: (rawSnap['money_in'] as num?)?.toInt() ?? 0,
+        moneyOut: (rawSnap['money_out'] as num?)?.toInt() ?? 0,
+        loanEmi: (rawSnap['loan_emi'] as num?)?.toInt() ?? 0,
+        savings: (rawSnap['savings'] as num?)?.toInt() ?? 0,
+        basis: (rawSnap['basis'] as String?) == 'records'
+            ? MoneyBasis.fromRecords
+            : MoneyBasis.roughEstimate,
+      );
+    }
     return RemoteBusiness(
       id: json['id'] as int,
       name: json['name'] as String,
@@ -66,13 +85,14 @@ class RemoteBusiness {
       staffCount: json['staff_count'] as int,
       isNewBusiness: json['is_new_business'] as bool,
       yearsInOperation: json['years_in_operation'] as int,
+      latestSnapshot: snap,
     );
   }
 
-  /// Build a partial [Business] for `AppSession` after `GET /businesses`.
-  /// The monthly snapshot isn't returned by that endpoint, so we seed it
-  /// with zeros — the ML score + monthly-in/out come from the insights
-  /// endpoints instead, which are the real source of truth on Home.
+  /// Build a [Business] for `AppSession` after `GET /businesses`. The
+  /// backend's `latest_snapshot` seeds the monthly baseline so Home's tiles
+  /// carry through the numbers the user typed on the setup wizard — ledger
+  /// entries fetched separately can override them for the running month.
   Business toDomain() {
     return Business(
       name: name,
@@ -80,10 +100,11 @@ class RemoteBusiness {
       sector: _sectorFromWire(sector),
       tenure: _tenureFromWire(tenure),
       staffCount: staffCount,
-      monthly: const MonthlyMoney(
-        moneyIn: 0, moneyOut: 0, loanEmi: 0, savings: 0,
-        basis: MoneyBasis.roughEstimate,
-      ),
+      monthly: latestSnapshot ??
+          const MonthlyMoney(
+            moneyIn: 0, moneyOut: 0, loanEmi: 0, savings: 0,
+            basis: MoneyBasis.roughEstimate,
+          ),
     );
   }
 }

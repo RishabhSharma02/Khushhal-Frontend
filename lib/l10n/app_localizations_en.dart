@@ -311,13 +311,33 @@ class AppLocalizationsEn extends AppLocalizations {
   String get scoreNew => 'New';
 
   @override
-  String healthHeadline(String name) {
-    return '$name: HEALTHY 🙂';
+  String healthHeadlineLow(String name) {
+    return '$name: HEALTHY';
   }
 
   @override
-  String healthSummary(int score) {
+  String healthHeadlineMedium(String name) {
+    return '$name: NEEDS CARE';
+  }
+
+  @override
+  String healthHeadlineHigh(String name) {
+    return '$name: AT RISK';
+  }
+
+  @override
+  String healthSummaryLow(int score) {
     return 'Business is doing well · Score $score/100';
+  }
+
+  @override
+  String healthSummaryMedium(int score) {
+    return 'Business needs some care · Score $score/100';
+  }
+
+  @override
+  String healthSummaryHigh(int score) {
+    return 'Business is under strain · Score $score/100';
   }
 
   @override
@@ -327,6 +347,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get riskLowBadge => 'Low risk';
+
+  @override
+  String get riskMediumBadge => 'Medium risk';
+
+  @override
+  String get riskHighBadge => 'High risk';
 
   @override
   String homeNextUpdate(String date) {
@@ -339,13 +365,23 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String homeDayOf30(int day) {
+    return 'Day $day of 30';
+  }
+
+  @override
+  String homeScoreAsOf(String date) {
+    return 'Score as of $date';
+  }
+
+  @override
   String homeMonthJustStarted(String month) {
     return '$month just started';
   }
 
   @override
   String get homeScoreNote =>
-      'Score changes once a month. Daily entries build the next one.';
+      'Score refreshes every 30 days. Keep writing entries — they build the next one.';
 
   @override
   String get tileMoneyIn => 'Money IN';
@@ -476,8 +512,15 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String forecastInsightWhy(String amount) {
-    return 'Why? Fodder prices rising + festival costs. Savings would drop to $amount.';
+    return 'Money OUT is forecast above money IN that month. You have $amount saved today — that is the buffer it would draw on.';
   }
+
+  @override
+  String get forecastNoRiskTitle => 'No tight month in the next 6 months.';
+
+  @override
+  String get forecastNoRiskWhy =>
+      'Money IN stays ahead of money OUT right across the window. Keep writing entries — next month\'s forecast can change this.';
 
   @override
   String get whatIfNormal => 'Normal';
@@ -557,9 +600,15 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String alertSavingsDetail(String amount, String date) {
-    return 'Forecast shows $amount left · $date';
+  String get alertSavingsTitleNoMonth => 'Savings may run low';
+
+  @override
+  String alertSavingsDetail(String date) {
+    return 'From your latest forecast · raised $date';
   }
+
+  @override
+  String get alertSavingsDetailUndated => 'From your latest forecast';
 
   @override
   String get alertSavingsAction => 'See 3 things to do';

@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -110,9 +111,14 @@ class _MpinUnlockScreenState extends State<MpinUnlockScreen> {
                   const SizedBox(height: 24),
                   GestureDetector(
                     onTap: () async {
-                      // Wipe the stored PIN and force LockCubit → requiresSetup;
-                      // the auth gate above then routes back to phone/OTP.
-                      await context.read<LockCubit>().reset();
+                      // Sign out FIRST so `_AuthGate` flips to
+                      // PhoneLoginScreen and unmounts this widget — that
+                      // prevents `_LockGate` from flashing its `unknown`
+                      // spinner. Reset the cubit afterwards via the
+                      // captured reference (context is dead by then).
+                      final cubit = context.read<LockCubit>();
+                      await FirebaseAuth.instance.signOut();
+                      await cubit.reset();
                     },
                     child: Text('Forgot PIN? Login with OTP',
                         textAlign: TextAlign.center,

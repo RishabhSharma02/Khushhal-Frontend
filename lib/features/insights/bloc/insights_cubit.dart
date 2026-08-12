@@ -55,11 +55,13 @@ class InsightsCubit extends Cubit<InsightsState> {
     bool refreshFirst = false,
     bool autoRefreshIfMissing = true,
   }) async {
-    emit(state.copyWith(
-      status: InsightsStatus.loading,
-      businessId: businessId,
-      clearError: true,
-    ));
+    // A different business must not inherit the previous one's insights.
+    // `copyWith` can't clear a field, so switching starts from a bare state
+    // — otherwise a business with no stamp yet shows its predecessor's
+    // score, forecast and alerts.
+    emit(state.businessId == businessId
+        ? state.copyWith(status: InsightsStatus.loading, clearError: true)
+        : InsightsState(status: InsightsStatus.loading, businessId: businessId));
     try {
       if (refreshFirst) {
         try { await _repo.refresh(businessId); } catch (_) {}
@@ -76,8 +78,9 @@ class InsightsCubit extends Cubit<InsightsState> {
           bundle = await _repo.fetchAll(businessId);
         } catch (_) {}
       }
-      emit(state.copyWith(
+      emit(InsightsState(
         status: InsightsStatus.loaded,
+        businessId: businessId,
         health: bundle.health,
         forecast: bundle.forecast,
         alerts: bundle.alerts,

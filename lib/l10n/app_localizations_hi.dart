@@ -311,13 +311,33 @@ class AppLocalizationsHi extends AppLocalizations {
   String get scoreNew => 'नया';
 
   @override
-  String healthHeadline(String name) {
-    return '$name: सेहतमंद 🙂';
+  String healthHeadlineLow(String name) {
+    return '$name: सेहतमंद';
   }
 
   @override
-  String healthSummary(int score) {
+  String healthHeadlineMedium(String name) {
+    return '$name: ध्यान चाहिए';
+  }
+
+  @override
+  String healthHeadlineHigh(String name) {
+    return '$name: जोखिम में';
+  }
+
+  @override
+  String healthSummaryLow(int score) {
     return 'बिज़नेस अच्छा चल रहा है · स्कोर $score/100';
+  }
+
+  @override
+  String healthSummaryMedium(int score) {
+    return 'बिज़नेस को थोड़ा ध्यान चाहिए · स्कोर $score/100';
+  }
+
+  @override
+  String healthSummaryHigh(int score) {
+    return 'बिज़नेस पर दबाव है · स्कोर $score/100';
   }
 
   @override
@@ -327,6 +347,12 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get riskLowBadge => 'कम जोखिम';
+
+  @override
+  String get riskMediumBadge => 'मध्यम जोखिम';
+
+  @override
+  String get riskHighBadge => 'ज़्यादा जोखिम';
 
   @override
   String homeNextUpdate(String date) {
@@ -339,13 +365,23 @@ class AppLocalizationsHi extends AppLocalizations {
   }
 
   @override
+  String homeDayOf30(int day) {
+    return '30 में से $day दिन';
+  }
+
+  @override
+  String homeScoreAsOf(String date) {
+    return '$date का स्कोर';
+  }
+
+  @override
   String homeMonthJustStarted(String month) {
     return '$month अभी शुरू हुआ है';
   }
 
   @override
   String get homeScoreNote =>
-      'स्कोर महीने में एक बार बदलता है। रोज़ की एंट्री अगला स्कोर बनाती है।';
+      'स्कोर हर 30 दिन में बदलता है। रोज़ की एंट्री अगला स्कोर बनाती है।';
 
   @override
   String get tileMoneyIn => 'पैसा आया';
@@ -476,8 +512,16 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String forecastInsightWhy(String amount) {
-    return 'क्यों? चारे के भाव बढ़ रहे हैं + त्योहार का खर्चा। बचत घटकर $amount रह जाएगी।';
+    return 'अनुमान है कि उस महीने पैसा गया, पैसा आया से ऊपर रहेगा। आज आपके पास $amount की बचत है — सहारा वही बनेगी।';
   }
+
+  @override
+  String get forecastNoRiskTitle =>
+      'अगले 6 महीनों में कोई तंग महीना नहीं दिख रहा।';
+
+  @override
+  String get forecastNoRiskWhy =>
+      'पूरे छह महीने पैसा आया, पैसा गया से आगे रहता है। एंट्री लिखते रहें — अगले महीने का अनुमान इसे बदल सकता है।';
 
   @override
   String get whatIfNormal => 'सामान्य';
@@ -557,9 +601,15 @@ class AppLocalizationsHi extends AppLocalizations {
   }
 
   @override
-  String alertSavingsDetail(String amount, String date) {
-    return 'अनुमान: $amount बचेंगे · $date';
+  String get alertSavingsTitleNoMonth => 'बचत कम पड़ सकती है';
+
+  @override
+  String alertSavingsDetail(String date) {
+    return 'आपके ताज़ा अनुमान से · $date को उठी';
   }
+
+  @override
+  String get alertSavingsDetailUndated => 'आपके ताज़ा अनुमान से';
 
   @override
   String get alertSavingsAction => '3 काम देखें';

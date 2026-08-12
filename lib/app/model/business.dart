@@ -91,4 +91,24 @@ class Business {
 
   /// The monthly money picture from setup.
   final MonthlyMoney monthly;
+
+  /// A copy with the fields Settings' edit sheet can change replaced.
+  ///
+  /// Segment and sector are deliberately absent: changing either invalidates
+  /// every stamped health score, so they stay locked after setup.
+  Business copyWith({
+    String? name,
+    BusinessTenure? tenure,
+    int? staffCount,
+    MonthlyMoney? monthly,
+  }) {
+    return Business(
+      name: name ?? this.name,
+      segment: segment,
+      sector: sector,
+      tenure: tenure ?? this.tenure,
+      staffCount: staffCount ?? this.staffCount,
+      monthly: monthly ?? this.monthly,
+    );
+  }
 }

@@ -95,6 +95,22 @@ class AppSession extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Mirrors an edit saved on Settings' edit sheet back into the session, so
+  /// Home's name pill and health-card headline update without a restart.
+  void updateBusiness(int index, Business business) {
+    if (index >= 0 && index < _businesses.length) {
+      _businesses[index] = business;
+      notifyListeners();
+    }
+  }
+
+  bool _businessesFetched = false;
+
+  /// True once `GET /businesses` has resolved at least once — even with an
+  /// empty list. Consumers use this to distinguish "still loading" from
+  /// "server confirms zero businesses" (which forces the setup flow).
+  bool get businessesFetched => _businessesFetched;
+
   /// Wholesale replace — used by the Home-side BusinessListLoader when it
   /// fetches `GET /api/v1/businesses` on cold restart. Preserves the active
   /// index when possible.
@@ -108,7 +124,26 @@ class AppSession extends ChangeNotifier {
     if (_activeBusinessIndex >= _businesses.length) {
       _activeBusinessIndex = _businesses.isEmpty ? 0 : _businesses.length - 1;
     }
+    _businessesFetched = true;
+    _seedMoneyFromActiveBusinessIfEmpty();
     notifyListeners();
+  }
+
+  /// Home's money tiles used to render as zeros until the user hit the
+  /// standalone SavingsLoan screen — the setup-wizard numbers only landed
+  /// in `monthly_snapshots` on the backend, not `/me`. Now that
+  /// `GET /businesses` echoes the latest snapshot, seed the running
+  /// month-to-date + savings so the values the user typed on onboarding
+  /// carry through to Home. Live ledger entries can still override the
+  /// running IN/OUT numbers via [applyLiveEntries].
+  void _seedMoneyFromActiveBusinessIfEmpty() {
+    final Business? biz = activeBusiness;
+    if (biz == null) return;
+    final MonthlyMoney snap = biz.monthly;
+    if (_monthMoneyIn == 0 && snap.moneyIn > 0) _monthMoneyIn = snap.moneyIn;
+    if (_monthMoneyOut == 0 && snap.moneyOut > 0) _monthMoneyOut = snap.moneyOut;
+    if (_savingsInr == 0 && snap.savings > 0) _savingsInr = snap.savings;
+    if (_loanInr == 0 && snap.loanEmi > 0) _loanInr = snap.loanEmi;
   }
 
   // Backend id per business (populated after a successful POST /businesses).
@@ -178,22 +213,34 @@ class AppSession extends ChangeNotifier {
       .length;
 
   /// Bulk-populate from `GET /entries` after cold restart. Replaces the
-  /// current entry list and recomputes month-to-date IN / OUT totals.
+  /// current entry list and recomputes month-to-date IN / OUT totals from
+  /// live ledger rows.
+  ///
+  /// If the ledger has no entries for the running month, we keep whatever
+  /// baseline was seeded from the setup wizard's monthly snapshot — that
+  /// way Home doesn't flash back to zero when the user has real backend
+  /// data but hasn't written a ledger entry yet this month.
   void applyLiveEntries(List<LedgerEntry> entries) {
     _entries
       ..clear()
       ..addAll(entries);
-    _monthMoneyIn = 0;
-    _monthMoneyOut = 0;
+    int liveIn = 0;
+    int liveOut = 0;
+    bool sawCurrentMonth = false;
     final now = DateTime.now();
     for (final e in entries) {
       final sameMonth = e.recordedAt.year == now.year && e.recordedAt.month == now.month;
       if (!sameMonth) continue;
+      sawCurrentMonth = true;
       if (e.kind == EntryKind.moneyIn) {
-        _monthMoneyIn += e.amountInr;
+        liveIn += e.amountInr;
       } else {
-        _monthMoneyOut += e.amountInr;
+        liveOut += e.amountInr;
       }
+    }
+    if (sawCurrentMonth) {
+      _monthMoneyIn = liveIn;
+      _monthMoneyOut = liveOut;
     }
     notifyListeners();
   }

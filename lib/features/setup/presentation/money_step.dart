@@ -26,6 +26,7 @@ class MoneyStep extends StatefulWidget {
     required this.draft,
     required this.businessNumber,
     required this.onSubmit,
+    this.standalone = false,
   });
 
   /// The draft being filled in.
@@ -36,6 +37,9 @@ class MoneyStep extends StatefulWidget {
 
   /// Called with the finished business record.
   final ValueChanged<Business> onSubmit;
+
+  /// True when opened as Settings → Add business (see [KindStep.standalone]).
+  final bool standalone;
 
   @override
   State<MoneyStep> createState() => _MoneyStepState();
@@ -106,11 +110,12 @@ class _MoneyStepState extends State<MoneyStep> {
     return StepPage(
       header: SetupProgressHeader(
         label: l10n.setupStepOfBusiness(
-          5,
-          5,
+          widget.standalone ? 3 : 5,
+          widget.standalone ? 3 : 5,
           l10n.businessN(widget.businessNumber),
         ),
-        filled: 5,
+        filled: widget.standalone ? 3 : 5,
+        total: widget.standalone ? 3 : 5,
       ),
       cta: GradientCtaButton(label: l10n.moneySeeCardCta, onPressed: _submit),
       children: <Widget>[

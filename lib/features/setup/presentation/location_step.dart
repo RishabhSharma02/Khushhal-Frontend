@@ -4,6 +4,7 @@ library;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_map/flutter_map.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
 
 import '../../../core/theme/theme.dart';
@@ -37,6 +38,8 @@ class _LocationStepState extends State<LocationStep> {
   final _geocoder = Geocoder();
   final MapController _mapController = MapController();
 
+  bool _locating = false;
+  String? _locateError;
   List<RemoteState> _states = const [];
   List<String> _districts = const [];
 
@@ -101,6 +104,87 @@ class _LocationStepState extends State<LocationStep> {
       return context.read<LocationRepository>();
     } catch (_) {
       return null;
+    }
+  }
+
+  Future<void> _useMyLocation() async {
+    if (_locating) return;
+    setState(() {
+      _locating = true;
+      _locateError = null;
+    });
+    try {
+      final serviceOn = await Geolocator.isLocationServiceEnabled();
+      if (!serviceOn) {
+        setState(() {
+          _locating = false;
+          _locateError = 'Turn on device location and try again.';
+        });
+        return;
+      }
+      var perm = await Geolocator.checkPermission();
+      if (perm == LocationPermission.denied) {
+        perm = await Geolocator.requestPermission();
+      }
+      if (perm == LocationPermission.denied) {
+        setState(() {
+          _locating = false;
+          _locateError = 'Location permission denied.';
+        });
+        return;
+      }
+      if (perm == LocationPermission.deniedForever) {
+        setState(() {
+          _locating = false;
+          _locateError =
+              'Location permission is blocked — enable it from system settings.';
+        });
+        return;
+      }
+      final pos = await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.medium,
+          timeLimit: Duration(seconds: 12),
+        ),
+      );
+      final at = LatLng(pos.latitude, pos.longitude);
+      // Reverse-geocode via Nominatim (Mappls would slot in here).
+      final res = await _geocoder.reverse(at);
+      if (!mounted) return;
+
+      // Match the returned state name to one we ship dropdowns for.
+      RemoteState? matched;
+      if (res?.state != null) {
+        final needle = res!.state!.toLowerCase().trim();
+        for (final s in _states) {
+          if (s.nameEn.toLowerCase() == needle) { matched = s; break; }
+        }
+      }
+      setState(() {
+        _pin = at;
+        if (matched != null) _state = matched;
+        if (res?.district != null) _district = res!.district;
+        if (res?.village != null) _village = res!.village;
+        _locating = false;
+      });
+      // Refresh district list for the matched state so the picker below
+      // reflects the auto-filled district.
+      if (matched != null) {
+        try {
+          final repo = _repo();
+          if (repo != null) {
+            final ds = await repo.listDistricts(matched.code);
+            if (mounted) setState(() => _districts = ds);
+          }
+        } catch (_) {}
+      }
+      _mapController.move(at, 13);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _locating = false;
+        _locateError = 'Could not get a location fix: $e';
+      });
     }
   }
 
@@ -180,6 +264,12 @@ class _LocationStepState extends State<LocationStep> {
         ),
         const SizedBox(height: 14),
         _MapCard(controller: _mapController, pin: _pin, fallback: _indiaCentre),
+        const SizedBox(height: 10),
+        _UseMyLocationCard(
+          busy: _locating,
+          error: _locateError,
+          onTap: _useMyLocation,
+        ),
         const SizedBox(height: 12),
         SectionLabel(l10n.locationDetectedLabel),
         const SizedBox(height: 8),
@@ -222,6 +312,10 @@ class _MapCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Defer the actual OSM map render until we have a real pin — otherwise
+    // the emulator spends multi-second frames rasterising tiles at zoom 4
+    // just to show an outline of India before the user has picked anything.
+    if (pin == null) return const _MapPlaceholder();
     return KhushhalCard(
       padding: EdgeInsets.zero,
       radius: 16,
@@ -232,8 +326,8 @@ class _MapCard extends StatelessWidget {
           child: FlutterMap(
             mapController: controller,
             options: MapOptions(
-              initialCenter: pin ?? fallback,
-              initialZoom: pin != null ? 9.5 : 4.6,
+              initialCenter: pin!,
+              initialZoom: 9.5,
               interactionOptions: const InteractionOptions(
                 flags: InteractiveFlag.pinchZoom | InteractiveFlag.drag,
               ),
@@ -243,19 +337,100 @@ class _MapCard extends StatelessWidget {
                 urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                 userAgentPackageName: 'com.khushhal.app',
               ),
-              if (pin != null)
-                MarkerLayer(
-                  markers: [
-                    Marker(
-                      point: pin!,
-                      width: 32, height: 32,
-                      child: const Icon(Icons.place, color: AppPalette.forest, size: 32),
-                    ),
-                  ],
-                ),
+              MarkerLayer(
+                markers: [
+                  Marker(
+                    point: pin!,
+                    width: 32, height: 32,
+                    child: const Icon(Icons.place, color: AppPalette.forest, size: 32),
+                  ),
+                ],
+              ),
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// Highlighted "Use my location" tile — taps kick off the GPS permission
+/// prompt + reverse-geocode. Renders inline error copy under the row when
+/// the request fails so the user knows why nothing filled in.
+class _UseMyLocationCard extends StatelessWidget {
+  const _UseMyLocationCard({required this.busy, required this.error, required this.onTap});
+  final bool busy;
+  final String? error;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        KhushhalCard(
+          highlighted: true,
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          onTap: busy ? null : onTap,
+          child: Row(
+            children: [
+              busy
+                  ? const SizedBox(
+                      width: 20, height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2.5),
+                    )
+                  : const Icon(Icons.my_location, size: 20, color: AppPalette.forest),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text.rich(
+                  TextSpan(children: [
+                    TextSpan(
+                      text: l10n.locationUseMine,
+                      style: const TextStyle(fontWeight: FontWeight.w700),
+                    ),
+                    TextSpan(text: '  ·  ${l10n.locationOneTap}'),
+                  ]),
+                  style: const TextStyle(fontSize: 15, color: AppPalette.ink),
+                ),
+              ),
+              const Icon(Icons.chevron_right_rounded, color: AppPalette.forest),
+            ],
+          ),
+        ),
+        if (error != null) Padding(
+          padding: const EdgeInsets.only(top: 6, left: 4),
+          child: Text(error!,
+              style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.error)),
+        ),
+      ],
+    );
+  }
+}
+
+class _MapPlaceholder extends StatelessWidget {
+  const _MapPlaceholder();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 100,
+      decoration: BoxDecoration(
+        color: AppPalette.mintNote,
+        border: Border.all(color: const Color(0xFFA9C9B2), width: 1.5),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      alignment: Alignment.center,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Icon(Icons.place_outlined, size: 22, color: Color(0xFF5C8468)),
+          const SizedBox(height: 5),
+          Text(
+            AppLocalizations.of(context)!.locationMapHint,
+            style: const TextStyle(fontSize: 12, color: Color(0xFF5C8468)),
+          ),
+        ],
       ),
     );
   }
