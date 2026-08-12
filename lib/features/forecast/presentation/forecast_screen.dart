@@ -40,10 +40,13 @@ class _ForecastScreenState extends State<ForecastScreen> {
     final AppLocalizations l10n = AppLocalizations.of(context)!;
     final AppSession session = SessionScope.of(context);
     final List<ForecastMonth> months = session.forecast;
-    final ForecastMonth risk = months.firstWhere(
-      (ForecastMonth m) => m.isRiskMonth,
-      orElse: () => months.last,
-    );
+    // Empty forecast on fresh install → skip the risk-month label entirely.
+    final ForecastMonth? risk = months.isEmpty
+        ? null
+        : months.firstWhere(
+            (ForecastMonth m) => m.isRiskMonth,
+            orElse: () => months.last,
+          );
 
     return Scaffold(
       body: PageBackdrop(
@@ -150,7 +153,7 @@ class _ForecastScreenState extends State<ForecastScreen> {
                         children: <Widget>[
                           Text(
                             l10n.forecastInsightTitle(
-                              monthName(context, risk.month),
+                              risk != null ? monthName(context, risk.month) : '—',
                             ),
                             style: const TextStyle(
                               fontSize: 14,

@@ -2,6 +2,7 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../../app/demo_data.dart';
 import '../../../app/model/business.dart';
@@ -377,6 +378,7 @@ class _RecordsField extends StatelessWidget {
             child: TextField(
               controller: controller,
               keyboardType: TextInputType.number,
+              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
               textAlign: TextAlign.end,
               style: const TextStyle(
                 fontSize: 18,

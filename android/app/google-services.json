@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "906569730039",
+    "project_id": "khushhal-dd5f6",
+    "storage_bucket": "khushhal-dd5f6.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:906569730039:android:3468c5a59916b11a8d10f2",
+        "android_client_info": {
+          "package_name": "com.khushhal"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBy36ZYeeypdwXo59G-QI6mcWjyzaiNTFg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

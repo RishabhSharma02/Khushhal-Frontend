@@ -11,7 +11,9 @@ import '../../../core/widgets/khushhal_card.dart';
 import '../../../core/widgets/section_label.dart';
 import '../../../core/widgets/sync_chip.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../businesses/presentation/edit_business_sheet.dart';
 import '../../onboarding/domain/app_language.dart';
+import '../../setup/presentation/setup_flow.dart';
 import '../../sync/presentation/sync_screen.dart';
 
 /// The settings tab: who is signed in, their businesses, and the few
@@ -43,6 +45,37 @@ class SettingsScreen extends StatelessWidget {
         BusinessSector.shop: Icons.storefront_rounded,
         BusinessSector.other: Icons.work_rounded,
       };
+
+  Future<void> _openAddBusiness(BuildContext context) async {
+    await Navigator.of(context, rootNavigator: true).push(
+      MaterialPageRoute<void>(
+        builder: (_) => SetupFlow(
+          startAtKind: true,
+          onFinished: () => Navigator.of(context, rootNavigator: true).maybePop(),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _openEditBusinessSheet(
+    BuildContext context,
+    AppSession session,
+    int index,
+    Business business,
+  ) async {
+    final backendId = index < session.backendBusinessIds.length
+        ? session.backendBusinessIds[index]
+        : null;
+    await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: AppPalette.onPrimary,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
+      ),
+      builder: (_) => EditBusinessSheet(business: business, backendId: backendId),
+    );
+  }
 
   void _showLanguageSheet(BuildContext context) {
     final AppLanguage current = AppLanguage.fromLocale(
@@ -151,8 +184,8 @@ class SettingsScreen extends StatelessWidget {
             padding: const EdgeInsets.only(bottom: 8),
             children: <Widget>[
               _ProfileCard(
-                name: session.ownerName,
-                phone: session.ownerPhone,
+                name: session.ownerName ?? '—',
+                phone: session.ownerPhone ?? '—',
                 editLabel: l10n.settingsEdit,
               ),
               const SizedBox(height: 13),
@@ -162,7 +195,7 @@ class SettingsScreen extends StatelessWidget {
                 padding: EdgeInsets.zero,
                 child: Column(
                   children: <Widget>[
-                    for (final Business business in session.businesses)
+                    for (final (int idx, Business business) in session.businesses.indexed)
                       _SettingsRow(
                         well: _IconWell(
                           icon:
@@ -174,7 +207,7 @@ class SettingsScreen extends StatelessWidget {
                             '${business.sector.label(l10n)} · '
                             '${l10n.settingsPlaceValue}',
                         divider: true,
-                        onTap: () {},
+                        onTap: () => _openEditBusinessSheet(context, session, idx, business),
                       ),
                     _SettingsRow(
                       well: const _IconWell(
@@ -183,7 +216,7 @@ class SettingsScreen extends StatelessWidget {
                       ),
                       title: l10n.settingsAddBusiness,
                       titleColor: AppPalette.leaf,
-                      onTap: () {},
+                      onTap: () => _openAddBusiness(context),
                     ),
                   ],
                 ),

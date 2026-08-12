@@ -17,11 +17,46 @@ dependencies:
     sdk: flutter
   intl: any
 
+  # Auth
+  firebase_core: ^3.6.0
+  firebase_auth: ^5.3.1
+
+  # State management
+  flutter_bloc: ^8.1.6
+  equatable: ^2.0.5
+  provider: ^6.1.2   # transitive via flutter_bloc; declared for direct import of SingleChildWidget
+
+  # Networking
+  dio: ^5.7.0
+  connectivity_plus: ^6.0.5
+
+  # Local persistence for offline outbox + cache
+  hive: ^2.2.3
+  hive_flutter: ^1.1.0
+  path_provider: ^2.1.4
+
+  uuid: ^4.5.1
+
+  # Secure key/value for the mPIN app-lock (Keychain on iOS, Keystore on Android)
+  flutter_secure_storage: ^9.2.2
+
+  # Non-sensitive preferences (chosen language, first-run flags)
+  shared_preferences: ^2.3.2
+
+  # Map on the location step — OSM tiles, no API key
+  flutter_map: ^7.0.2
+  latlong2: ^0.9.1
+
+  # tel:/mailto: launcher (used by AlertDetail "Talk to officer")
+  url_launcher: ^6.3.1
+
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
 
   flutter_lints: ^6.0.0
+  build_runner: 2.13.1
 
 flutter:
   uses-material-design: true

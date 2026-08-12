@@ -4,7 +4,8 @@ library;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import '../../../app/demo_data.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+
 import '../../../app/labels.dart';
 import '../../../app/model/ledger.dart';
 import '../../../app/session.dart';
@@ -16,6 +17,7 @@ import '../../../core/widgets/gradient_cta_button.dart';
 import '../../../core/widgets/khushhal_card.dart';
 import '../../../core/widgets/page_backdrop.dart';
 import '../../../l10n/app_localizations.dart';
+import '../data/ledger_repository.dart';
 
 /// The IN/OUT, amount and category entry form.
 ///
@@ -49,16 +51,32 @@ class _AddEntryScreenState extends State<AddEntryScreen> {
       return;
     }
 
-    final DateTime today = DemoData.today;
-
-    SessionScope.of(context).addEntry(
-      LedgerEntry(
-        kind: _kind,
-        amountInr: _amountValue,
-        category: _category,
-        recordedAt: DateTime(today.year, today.month, today.day, 12),
-      ),
+    // Real wall clock — every entry must carry the actual date/time so the
+    // backend can group ledger rows by month and so /entries/sync doesn't
+    // deduplicate today's writes against demo dates from months ago.
+    final DateTime now = DateTime.now();
+    final LedgerEntry entry = LedgerEntry(
+      kind: _kind,
+      amountInr: _amountValue,
+      category: _category,
+      recordedAt: now,
     );
+
+    final session = SessionScope.of(context);
+    session.addEntry(entry);
+
+    // Fire-and-forget backend submit via outbox — safe offline, idempotent
+    // via client_entry_id. Nothing blocks the pop() below.
+    final businessId = session.activeBackendBusinessId;
+    if (businessId != null) {
+      try {
+        final repo = context.read<LedgerRepository>();
+        // ignore: discarded_futures
+        repo.submit(businessId: businessId, entry: entry);
+      } catch (_) {
+        // No repository provided (e.g. demo mode) — session addEntry is enough.
+      }
+    }
 
     Navigator.of(context).pop();
   }
@@ -187,8 +205,10 @@ class _AddEntryScreenState extends State<AddEntryScreen> {
                     Center(
                       child: Text(
                         l10n.addEntryMonthNote(
-                          monthName(context, DemoData.today),
-                          dayMonth(context, session.health.nextUpdate),
+                          monthName(context, DateTime.now()),
+                          session.health != null
+                              ? dayMonth(context, session.health!.nextUpdate)
+                              : '—',
                         ),
                         textAlign: TextAlign.center,
                         style: const TextStyle(

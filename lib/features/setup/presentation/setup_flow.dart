@@ -3,9 +3,12 @@ library;
 
 import 'package:flutter/material.dart';
 
+import 'package:flutter_bloc/flutter_bloc.dart';
+
 import '../../../app/model/business.dart';
 import '../../../app/session.dart';
 import '../../../core/widgets/page_backdrop.dart';
+import '../../businesses/data/business_repository.dart';
 import '../domain/business_draft.dart';
 import 'count_step.dart';
 import 'details_step.dart';
@@ -27,17 +30,23 @@ enum _SetupStage { location, count, hub, kind, details, money }
 /// stages instead of leaving the app.
 class SetupFlow extends StatefulWidget {
   /// Creates the setup flow.
-  const SetupFlow({super.key, required this.onFinished});
+  ///
+  /// [startAtKind] skips Location / Count / Hub — used when opening the
+  /// flow from Settings → "Add new business" for a signed-in user whose
+  /// location + plan is already set.
+  const SetupFlow({super.key, required this.onFinished, this.startAtKind = false});
 
   /// Called when the hub's Finish unlocks and is tapped.
   final VoidCallback onFinished;
+
+  final bool startAtKind;
 
   @override
   State<SetupFlow> createState() => _SetupFlowState();
 }
 
 class _SetupFlowState extends State<SetupFlow> {
-  _SetupStage _stage = _SetupStage.location;
+  late _SetupStage _stage = widget.startAtKind ? _SetupStage.kind : _SetupStage.location;
 
   /// Scratch state for the business currently in the 1k–1m subflow.
   BusinessDraft _draft = BusinessDraft();
@@ -46,28 +55,58 @@ class _SetupFlowState extends State<SetupFlow> {
     setState(() => _stage = next);
   }
 
-  /// One stage backwards; swallows back at the first screen.
+  /// One stage backwards. Pops the whole flow when we're at the natural
+  /// first stage — either LocationStep for the onboarding path or KindStep
+  /// for the "Add new business from Settings" path.
   void _back() {
-    final _SetupStage? previous = switch (_stage) {
-      _SetupStage.location => null,
+    if ((widget.startAtKind && _stage == _SetupStage.kind)
+        || _stage == _SetupStage.location) {
+      Navigator.of(context).maybePop();
+      return;
+    }
+    final _SetupStage previous = switch (_stage) {
+      _SetupStage.location => _SetupStage.location, // unreachable — handled above
       _SetupStage.count => _SetupStage.location,
       _SetupStage.hub => _SetupStage.count,
       _SetupStage.kind => _SetupStage.hub,
       _SetupStage.details => _SetupStage.kind,
       _SetupStage.money => _SetupStage.details,
     };
-
-    if (previous != null) {
-      setState(() => _stage = previous);
-    }
+    setState(() => _stage = previous);
   }
 
-  void _submitBusiness(AppSession session, Business business) {
+  Future<void> _submitBusiness(AppSession session, Business business) async {
     session.addBusiness(business);
-    setState(() {
-      _draft = BusinessDraft();
-      _stage = _SetupStage.hub;
-    });
+    if (widget.startAtKind) {
+      // Add-from-Settings path: no Hub to return to — pop straight back.
+      widget.onFinished();
+    } else {
+      setState(() {
+        _draft = BusinessDraft();
+        _stage = _SetupStage.hub;
+      });
+    }
+
+    // Best-effort backend persistence — the demo state is now updated so the
+    // UI moves on immediately; if the network call succeeds we register the
+    // backend id so subsequent ledger entries know where to land, otherwise
+    // we surface a snackbar and leave the local state alone.
+    BusinessRepository? repo;
+    try {
+      repo = context.read<BusinessRepository>();
+    } catch (_) {
+      return;
+    }
+    try {
+      final remote = await repo.create(business);
+      if (!mounted) return;
+      session.registerBackendBusinessId(remote.id);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Business saved locally — sync failed: $e')),
+      );
+    }
   }
 
   @override

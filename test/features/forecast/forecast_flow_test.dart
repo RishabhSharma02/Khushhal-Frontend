@@ -90,7 +90,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(session.updateReady, isFalse);
-      expect(session.health.score, 76);
+      expect(session.health?.score, 76);
       expect(find.text('76'), findsOneWidget);
       expect(
         find.text('▲ ${en.updateDeltaFrom(4, 'October')}'),

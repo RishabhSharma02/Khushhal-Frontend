@@ -2,7 +2,10 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
+
+import '../../entries/data/ledger_repository.dart';
 
 import '../../../app/demo_data.dart';
 import '../../../app/labels.dart';
@@ -21,9 +24,59 @@ import '../../../l10n/app_localizations.dart';
 
 /// The reassurance screen: nothing is lost, sync is automatic, and the data
 /// cost is stated. Reached from the sync chip on any screen.
-class SyncScreen extends StatelessWidget {
+class SyncScreen extends StatefulWidget {
   /// Creates the screen.
   const SyncScreen({super.key});
+
+  @override
+  State<SyncScreen> createState() => _SyncScreenState();
+}
+
+class _SyncScreenState extends State<SyncScreen> {
+  int? _outboxCount;
+
+  @override
+  void initState() {
+    super.initState();
+    _refreshOutbox();
+  }
+
+  void _refreshOutbox() {
+    try {
+      final repo = context.read<LedgerRepository>();
+      final n = repo.pendingCount;
+      if (mounted) setState(() => _outboxCount = n);
+    } catch (_) {
+      _outboxCount = null;
+    }
+  }
+
+  Future<void> _syncNow(BuildContext context, AppSession session) async {
+    // Local demo-state sync (keeps the existing chip animation happy).
+    session.syncNow();
+
+    // Real outbox drain — no-op if no repository was provided.
+    LedgerRepository? repo;
+    try {
+      repo = context.read<LedgerRepository>();
+    } catch (_) {
+      return;
+    }
+    try {
+      final outcome = await repo.syncAll();
+      if (!context.mounted) return;
+      final msg = outcome.isClean
+          ? 'Synced ${outcome.accepted} (${outcome.duplicates} dupes).'
+          : 'Synced ${outcome.accepted}. Still pending: ${outcome.stillPending}.';
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+      _refreshOutbox();
+    } catch (e) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Sync failed: $e')),
+      );
+    }
+  }
 
   /// Weekday abbreviation for a queue row ("Tue" / "मंगल").
   String _weekday(BuildContext context, DateTime date) {
@@ -66,6 +119,28 @@ class SyncScreen extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
+                    if (_outboxCount != null && _outboxCount! > 0) ...<Widget>[
+                      const SizedBox(height: 12),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: AppPalette.mintWash,
+                          borderRadius: BorderRadius.circular(999),
+                          border: Border.all(color: AppPalette.line),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: <Widget>[
+                            const Icon(Icons.inbox_outlined, size: 16, color: AppPalette.forest),
+                            const SizedBox(width: 6),
+                            Text(
+                              '$_outboxCount pending in outbox',
+                              style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, color: AppPalette.forest),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                     if (pending.isNotEmpty) ...<Widget>[
                       const SizedBox(height: 16),
                       KhushhalCard(
@@ -187,7 +262,7 @@ class SyncScreen extends StatelessWidget {
             SecondaryCtaButton(
               label: l10n.syncNowCta,
               icon: Icons.sync_rounded,
-              onPressed: session.syncNow,
+              onPressed: () => _syncNow(context, session),
             ),
           ],
         ),

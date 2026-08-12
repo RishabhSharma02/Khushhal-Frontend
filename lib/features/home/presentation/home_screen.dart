@@ -2,6 +2,7 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../app/demo_data.dart';
 import '../../../app/model/insights.dart';
@@ -10,8 +11,10 @@ import '../../../core/formatting.dart';
 import '../../../core/theme/theme.dart';
 import '../../../core/widgets/gradient_cta_button.dart';
 import '../../../core/widgets/khushhal_card.dart';
+import '../../../core/widgets/shimmer_box.dart';
 import '../../../core/widgets/sync_chip.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../insights/bloc/insights_cubit.dart';
 import '../../entries/presentation/add_entry_screen.dart';
 import '../../forecast/presentation/alert_detail_screen.dart';
 import '../../forecast/presentation/alerts_screen.dart';
@@ -48,10 +51,14 @@ class HomeScreen extends StatelessWidget {
     final bool offline = session.connectivity == ConnectivityStatus.offline;
     final bool updateReady = session.updateReady;
 
-    final ForecastMonth riskMonth = session.forecast.firstWhere(
-      (ForecastMonth m) => m.isRiskMonth,
-      orElse: () => session.forecast.last,
-    );
+    // Safe against an empty forecast (fresh install, no ML score yet).
+    ForecastMonth? riskMonth;
+    if (session.forecast.isNotEmpty) {
+      riskMonth = session.forecast.firstWhere(
+        (ForecastMonth m) => m.isRiskMonth,
+        orElse: () => session.forecast.last,
+      );
+    }
 
     final List<Widget> body;
 
@@ -83,7 +90,10 @@ class HomeScreen extends StatelessWidget {
         const SizedBox(height: 12),
         _OfflineBanner(count: session.pendingEntryCount),
         const SizedBox(height: 12),
-        _OfflineHealthCard(health: session.health),
+        if (session.health != null)
+          _OfflineHealthCard(health: session.health!)
+        else
+          const _HealthCardSkeleton(),
         const SizedBox(height: 10),
         const MoneyTileGrid(compact: true),
         const SizedBox(height: 12),
@@ -132,33 +142,47 @@ class HomeScreen extends StatelessWidget {
           ),
           const SizedBox(height: 10),
         ],
-        HealthCard(
-          businessName: session.activeBusiness?.name ?? l10n.brandName,
-          health: session.health,
-          pending: session.pendingHealth,
-          onTap: () => _push(context, const ForecastScreen()),
+        // Show a shimmering placeholder while the insights cubit is
+        // fetching from the backend for the first time; once data lands
+        // (or the fetch fails and we stay on demo data) the real card
+        // renders.
+        BlocBuilder<InsightsCubit, InsightsState>(
+          builder: (context, s) {
+            final live = session.health;
+            if (live == null) return const _HealthCardSkeleton();
+            return HealthCard(
+              businessName: session.activeBusiness?.name ?? l10n.brandName,
+              health: live,
+              pending: session.pendingHealth,
+              onTap: () => _push(context, const ForecastScreen()),
+            );
+          },
         ),
         const SizedBox(height: 10),
         MoneyTileGrid(
           onEditTap: () => _push(context, const SavingsLoanScreen()),
         ),
-        const SizedBox(height: 14),
-        Text(
-          l10n.homeWatch,
-          style: const TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w600,
-            color: AppPalette.muted,
-            height: 1.3,
+        // Watch section only appears when the backend surfaces at least
+        // one alert AND the ML has flagged a risk month in the forecast.
+        if (session.alerts.isNotEmpty && riskMonth != null) ...<Widget>[
+          const SizedBox(height: 14),
+          Text(
+            l10n.homeWatch,
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: AppPalette.muted,
+              height: 1.3,
+            ),
           ),
-        ),
-        const SizedBox(height: 7),
-        WatchCard(
-          riskMonthLabel: monthShort(context, riskMonth.month),
-          fromForecast: updateReady,
-          onOpenAlerts: () => _push(context, const AlertsScreen()),
-          onOpenPlan: () => _push(context, const AlertDetailScreen()),
-        ),
+          const SizedBox(height: 7),
+          WatchCard(
+            riskMonthLabel: monthShort(context, riskMonth.month),
+            fromForecast: updateReady,
+            onOpenAlerts: () => _push(context, const AlertsScreen()),
+            onOpenPlan: () => _push(context, const AlertDetailScreen()),
+          ),
+        ],
       ];
     }
 
@@ -345,6 +369,34 @@ class _OfflineHealthCard extends StatelessWidget {
             ],
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Skeleton shown while insights load for the active business for the
+/// first time. Matches HealthCard's rough footprint so the layout doesn't
+/// jump when data arrives.
+class _HealthCardSkeleton extends StatelessWidget {
+  const _HealthCardSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    return ShimmerBox(
+      child: KhushhalCard(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: const <Widget>[
+            SkeletonBar(width: 140, height: 12),
+            SizedBox(height: 12),
+            SkeletonBar(width: 90, height: 36),
+            SizedBox(height: 20),
+            SkeletonBar(height: 8, radius: 99),
+            SizedBox(height: 12),
+            SkeletonBar(width: 200, height: 12),
+          ],
+        ),
       ),
     );
   }

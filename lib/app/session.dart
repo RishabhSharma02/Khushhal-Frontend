@@ -3,7 +3,6 @@ library;
 
 import 'package:flutter/widgets.dart';
 
-import 'demo_data.dart';
 import 'model/business.dart';
 import 'model/insights.dart';
 import 'model/ledger.dart';
@@ -23,30 +22,30 @@ enum ConnectivityStatus {
 /// The running state of the app: businesses, ledger, score, alerts, sync.
 ///
 /// One instance lives above `MaterialApp`; screens reach it through
-/// [SessionScope]. Model output (score, forecast, alerts) is demo content
-/// from [DemoData] until there is a backend; everything the user edits
-/// (businesses, entries, savings, loan, plan actions) is live state.
+/// [SessionScope]. Nothing is seeded from demo data anymore — every field
+/// starts empty/null and is filled by the backend (or by the user).
 class AppSession extends ChangeNotifier {
-  /// A session for a fresh install: no businesses yet, demo model output.
-  AppSession()
-    : _entries = List<LedgerEntry>.of(DemoData.entries),
-      _current = DemoData.currentHealth,
-      _pending = DemoData.pendingHealth,
-      _alerts = List<RiskAlert>.of(DemoData.alerts),
-      _actions = List<PlanAction>.of(DemoData.planActions);
+  AppSession();
 
-  /// A session that starts fully set up — for tests and previews.
-  factory AppSession.demo() {
-    return AppSession().._businesses.add(DemoData.business);
-  }
+  /// Test-only convenience — kept as a no-op so pre-existing widget tests
+  /// that call `AppSession.demo()` still compile.
+  factory AppSession.demo() => AppSession();
 
   // ── Profile ────────────────────────────────────────────────────────────
 
-  /// Owner's display name.
-  String get ownerName => DemoData.ownerName;
+  String? _ownerName;
+  String? _ownerPhone;
 
-  /// Owner's phone number.
-  String get ownerPhone => DemoData.ownerPhone;
+  String? get ownerName => _ownerName;
+  String? get ownerPhone => _ownerPhone;
+
+  /// Called by the auth flow when a user's session is exchanged with the
+  /// backend so Settings / mPIN unlock can display their name + phone.
+  void applyProfile({String? name, String? phone}) {
+    _ownerName = name;
+    _ownerPhone = phone;
+    notifyListeners();
+  }
 
   // ── Guided setup ───────────────────────────────────────────────────────
 
@@ -70,7 +69,7 @@ class AppSession extends ChangeNotifier {
   /// Whether design 1h has been confirmed.
   bool get locationConfirmed => _locationConfirmed;
 
-  /// Confirms the (demo-detected) location.
+  /// Confirms the location.
   void confirmLocation() {
     _locationConfirmed = true;
     notifyListeners();
@@ -96,11 +95,53 @@ class AppSession extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Wholesale replace — used by the Home-side BusinessListLoader when it
+  /// fetches `GET /api/v1/businesses` on cold restart. Preserves the active
+  /// index when possible.
+  void applyBusinessList(List<Business> businesses, List<int?> backendIds) {
+    _businesses
+      ..clear()
+      ..addAll(businesses);
+    _backendBusinessIds
+      ..clear()
+      ..addAll(backendIds);
+    if (_activeBusinessIndex >= _businesses.length) {
+      _activeBusinessIndex = _businesses.isEmpty ? 0 : _businesses.length - 1;
+    }
+    notifyListeners();
+  }
+
+  // Backend id per business (populated after a successful POST /businesses).
+  // Parallel to [_businesses] by index; missing entries fall back to null.
+  final List<int?> _backendBusinessIds = <int?>[];
+
+  /// Read-only view of backend ids in the same order as [businesses].
+  List<int?> get backendBusinessIds => List<int?>.unmodifiable(_backendBusinessIds);
+
+  /// The backend id assigned to the currently-active business, if any.
+  int? get activeBackendBusinessId {
+    if (_activeBusinessIndex >= _backendBusinessIds.length) return null;
+    return _backendBusinessIds[_activeBusinessIndex];
+  }
+
+  /// Records the backend-assigned id for the most recently added business.
+  /// Called by SetupFlow after `POST /api/v1/businesses` returns.
+  void registerBackendBusinessId(int id) {
+    while (_backendBusinessIds.length < _businesses.length - 1) {
+      _backendBusinessIds.add(null);
+    }
+    _backendBusinessIds.add(id);
+    notifyListeners();
+  }
+
   // ── Money ──────────────────────────────────────────────────────────────
 
-  int _savingsInr = DemoData.savings;
+  int _savingsInr = 0;
+  int _loanInr = 0;
+  int _monthMoneyIn = 0;
+  int _monthMoneyOut = 0;
+  final int _monthLoanPaid = 0;
 
-  /// Savings balance — editable on 1t.
   int get savingsInr => _savingsInr;
 
   set savingsInr(int value) {
@@ -108,9 +149,6 @@ class AppSession extends ChangeNotifier {
     notifyListeners();
   }
 
-  int _loanInr = DemoData.loan;
-
-  /// Outstanding loan — editable on 1t.
   int get loanInr => _loanInr;
 
   set loanInr(int value) {
@@ -118,22 +156,18 @@ class AppSession extends ChangeNotifier {
     notifyListeners();
   }
 
-  int _monthMoneyIn = DemoData.monthMoneyIn;
-
-  /// Money IN so far this month.
   int get monthMoneyIn => _monthMoneyIn;
-
-  int _monthMoneyOut = DemoData.monthMoneyOut;
-
-  /// Money OUT so far this month.
   int get monthMoneyOut => _monthMoneyOut;
+  int get monthLoanPaid => _monthLoanPaid;
 
-  /// Loan repaid so far this month.
-  int get monthLoanPaid => DemoData.monthLoanPaid;
+  /// True when any money-related field has a non-zero value — Home uses
+  /// this to decide between real numbers and a "—" placeholder on tiles.
+  bool get hasAnyMoneyData =>
+      _savingsInr > 0 || _loanInr > 0 || _monthMoneyIn > 0 || _monthMoneyOut > 0 || _monthLoanPaid > 0;
 
   // ── Ledger ─────────────────────────────────────────────────────────────
 
-  final List<LedgerEntry> _entries;
+  final List<LedgerEntry> _entries = <LedgerEntry>[];
 
   /// All entries, newest first.
   List<LedgerEntry> get entries => List<LedgerEntry>.unmodifiable(_entries);
@@ -142,6 +176,27 @@ class AppSession extends ChangeNotifier {
   int get pendingEntryCount => _entries
       .where((LedgerEntry e) => e.syncState != EntrySyncState.synced)
       .length;
+
+  /// Bulk-populate from `GET /entries` after cold restart. Replaces the
+  /// current entry list and recomputes month-to-date IN / OUT totals.
+  void applyLiveEntries(List<LedgerEntry> entries) {
+    _entries
+      ..clear()
+      ..addAll(entries);
+    _monthMoneyIn = 0;
+    _monthMoneyOut = 0;
+    final now = DateTime.now();
+    for (final e in entries) {
+      final sameMonth = e.recordedAt.year == now.year && e.recordedAt.month == now.month;
+      if (!sameMonth) continue;
+      if (e.kind == EntryKind.moneyIn) {
+        _monthMoneyIn += e.amountInr;
+      } else {
+        _monthMoneyOut += e.amountInr;
+      }
+    }
+    notifyListeners();
+  }
 
   /// Saves an entry from design 1p and rolls it into the month's totals.
   ///
@@ -164,10 +219,11 @@ class AppSession extends ChangeNotifier {
 
   // ── Score, forecast, alerts ────────────────────────────────────────────
 
-  HealthSnapshot _current;
+  HealthSnapshot? _current;
 
-  /// The stamped score the month runs on.
-  HealthSnapshot get health => _current;
+  /// The stamped score the month runs on — null until the ML pipeline
+  /// stamps one for the active business.
+  HealthSnapshot? get health => _current;
 
   HealthSnapshot? _pending;
 
@@ -188,15 +244,38 @@ class AppSession extends ChangeNotifier {
     }
   }
 
-  /// The six-month forecast.
-  List<ForecastMonth> get forecast => DemoData.forecast;
+  List<ForecastMonth>? _liveForecast;
 
-  final List<RiskAlert> _alerts;
+  /// The six-month forecast — empty until the backend delivers one.
+  List<ForecastMonth> get forecast => _liveForecast ?? const <ForecastMonth>[];
+
+  /// Called by the insights loader whenever a fresh forecast arrives from
+  /// `GET /api/v1/businesses/{id}/forecast`.
+  void applyLiveForecast(List<ForecastMonth>? months) {
+    _liveForecast = months;
+    notifyListeners();
+  }
+
+  /// Replaces the stamped health snapshot with a live one from the backend.
+  void applyLiveHealth(HealthSnapshot? snapshot) {
+    _current = snapshot;
+    notifyListeners();
+  }
+
+  /// Replaces the active alerts list with the live one from the backend.
+  void applyLiveAlerts(List<RiskAlert>? alerts) {
+    _alerts
+      ..clear()
+      ..addAll(alerts ?? const <RiskAlert>[]);
+    notifyListeners();
+  }
+
+  final List<RiskAlert> _alerts = <RiskAlert>[];
 
   /// Active alerts, urgent first.
   List<RiskAlert> get alerts => List<RiskAlert>.unmodifiable(_alerts);
 
-  final List<PlanAction> _actions;
+  final List<PlanAction> _actions = <PlanAction>[];
 
   /// The current plan's actions (1s).
   List<PlanAction> get planActions => List<PlanAction>.unmodifiable(_actions);

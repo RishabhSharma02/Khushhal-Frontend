@@ -1,4 +1,4 @@
-package com.example.khushhal
+package com.khushhal
 
 import io.flutter.embedding.android.FlutterActivity
 
