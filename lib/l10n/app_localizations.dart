@@ -428,6 +428,12 @@ abstract class AppLocalizations {
   /// **'You can finish with 1 done and add the rest later'**
   String get hubFinishHint;
 
+  /// No description provided for @hubAddAnother.
+  ///
+  /// In en, this message translates to:
+  /// **'Add new business'**
+  String get hubAddAnother;
+
   /// No description provided for @kindHeading.
   ///
   /// In en, this message translates to:
@@ -505,6 +511,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Dairy picked: winter flush season and Sitapur fodder prices load automatically.'**
   String get kindDairyHint;
+
+  /// No description provided for @kindPoultryHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Poultry picked: feed price swings and summer heat-stress alerts kick in for your area.'**
+  String get kindPoultryHint;
+
+  /// No description provided for @kindFoodProcessingHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Food processing picked: input-cost tracking and monsoon demand shifts are factored into your forecast.'**
+  String get kindFoodProcessingHint;
+
+  /// No description provided for @kindCraftsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Handicrafts picked: raw-material seasonality and festival demand windows shape your outlook.'**
+  String get kindCraftsHint;
+
+  /// No description provided for @kindShopHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Shop picked: local footfall trends, mandi holidays and fortnightly stock cycles feed your forecast.'**
+  String get kindShopHint;
+
+  /// No description provided for @kindOtherHint.
+  ///
+  /// In en, this message translates to:
+  /// **'We\'ll use only your entries for now — the score gets sharper as you record more months.'**
+  String get kindOtherHint;
 
   /// No description provided for @detailsHeading.
   ///

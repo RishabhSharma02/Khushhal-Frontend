@@ -50,6 +50,9 @@ class _LocationStepState extends State<LocationStep> {
 
   bool _loading = false;
   bool _saving = false;
+  // Turns on after the first tap on Confirm — before then we don't want to
+  // shout red at a user who hasn't tried to submit yet.
+  bool _submitted = false;
 
   static const _indiaCentre = LatLng(22.9734, 78.6569);
 
@@ -126,25 +129,36 @@ class _LocationStepState extends State<LocationStep> {
       if (perm == LocationPermission.denied) {
         perm = await Geolocator.requestPermission();
       }
-      if (perm == LocationPermission.denied) {
+      if (perm == LocationPermission.denied
+          || perm == LocationPermission.deniedForever) {
         setState(() {
           _locating = false;
-          _locateError = 'Location permission denied.';
+          _locateError = perm == LocationPermission.deniedForever
+              ? 'Location permission is blocked — enable it from system settings.'
+              : 'Location permission denied.';
         });
         return;
       }
-      if (perm == LocationPermission.deniedForever) {
-        setState(() {
-          _locating = false;
-          _locateError =
-              'Location permission is blocked — enable it from system settings.';
-        });
-        return;
+
+      // The states list drives the dropdown; if it hasn't loaded yet we
+      // won't be able to match the reverse-geocode result — kick it off
+      // now and wait alongside the GPS request.
+      if (_states.isEmpty) {
+        await _fetchStates();
       }
-      final pos = await Geolocator.getCurrentPosition(
+
+      // Try the fast, no-fix-needed path first — a cached last-known
+      // position lands instantly on any device that's used GPS before,
+      // and on an emulator with `adb emu geo fix` it's the only source
+      // that reliably returns.
+      Position? pos;
+      try {
+        pos = await Geolocator.getLastKnownPosition();
+      } catch (_) {/* ignore */}
+      pos ??= await Geolocator.getCurrentPosition(
         locationSettings: const LocationSettings(
           accuracy: LocationAccuracy.medium,
-          timeLimit: Duration(seconds: 12),
+          timeLimit: Duration(seconds: 15),
         ),
       );
       final at = LatLng(pos.latitude, pos.longitude);
@@ -152,12 +166,27 @@ class _LocationStepState extends State<LocationStep> {
       final res = await _geocoder.reverse(at);
       if (!mounted) return;
 
-      // Match the returned state name to one we ship dropdowns for.
+      // Match the returned state name to one we ship dropdowns for —
+      // Nominatim returns things like "Uttar Pradesh" that must map to our
+      // catalogue row. Tolerate case + trim, and fall back to a substring
+      // match for edge cases like "NCT of Delhi" → "Delhi".
       RemoteState? matched;
-      if (res?.state != null) {
-        final needle = res!.state!.toLowerCase().trim();
+      final rawState = res?.state?.toLowerCase().trim();
+      if (rawState != null && rawState.isNotEmpty) {
         for (final s in _states) {
-          if (s.nameEn.toLowerCase() == needle) { matched = s; break; }
+          if (s.nameEn.toLowerCase() == rawState) { matched = s; break; }
+        }
+        matched ??= _states.firstWhere(
+          (s) => rawState.contains(s.nameEn.toLowerCase())
+              || s.nameEn.toLowerCase().contains(rawState),
+          orElse: () => _states.first, // no perfect match — leave to user
+        );
+        // firstWhere with orElse never returns null but we want null when
+        // it truly didn't match, so re-check.
+        if (!(matched.nameEn.toLowerCase() == rawState
+              || rawState.contains(matched.nameEn.toLowerCase())
+              || matched.nameEn.toLowerCase().contains(rawState))) {
+          matched = null;
         }
       }
       setState(() {
@@ -189,6 +218,8 @@ class _LocationStepState extends State<LocationStep> {
   }
 
   Future<void> _confirm() async {
+    setState(() => _submitted = true);
+    if (_state == null || _district == null) return;
     final repo = _repo();
     if (repo == null) {
       widget.onConfirm();
@@ -249,13 +280,11 @@ class _LocationStepState extends State<LocationStep> {
   Widget build(BuildContext context) {
     final AppLocalizations l10n = AppLocalizations.of(context)!;
 
-    final canConfirm = _state != null && _district != null;
-
     return StepPage(
       header: SetupProgressHeader(label: l10n.setupStepOf(1, 5), filled: 1, showBack: false),
       cta: GradientCtaButton(
         label: _saving ? '${l10n.locationConfirmCta}…' : l10n.locationConfirmCta,
-        onPressed: (canConfirm && !_saving) ? _confirm : () {},
+        onPressed: _saving ? () {} : _confirm,
       ),
       children: <Widget>[
         Text(
@@ -281,6 +310,8 @@ class _LocationStepState extends State<LocationStep> {
           label: l10n.locationState,
           value: _state?.nameEn,
           enabled: _states.isNotEmpty,
+          required: true,
+          errorText: (_submitted && _state == null) ? 'Please select a state.' : null,
           onTap: _pickState,
         ),
         const SizedBox(height: 8),
@@ -288,6 +319,8 @@ class _LocationStepState extends State<LocationStep> {
           label: l10n.locationDistrict,
           value: _district,
           enabled: _districts.isNotEmpty,
+          required: true,
+          errorText: (_submitted && _district == null) ? 'Please select a district.' : null,
           onTap: _pickDistrict,
         ),
         const SizedBox(height: 8),
@@ -442,48 +475,80 @@ class _FieldRow extends StatelessWidget {
     required this.value,
     required this.enabled,
     required this.onTap,
+    this.required = false,
+    this.errorText,
   });
 
   final String label;
   final String? value;
   final bool enabled;
   final VoidCallback onTap;
+  final bool required;
+  final String? errorText;
 
   @override
   Widget build(BuildContext context) {
     final display = value ?? label;
-    return InkWell(
-      borderRadius: BorderRadius.circular(14),
-      onTap: enabled ? onTap : null,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-        decoration: BoxDecoration(
-          color: AppPalette.onPrimary,
+    final borderColor = errorText != null
+        ? Theme.of(context).colorScheme.error
+        : AppPalette.line;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        InkWell(
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: AppPalette.line, width: 1.5),
-        ),
-        child: Row(
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(label, style: const TextStyle(fontSize: 11.5, color: AppPalette.muted)),
-                  const SizedBox(height: 3),
-                  Text(display,
-                      style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: value != null ? FontWeight.w600 : FontWeight.w400,
-                        color: value != null ? AppPalette.cardInk : AppPalette.muted,
-                      )),
-                ],
-              ),
+          onTap: enabled ? onTap : null,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+            decoration: BoxDecoration(
+              color: AppPalette.onPrimary,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: borderColor, width: 1.5),
             ),
-            Icon(enabled ? Icons.arrow_drop_down_rounded : Icons.lock_outline,
-                color: enabled ? AppPalette.body : AppPalette.muted, size: 22),
-          ],
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Text(label,
+                              style: const TextStyle(
+                                  fontSize: 11.5, color: AppPalette.muted)),
+                          if (required)
+                            Text(' *',
+                                style: TextStyle(
+                                    fontSize: 11.5,
+                                    color: Theme.of(context).colorScheme.error,
+                                    fontWeight: FontWeight.w700)),
+                        ],
+                      ),
+                      const SizedBox(height: 3),
+                      Text(display,
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: value != null ? FontWeight.w600 : FontWeight.w400,
+                            color: value != null ? AppPalette.cardInk : AppPalette.muted,
+                          )),
+                    ],
+                  ),
+                ),
+                Icon(enabled ? Icons.arrow_drop_down_rounded : Icons.lock_outline,
+                    color: enabled ? AppPalette.body : AppPalette.muted, size: 22),
+              ],
+            ),
+          ),
         ),
-      ),
+        if (errorText != null)
+          Padding(
+            padding: const EdgeInsets.only(top: 4, left: 4),
+            child: Text(errorText!,
+                style: TextStyle(
+                    fontSize: 12,
+                    color: Theme.of(context).colorScheme.error)),
+          ),
+      ],
     );
   }
 }

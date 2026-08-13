@@ -132,12 +132,21 @@ class _KindStepState extends State<KindStep> {
             ],
           ),
         ],
-        if (draft.sector == BusinessSector.dairy) ...<Widget>[
-          const SizedBox(height: 12),
-          InfoNote(text: l10n.kindDairyHint),
-        ],
+        const SizedBox(height: 12),
+        InfoNote(text: _sectorHint(l10n, draft.sector)),
       ],
     );
+  }
+
+  String _sectorHint(AppLocalizations l10n, BusinessSector sector) {
+    switch (sector) {
+      case BusinessSector.dairy: return l10n.kindDairyHint;
+      case BusinessSector.poultry: return l10n.kindPoultryHint;
+      case BusinessSector.foodProcessing: return l10n.kindFoodProcessingHint;
+      case BusinessSector.crafts: return l10n.kindCraftsHint;
+      case BusinessSector.shop: return l10n.kindShopHint;
+      case BusinessSector.other: return l10n.kindOtherHint;
+    }
   }
 
   Widget _sectorCell(BusinessSector sector) {

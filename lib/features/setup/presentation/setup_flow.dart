@@ -156,6 +156,7 @@ class _SetupFlowState extends State<SetupFlow> {
         businesses: session.businesses,
         onStartSetup: () => _advance(_SetupStage.kind),
         onFinish: widget.onFinished,
+        onBack: _back,
       ),
       _SetupStage.kind => KindStep(
         draft: _draft,

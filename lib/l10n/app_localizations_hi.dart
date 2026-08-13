@@ -191,6 +191,9 @@ class AppLocalizationsHi extends AppLocalizations {
       '1 पूरा होने पर भी आगे बढ़ सकते हैं, बाकी बाद में जोड़ लें';
 
   @override
+  String get hubAddAnother => 'नया बिज़नेस जोड़ें';
+
+  @override
   String get kindHeading => 'कैसा बिज़नेस है?';
 
   @override
@@ -229,6 +232,26 @@ class AppLocalizationsHi extends AppLocalizations {
   @override
   String get kindDairyHint =>
       'डेयरी चुनी: सर्दी का फ्लश सीज़न और सीतापुर के चारे के भाव अपने आप जुड़ गए।';
+
+  @override
+  String get kindPoultryHint =>
+      'मुर्गी पालन चुना: दाने की क़ीमत में उतार-चढ़ाव और गर्मी की चेतावनियाँ आपके इलाके के हिसाब से जुड़ेंगी।';
+
+  @override
+  String get kindFoodProcessingHint =>
+      'फ़ूड प्रोसेसिंग चुना: कच्चे माल की क़ीमत और मानसून की माँग का असर आपके अनुमान में जुड़ेगा।';
+
+  @override
+  String get kindCraftsHint =>
+      'हस्तशिल्प चुना: कच्चे माल का सीज़न और त्यौहारों की माँग आपके अनुमान में शामिल होगी।';
+
+  @override
+  String get kindShopHint =>
+      'दुकान चुनी: स्थानीय बिक्री, मंडी की छुट्टियाँ और स्टॉक चक्र आपके अनुमान में जुड़ेंगे।';
+
+  @override
+  String get kindOtherHint =>
+      'फ़िलहाल सिर्फ़ आपकी एंट्री से चलेगा — जितने महीने लिखेंगे, स्कोर उतना सटीक होगा।';
 
   @override
   String get detailsHeading => 'अपने बिज़नेस के बारे में';

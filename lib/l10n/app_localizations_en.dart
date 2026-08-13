@@ -191,6 +191,9 @@ class AppLocalizationsEn extends AppLocalizations {
       'You can finish with 1 done and add the rest later';
 
   @override
+  String get hubAddAnother => 'Add new business';
+
+  @override
   String get kindHeading => 'What kind of business?';
 
   @override
@@ -229,6 +232,26 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get kindDairyHint =>
       'Dairy picked: winter flush season and Sitapur fodder prices load automatically.';
+
+  @override
+  String get kindPoultryHint =>
+      'Poultry picked: feed price swings and summer heat-stress alerts kick in for your area.';
+
+  @override
+  String get kindFoodProcessingHint =>
+      'Food processing picked: input-cost tracking and monsoon demand shifts are factored into your forecast.';
+
+  @override
+  String get kindCraftsHint =>
+      'Handicrafts picked: raw-material seasonality and festival demand windows shape your outlook.';
+
+  @override
+  String get kindShopHint =>
+      'Shop picked: local footfall trends, mandi holidays and fortnightly stock cycles feed your forecast.';
+
+  @override
+  String get kindOtherHint =>
+      'We\'ll use only your entries for now — the score gets sharper as you record more months.';
 
   @override
   String get detailsHeading => 'About your business';

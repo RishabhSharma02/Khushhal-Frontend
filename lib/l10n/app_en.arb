@@ -166,6 +166,7 @@
   "hubStartCta": "Start setup",
   "hubFinishCta": "Finish",
   "hubFinishHint": "You can finish with 1 done and add the rest later",
+  "hubAddAnother": "Add new business",
 
   "kindHeading": "What kind of business?",
   "segmentPrompt": "I am a…",
@@ -180,6 +181,11 @@
   "sectorShop": "Shop",
   "sectorOther": "Other",
   "kindDairyHint": "Dairy picked: winter flush season and Sitapur fodder prices load automatically.",
+  "kindPoultryHint": "Poultry picked: feed price swings and summer heat-stress alerts kick in for your area.",
+  "kindFoodProcessingHint": "Food processing picked: input-cost tracking and monsoon demand shifts are factored into your forecast.",
+  "kindCraftsHint": "Handicrafts picked: raw-material seasonality and festival demand windows shape your outlook.",
+  "kindShopHint": "Shop picked: local footfall trends, mandi holidays and fortnightly stock cycles feed your forecast.",
+  "kindOtherHint": "We'll use only your entries for now — the score gets sharper as you record more months.",
 
   "detailsHeading": "About your business",
   "detailsNameLabel": "Business name",

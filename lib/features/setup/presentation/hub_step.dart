@@ -20,9 +20,11 @@ class HubStep extends StatelessWidget {
     required this.businesses,
     required this.onStartSetup,
     required this.onFinish,
+    this.onBack,
   });
 
-  /// How many businesses design 1i planned for.
+  /// How many businesses design 1i planned for. `4` represents "4+" and
+  /// unlocks unlimited additions via the "Add new business" tile below.
   final int planned;
 
   /// The ones set up so far.
@@ -34,10 +36,21 @@ class HubStep extends StatelessWidget {
   /// Leaves setup; only offered once at least one business is done.
   final VoidCallback onFinish;
 
+  /// Optional — renders a leading back button in the header when provided.
+  final VoidCallback? onBack;
+
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = AppLocalizations.of(context)!;
     final int done = businesses.length;
+    final bool unlimited = planned >= 4;
+
+    // How many rows to render before the persistent "Add new business" tile.
+    // - Fixed count (1..3): show all done + placeholders up to `planned`.
+    // - 4+ (unlimited): show all done + one active "Next up" until finished.
+    final int rowCount = unlimited
+        ? (done + 1)
+        : (done < planned ? planned : done);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -46,24 +59,35 @@ class HubStep extends StatelessWidget {
           padding: const EdgeInsets.only(top: 4),
           // A Wrap, not a Row: at large text sizes the done-count drops to
           // its own line instead of squeezing the title out of existence.
-          child: Wrap(
-            alignment: WrapAlignment.spaceBetween,
-            spacing: 10,
+          child: Row(
             children: <Widget>[
-              Text(
-                l10n.hubTitle,
-                style: const TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500,
-                  color: AppPalette.muted,
-                ),
-              ),
-              Text(
-                l10n.hubDoneOf(done, planned),
-                style: const TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: AppPalette.forest,
+              if (onBack != null)
+                _BackChip(onTap: onBack!),
+              if (onBack != null) const SizedBox(width: 8),
+              Expanded(
+                child: Wrap(
+                  alignment: WrapAlignment.spaceBetween,
+                  spacing: 10,
+                  children: <Widget>[
+                    Text(
+                      l10n.hubTitle,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                        color: AppPalette.muted,
+                      ),
+                    ),
+                    Text(
+                      unlimited
+                          ? l10n.hubDoneOf(done, done > planned ? done : planned)
+                          : l10n.hubDoneOf(done, planned),
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: AppPalette.forest,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
@@ -85,7 +109,7 @@ class HubStep extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 16),
-                for (int i = 0; i < planned; i++) ...<Widget>[
+                for (int i = 0; i < rowCount; i++) ...<Widget>[
                   if (i > 0) const SizedBox(height: 10),
                   if (i < done)
                     _DoneCard(index: i, business: businesses[i])
@@ -93,6 +117,13 @@ class HubStep extends StatelessWidget {
                     _NextUpCard(index: i, onStart: onStartSetup)
                   else
                     _WaitingCard(index: i),
+                ],
+                // Explicit "Add new business" tile — always visible so the
+                // user has a clear entry point even after all planned slots
+                // are done (required for the 4+ path, harmless otherwise).
+                if (done > 0 && (unlimited || done < planned)) ...<Widget>[
+                  const SizedBox(height: 10),
+                  _AddAnotherCard(onTap: onStartSetup),
                 ],
               ],
             ),
@@ -120,6 +151,81 @@ class HubStep extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+/// Small back chip rendered inline with the hub header — mirrors the back
+/// affordance the setup subflow (kind → details → money) offers.
+class _BackChip extends StatelessWidget {
+  const _BackChip({required this.onTap});
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkResponse(
+      onTap: onTap,
+      radius: 22,
+      child: Container(
+        width: 34,
+        height: 34,
+        decoration: BoxDecoration(
+          color: AppPalette.onPrimary,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: AppPalette.line, width: 1.5),
+        ),
+        child: const Icon(Icons.arrow_back_rounded, size: 18, color: AppPalette.forest),
+      ),
+    );
+  }
+}
+
+/// Dashed "Add new business" tile shown below the last row of the hub.
+class _AddAnotherCard extends StatelessWidget {
+  const _AddAnotherCard({required this.onTap});
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    return Material(
+      color: AppPalette.mintNote,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(18),
+        side: const BorderSide(color: AppPalette.idle, width: 1.5),
+      ),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(18),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          child: Row(
+            children: [
+              Container(
+                width: 32, height: 32,
+                decoration: BoxDecoration(
+                  color: AppPalette.mintChip,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(Icons.add_rounded, size: 20, color: AppPalette.leaf),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  l10n.hubAddAnother,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: AppPalette.leaf,
+                    height: 1.3,
+                  ),
+                ),
+              ),
+              const Icon(Icons.chevron_right_rounded, size: 18, color: AppPalette.leaf),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

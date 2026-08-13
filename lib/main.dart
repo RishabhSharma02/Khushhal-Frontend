@@ -289,12 +289,23 @@ class _LockGateState extends State<_LockGate> {
   // when their profile already has a name). Prevents re-prompting on
   // every widget rebuild inside the session.
   bool _nameCaptured = false;
+  // The LockCubit is provided app-wide and its state persists across sign-
+  // outs (the `unlocked` from the previous session can linger until the
+  // fresh check() emits). We block rendering the mPIN/Name flows until we
+  // observe a state emission after this gate's own mount — otherwise a
+  // newly signed-in user briefly sees the previous user's
+  // NameCaptureScreen or Home before mPIN setup takes over.
+  bool _settled = false;
 
   @override
   void initState() {
     super.initState();
     try {
-      context.read<LockCubit>().check();
+      // Force a fresh mPIN check for the newly signed-in identity, then
+      // flip `_settled` so the builder starts trusting cubit state.
+      context.read<LockCubit>().check().whenComplete(() {
+        if (mounted) setState(() => _settled = true);
+      });
       _hasCubit = true;
     } catch (_) {
       _hasCubit = false;
@@ -316,6 +327,9 @@ class _LockGateState extends State<_LockGate> {
         }
       },
       builder: (context, state) {
+        if (!_settled) {
+          return const Scaffold(body: Center(child: CircularProgressIndicator()));
+        }
         switch (state.status) {
           case LockStatus.unknown:
             return const Scaffold(body: Center(child: CircularProgressIndicator()));
