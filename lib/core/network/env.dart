@@ -8,7 +8,7 @@
 class AppEnv {
   static const String apiBaseUrl = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: 'http://localhost:8000',
+    defaultValue: 'http://khushhal-backend-production.up.railway.app',
   );
 
   /// Backend dev-shim uid. Only used when Firebase is not configured yet,
