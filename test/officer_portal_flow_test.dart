@@ -6,6 +6,7 @@ import 'package:khushhal/features/officer_portal/data/dashboard_repository.dart'
 import 'package:khushhal/features/officer_portal/data/enterprises_repository.dart';
 import 'package:khushhal/features/officer_portal/data/officer_auth_repository.dart';
 import 'package:khushhal/features/officer_portal/data/officer_demo_data.dart';
+import 'package:khushhal/features/officer_portal/data/profile_repository.dart';
 import 'package:khushhal/features/officer_portal/data/reports_repository.dart';
 import 'package:khushhal/features/officer_portal/data/sync_status_repository.dart';
 import 'package:khushhal/features/officer_portal/data/visits_repository.dart';
@@ -32,11 +33,32 @@ class _FakeOfficerAuthRepository implements OfficerAuthRepository {
     required String password,
     required String employeeId,
     required String fullName,
-    required String mobile,
+    String? mobile,
     String? pincode,
     String? block,
     String? state,
   }) async => OfficerDemoData.officer;
+}
+
+/// Stands in for [ApiProfileRepository] so widget tests never hit the real
+/// backend — updates the in-memory demo officer and returns it.
+class _FakeProfileRepository implements ProfileRepository {
+  @override
+  Future<OfficerProfile> updateProfile({String? fullName, String? mobile}) async {
+    return OfficerProfile(
+      fullName: fullName ?? OfficerDemoData.officer.fullName,
+      employeeId: OfficerDemoData.officer.employeeId,
+      employeeIdVerified: OfficerDemoData.officer.employeeIdVerified,
+      pincode: OfficerDemoData.officer.pincode,
+      block: OfficerDemoData.officer.block,
+      state: OfficerDemoData.officer.state,
+      email: OfficerDemoData.officer.email,
+      mobile: mobile,
+      coverage: OfficerDemoData.officer.coverage,
+      signedInSince: OfficerDemoData.officer.signedInSince,
+      deviceLabel: OfficerDemoData.officer.deviceLabel,
+    );
+  }
 }
 
 /// Stands in for [ApiEnterprisesRepository] so widget tests never hit the
@@ -236,6 +258,7 @@ void main() {
         syncStatusRepository: _FakeSyncStatusRepository(),
         dashboardRepository: _FakeDashboardRepository(),
         reportsRepository: _FakeReportsRepository(),
+        profileRepository: _FakeProfileRepository(),
       ),
     );
 

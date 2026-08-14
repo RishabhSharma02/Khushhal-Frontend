@@ -66,8 +66,9 @@ class OfficerProfile {
   /// Login email.
   final String email;
 
-  /// Contact mobile number.
-  final String mobile;
+  /// Contact mobile number — not used for sign-in (that's email/password),
+  /// so it's optional; an officer can add it later via profile edit.
+  final String? mobile;
 
   /// Coverage stats for the Profile screen.
   final OfficerCoverage coverage;
@@ -104,24 +105,6 @@ class OfficerProfile {
       mobile: mobile,
       coverage: coverage,
       signedInSince: time,
-      deviceLabel: deviceLabel,
-    );
-  }
-
-  /// A copy with [fullName] and/or [mobile] replaced — used by the Profile
-  /// screen's "Edit" dialog.
-  OfficerProfile withDetails({String? fullName, String? mobile}) {
-    return OfficerProfile(
-      fullName: fullName ?? this.fullName,
-      employeeId: employeeId,
-      employeeIdVerified: employeeIdVerified,
-      pincode: pincode,
-      block: block,
-      state: state,
-      email: email,
-      mobile: mobile ?? this.mobile,
-      coverage: coverage,
-      signedInSince: signedInSince,
       deviceLabel: deviceLabel,
     );
   }

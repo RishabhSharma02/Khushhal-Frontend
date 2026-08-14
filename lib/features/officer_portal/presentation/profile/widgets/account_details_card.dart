@@ -45,7 +45,11 @@ class AccountDetailsCard extends StatelessWidget {
           ),
           const SizedBox(height: 10),
           _Row(label: 'Email', value: officer.email),
-          _Row(label: 'Mobile', value: officer.mobile, changeable: true),
+          _Row(
+            label: 'Mobile',
+            value: officer.mobile ?? 'Not provided',
+            changeable: true,
+          ),
           _Row(label: 'Password', value: '••••••••', changeable: true),
           _Row(label: 'Language', value: 'English · हिंदी ▾', divider: false),
         ],

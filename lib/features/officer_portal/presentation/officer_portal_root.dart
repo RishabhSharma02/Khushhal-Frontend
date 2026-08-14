@@ -7,6 +7,7 @@ import '../data/action_plan_repository.dart';
 import '../data/dashboard_repository.dart';
 import '../data/enterprises_repository.dart';
 import '../data/officer_auth_repository.dart';
+import '../data/profile_repository.dart';
 import '../data/reports_repository.dart';
 import '../data/sync_status_repository.dart';
 import '../data/visits_repository.dart';
@@ -19,7 +20,7 @@ import 'theme/officer_theme.dart';
 
 /// The top-level stretches of the officer's journey.
 enum _OfficerPhase {
-  /// Phone number, then OTP (5h–5k).
+  /// Sign in, or create a new account (5h–5k).
   auth,
 
   /// Fetching the officer's enterprises right after sign-in, before the
@@ -49,6 +50,7 @@ class OfficerPortalRoot extends StatefulWidget {
     this.syncStatusRepository,
     this.dashboardRepository,
     this.reportsRepository,
+    this.profileRepository,
   });
 
   /// Overridable for tests; production always uses the default.
@@ -72,6 +74,9 @@ class OfficerPortalRoot extends StatefulWidget {
   /// Overridable for tests; production always uses the default.
   final ReportsRepository? reportsRepository;
 
+  /// Overridable for tests; production always uses the default.
+  final ProfileRepository? profileRepository;
+
   @override
   State<OfficerPortalRoot> createState() => _OfficerPortalRootState();
 }
@@ -93,6 +98,8 @@ class _OfficerPortalRootState extends State<OfficerPortalRoot> {
       widget.dashboardRepository ?? ApiDashboardRepository();
   late final ReportsRepository _reportsRepository =
       widget.reportsRepository ?? ApiReportsRepository();
+  late final ProfileRepository _profileRepository =
+      widget.profileRepository ?? ApiProfileRepository();
 
   void _handleAuthenticated(OfficerProfile profile) {
     final OfficerSession session = OfficerSession.authenticated(
@@ -103,6 +110,7 @@ class _OfficerPortalRootState extends State<OfficerPortalRoot> {
       syncStatusRepository: _syncStatusRepository,
       dashboardRepository: _dashboardRepository,
       reportsRepository: _reportsRepository,
+      profileRepository: _profileRepository,
     );
     session.markSignedIn(DateTime.now());
     setState(() {

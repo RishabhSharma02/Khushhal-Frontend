@@ -7,6 +7,7 @@ import '../data/action_plan_repository.dart';
 import '../data/dashboard_repository.dart';
 import '../data/enterprises_repository.dart';
 import '../data/officer_demo_data.dart';
+import '../data/profile_repository.dart';
 import '../data/reports_repository.dart';
 import '../data/sync_status_repository.dart';
 import '../data/visits_repository.dart';
@@ -33,6 +34,7 @@ class OfficerSession extends ChangeNotifier {
       _syncStatusRepository = null,
       _dashboardRepository = null,
       _reportsRepository = null,
+      _profileRepository = null,
       _enterprises = List<Enterprise>.of(OfficerDemoData.enterprises),
       _visits = List<Visit>.of(OfficerDemoData.visits);
 
@@ -48,6 +50,7 @@ class OfficerSession extends ChangeNotifier {
     required SyncStatusRepository syncStatusRepository,
     required DashboardRepository dashboardRepository,
     required ReportsRepository reportsRepository,
+    required ProfileRepository profileRepository,
   }) : _profile = profile,
        _enterprisesRepository = enterprisesRepository,
        _actionPlanRepository = actionPlanRepository,
@@ -55,6 +58,7 @@ class OfficerSession extends ChangeNotifier {
        _syncStatusRepository = syncStatusRepository,
        _dashboardRepository = dashboardRepository,
        _reportsRepository = reportsRepository,
+       _profileRepository = profileRepository,
        _enterprises = <Enterprise>[],
        _visits = <Visit>[];
 
@@ -69,9 +73,13 @@ class OfficerSession extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Applies edits from the Profile screen's "Edit" dialog.
-  void updateProfile({String? fullName, String? mobile}) {
-    _profile = _profile.withDetails(fullName: fullName, mobile: mobile);
+  /// Persists edits from the Profile screen's "Edit" dialog to the backend,
+  /// then adopts whatever it returns as the new profile.
+  Future<void> updateProfile({String? fullName, String? mobile}) async {
+    final ProfileRepository? repository = _profileRepository;
+    if (repository == null) return;
+
+    _profile = await repository.updateProfile(fullName: fullName, mobile: mobile);
     notifyListeners();
   }
 
@@ -102,6 +110,8 @@ class OfficerSession extends ChangeNotifier {
 
   /// Exposed so the Reports screen can fetch its month-in-review directly.
   ReportsRepository? get reportsRepository => _reportsRepository;
+
+  final ProfileRepository? _profileRepository;
 
   List<Enterprise> _enterprises;
   bool _enterprisesLoading = false;

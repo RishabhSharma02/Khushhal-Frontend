@@ -24,7 +24,7 @@ abstract class OfficerAuthRepository {
     required String password,
     required String employeeId,
     required String fullName,
-    required String mobile,
+    String? mobile,
     String? pincode,
     String? block,
     String? state,
@@ -62,7 +62,7 @@ class FirebaseOfficerAuthRepository implements OfficerAuthRepository {
 
     final String idToken = await _requireIdToken(userCredential);
     final Map<String, dynamic> json = await _apiClient.createSession(idToken);
-    return _profileFromJson(json);
+    return officerProfileFromJson(json);
   }
 
   @override
@@ -71,7 +71,7 @@ class FirebaseOfficerAuthRepository implements OfficerAuthRepository {
     required String password,
     required String employeeId,
     required String fullName,
-    required String mobile,
+    String? mobile,
     String? pincode,
     String? block,
     String? state,
@@ -90,12 +90,12 @@ class FirebaseOfficerAuthRepository implements OfficerAuthRepository {
     final Map<String, dynamic> json = await _apiClient.registerOfficer(idToken, <String, dynamic>{
       'employee_id': employeeId,
       'full_name': fullName,
-      'mobile_e164': mobile,
+      'mobile_e164': ?mobile,
       'pincode': ?pincode,
       'block': ?block,
       'state': ?state,
     });
-    return _profileFromJson(json);
+    return officerProfileFromJson(json);
   }
 
   Future<String> _requireIdToken(UserCredential credential) async {
@@ -108,11 +108,13 @@ class FirebaseOfficerAuthRepository implements OfficerAuthRepository {
 }
 
 /// Maps the backend's `OfficerRead` shape onto the domain [OfficerProfile].
+/// Shared with `profile_repository.dart` so a profile edit's response maps
+/// the same way a fresh sign-in's does.
 ///
 /// `coverage` isn't part of the auth/profile API (it's derived from
 /// enterprises/visits data), so it's filled in from [OfficerDemoData] as a
 /// placeholder until a real endpoint exists for it.
-OfficerProfile _profileFromJson(Map<String, dynamic> json) {
+OfficerProfile officerProfileFromJson(Map<String, dynamic> json) {
   return OfficerProfile(
     fullName: json['full_name'] as String,
     employeeId: json['employee_id'] as String,
@@ -121,7 +123,7 @@ OfficerProfile _profileFromJson(Map<String, dynamic> json) {
     block: json['block'] as String? ?? '',
     state: json['state'] as String? ?? '',
     email: json['email'] as String? ?? '',
-    mobile: json['mobile_e164'] as String,
+    mobile: json['mobile_e164'] as String?,
     coverage: OfficerDemoData.officer.coverage,
     deviceLabel: json['device_label'] as String? ?? 'this device',
   );

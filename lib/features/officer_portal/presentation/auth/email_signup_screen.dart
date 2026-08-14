@@ -83,9 +83,8 @@ class _EmailSignupScreenState extends State<EmailSignupScreen> {
   Future<void> _submit() async {
     if (_fullName.text.trim().isEmpty ||
         _employeeId.text.trim().isEmpty ||
-        _mobile.text.trim().isEmpty ||
         _email.text.trim().isEmpty) {
-      setState(() => _error = 'Fill in all fields first');
+      setState(() => _error = 'Fill in your name, employee ID and email first');
       return;
     }
     if (!_passwordOk) {
@@ -104,7 +103,7 @@ class _EmailSignupScreenState extends State<EmailSignupScreen> {
         password: _password.text,
         employeeId: _employeeId.text.trim(),
         fullName: _fullName.text.trim(),
-        mobile: _mobile.text.trim(),
+        mobile: _mobile.text.trim().isEmpty ? null : _mobile.text.trim(),
       );
       if (!mounted) return;
       widget.onAuthenticated(profile);
@@ -130,10 +129,10 @@ class _EmailSignupScreenState extends State<EmailSignupScreen> {
           LabeledField(label: 'EMPLOYEE ID', controller: _employeeId),
           const SizedBox(height: 14),
           LabeledField(
-            label: 'MOBILE',
+            label: 'MOBILE (OPTIONAL)',
             controller: _mobile,
             keyboardType: TextInputType.phone,
-            hintText: '+91XXXXXXXXXX',
+            hintText: '+91XXXXXXXXXX — can add later',
           ),
           const SizedBox(height: 14),
           LabeledField(
