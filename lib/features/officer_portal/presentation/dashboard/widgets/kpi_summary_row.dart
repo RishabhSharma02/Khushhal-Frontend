@@ -3,14 +3,31 @@ library;
 
 import 'package:flutter/material.dart';
 
-import '../../../data/officer_demo_data.dart';
 import '../../theme/officer_palette.dart';
 import '../../widgets/officer_card.dart';
 
 /// Enterprises / healthy / watch / at-risk counts, in a responsive row.
 class KpiSummaryRow extends StatelessWidget {
   /// Creates the KPI row.
-  const KpiSummaryRow({super.key});
+  const KpiSummaryRow({
+    super.key,
+    required this.totalEnterpriseCount,
+    required this.healthyCount,
+    required this.watchCount,
+    required this.atRiskCount,
+  });
+
+  /// Every enterprise on the officer's beat.
+  final int totalEnterpriseCount;
+
+  /// Enterprises currently healthy.
+  final int healthyCount;
+
+  /// Enterprises on watch.
+  final int watchCount;
+
+  /// Enterprises at risk.
+  final int atRiskCount;
 
   @override
   Widget build(BuildContext context) {
@@ -23,25 +40,25 @@ class KpiSummaryRow extends StatelessWidget {
             emoji: '🏢',
             iconBg: OfficerPalette.soft,
             label: 'Enterprises',
-            value: '${OfficerDemoData.totalEnterpriseCount}',
+            value: '$totalEnterpriseCount',
           ),
           _KpiTile(
             emoji: '🟢',
             iconBg: OfficerPalette.chipGreenBg,
             label: 'Healthy',
-            value: '${OfficerDemoData.healthyCount}',
+            value: '$healthyCount',
           ),
           _KpiTile(
             emoji: '🟡',
             iconBg: OfficerPalette.chipAmberBg,
             label: 'Watch',
-            value: '${OfficerDemoData.watchCount}',
+            value: '$watchCount',
           ),
           _KpiTile(
             emoji: '🔴',
             iconBg: OfficerPalette.chipRedBg,
             label: 'At risk',
-            value: '${OfficerDemoData.atRiskCount}',
+            value: '$atRiskCount',
             valueColor: OfficerPalette.statusRed,
             caption: 'count, last 6 months ▸',
           ),

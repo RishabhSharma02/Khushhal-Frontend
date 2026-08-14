@@ -1,59 +1,68 @@
-/// The pre-login stretch: login, sign up, set password, forgot password.
+/// The pre-login stretch: phone number, then OTP.
 library;
 
 import 'package:flutter/material.dart';
 
-import '../../data/officer_demo_data.dart';
-import 'forgot_password_screen.dart';
-import 'login_screen.dart';
-import 'set_password_screen.dart';
-import 'signup_screen.dart';
+import '../../data/officer_auth_repository.dart';
+import '../../domain/officer_profile.dart';
+import 'otp_screen.dart';
+import 'phone_screen.dart';
 
-enum _AuthStep { login, signup, setPassword, forgotPassword }
+enum _AuthStep { phone, otp }
 
-/// Switches between the four auth screens without a `Navigator`, mirroring
-/// the consumer app's `OnboardingFlow`/`SetupFlow`.
+/// Switches between the phone and OTP screens without a `Navigator`,
+/// mirroring the consumer app's `OnboardingFlow`/`SetupFlow`.
 class OfficerAuthFlow extends StatefulWidget {
   /// Creates the auth flow.
-  const OfficerAuthFlow({super.key, required this.onAuthenticated});
+  const OfficerAuthFlow({
+    super.key,
+    required this.onAuthenticated,
+    required this.authRepository,
+  });
 
-  /// Called once sign-in, sign-up, or password reset completes.
-  final VoidCallback onAuthenticated;
+  /// Called once OTP verification succeeds, with the officer's profile.
+  final void Function(OfficerProfile profile) onAuthenticated;
+
+  /// Firebase-backed by default; tests inject a fake.
+  final OfficerAuthRepository authRepository;
 
   @override
   State<OfficerAuthFlow> createState() => _OfficerAuthFlowState();
 }
 
 class _OfficerAuthFlowState extends State<OfficerAuthFlow> {
-  _AuthStep _step = _AuthStep.login;
-  String _pendingEmail = OfficerDemoData.officer.email;
-  SetPasswordMode _passwordMode = SetPasswordMode.signup;
+  _AuthStep _step = _AuthStep.phone;
+  String _phoneE164 = '';
+  String _verificationId = '';
 
-  void _goTo(_AuthStep step) => setState(() => _step = step);
+  void _handleCodeSent(String phoneE164, String verificationId) {
+    setState(() {
+      _phoneE164 = phoneE164;
+      _verificationId = verificationId;
+      _step = _AuthStep.otp;
+    });
+  }
+
+  Future<void> _handleResend() async {
+    final String verificationId = await widget.authRepository.sendOtp(_phoneE164);
+    if (!mounted) return;
+    setState(() => _verificationId = verificationId);
+  }
 
   @override
   Widget build(BuildContext context) {
     return switch (_step) {
-      _AuthStep.login => LoginScreen(
-        onSignIn: widget.onAuthenticated,
-        onForgotPassword: () => _goTo(_AuthStep.forgotPassword),
-        onCreateAccount: () => _goTo(_AuthStep.signup),
+      _AuthStep.phone => PhoneScreen(
+        authRepository: widget.authRepository,
+        onCodeSent: _handleCodeSent,
       ),
-      _AuthStep.signup => SignupScreen(
-        onContinue: (String email) {
-          _pendingEmail = email;
-          _passwordMode = SetPasswordMode.signup;
-          _goTo(_AuthStep.setPassword);
-        },
-        onSignIn: () => _goTo(_AuthStep.login),
-      ),
-      _AuthStep.setPassword => SetPasswordScreen(
-        mode: _passwordMode,
-        email: _pendingEmail,
-        onSubmit: widget.onAuthenticated,
-      ),
-      _AuthStep.forgotPassword => ForgotPasswordScreen(
-        onBackToSignIn: () => _goTo(_AuthStep.login),
+      _AuthStep.otp => OtpScreen(
+        authRepository: widget.authRepository,
+        phoneE164: _phoneE164,
+        verificationId: _verificationId,
+        onVerified: widget.onAuthenticated,
+        onResend: _handleResend,
+        onBackToPhone: () => setState(() => _step = _AuthStep.phone),
       ),
     };
   }

@@ -3,9 +3,13 @@ library;
 
 import 'package:flutter/widgets.dart';
 
+import '../data/action_plan_repository.dart';
+import '../data/dashboard_repository.dart';
+import '../data/enterprises_repository.dart';
 import '../data/officer_demo_data.dart';
-import '../domain/action_step.dart';
-import '../domain/contact_log.dart';
+import '../data/reports_repository.dart';
+import '../data/sync_status_repository.dart';
+import '../data/visits_repository.dart';
 import '../domain/enterprise.dart';
 import '../domain/officer_profile.dart';
 import '../domain/visit.dart';
@@ -13,14 +17,46 @@ import '../domain/visit.dart';
 /// The running state of the Officer Portal: officer, enterprises, visits.
 ///
 /// One instance lives above the shell; screens reach it through
-/// [OfficerSessionScope]. Enterprise/report/sync content is demo data from
-/// [OfficerDemoData] until there is a backend; visits the officer adds are
-/// live state.
+/// [OfficerSessionScope]. Action plan / contact history are backend-owned
+/// (see [actionPlanRepository]) and fetched/mutated directly by
+/// `EnterpriseDetailScreen`, not cached here — they're only ever needed for
+/// whichever one enterprise is currently open. Dashboard trends, reports,
+/// and sync status work the same way via their own repository getters.
 class OfficerSession extends ChangeNotifier {
-  /// Starts a fresh session over the demo dataset.
+  /// Starts a fresh session over the demo dataset — used only before
+  /// sign-in / right after logout, so it never actually renders the shell.
   OfficerSession()
     : _profile = OfficerDemoData.officer,
+      _enterprisesRepository = null,
+      _actionPlanRepository = null,
+      _visitsRepository = null,
+      _syncStatusRepository = null,
+      _dashboardRepository = null,
+      _reportsRepository = null,
+      _enterprises = List<Enterprise>.of(OfficerDemoData.enterprises),
       _visits = List<Visit>.of(OfficerDemoData.visits);
+
+  /// Starts a session for an officer who just signed in via the real
+  /// backend (see `officer_auth_repository.dart`). Call [loadEnterprises]
+  /// and [loadVisits] right after construction — see
+  /// `officer_portal_root.dart`'s loading phase.
+  OfficerSession.authenticated(
+    OfficerProfile profile, {
+    required EnterprisesRepository enterprisesRepository,
+    required ActionPlanRepository actionPlanRepository,
+    required VisitsRepository visitsRepository,
+    required SyncStatusRepository syncStatusRepository,
+    required DashboardRepository dashboardRepository,
+    required ReportsRepository reportsRepository,
+  }) : _profile = profile,
+       _enterprisesRepository = enterprisesRepository,
+       _actionPlanRepository = actionPlanRepository,
+       _visitsRepository = visitsRepository,
+       _syncStatusRepository = syncStatusRepository,
+       _dashboardRepository = dashboardRepository,
+       _reportsRepository = reportsRepository,
+       _enterprises = <Enterprise>[],
+       _visits = <Visit>[];
 
   OfficerProfile _profile;
 
@@ -39,12 +75,73 @@ class OfficerSession extends ChangeNotifier {
     notifyListeners();
   }
 
+  final EnterprisesRepository? _enterprisesRepository;
+
+  /// Exposed so the enterprise detail screen can fetch cash-flow/data
+  /// quality directly — those aren't preloaded with the list.
+  EnterprisesRepository? get enterprisesRepository => _enterprisesRepository;
+
+  final ActionPlanRepository? _actionPlanRepository;
+
+  /// Exposed so the enterprise detail screen can fetch/mutate the action
+  /// plan and contact history directly.
+  ActionPlanRepository? get actionPlanRepository => _actionPlanRepository;
+
+  final SyncStatusRepository? _syncStatusRepository;
+
+  /// Exposed so the Data sync screen can fetch its triage table directly —
+  /// it's only ever needed there, not preloaded like enterprises/visits.
+  SyncStatusRepository? get syncStatusRepository => _syncStatusRepository;
+
+  final DashboardRepository? _dashboardRepository;
+
+  /// Exposed so the Dashboard screen can fetch its trend data directly.
+  DashboardRepository? get dashboardRepository => _dashboardRepository;
+
+  final ReportsRepository? _reportsRepository;
+
+  /// Exposed so the Reports screen can fetch its month-in-review directly.
+  ReportsRepository? get reportsRepository => _reportsRepository;
+
+  List<Enterprise> _enterprises;
+  bool _enterprisesLoading = false;
+  String? _enterprisesError;
+
   /// Every enterprise on the officer's beat.
-  List<Enterprise> get enterprises =>
-      List<Enterprise>.unmodifiable(OfficerDemoData.enterprises);
+  List<Enterprise> get enterprises => List<Enterprise>.unmodifiable(_enterprises);
+
+  /// Whether [loadEnterprises] is in flight.
+  bool get enterprisesLoading => _enterprisesLoading;
+
+  /// The last [loadEnterprises] failure, if any.
+  String? get enterprisesError => _enterprisesError;
+
+  /// Fetches the officer's enterprises from the backend. Called once, right
+  /// after sign-in, by `officer_portal_root.dart`'s loading phase.
+  Future<void> loadEnterprises() async {
+    final EnterprisesRepository? repository = _enterprisesRepository;
+    if (repository == null) return;
+
+    _enterprisesLoading = true;
+    notifyListeners();
+    try {
+      _enterprises = await repository.fetchEnterprises();
+      _enterprisesError = null;
+    } catch (e) {
+      _enterprisesError = e.toString();
+    } finally {
+      _enterprisesLoading = false;
+      notifyListeners();
+    }
+  }
 
   /// Looks up one enterprise by id.
-  Enterprise enterpriseById(String id) => OfficerDemoData.enterpriseById(id);
+  Enterprise enterpriseById(String id) {
+    return _enterprises.firstWhere(
+      (Enterprise e) => e.id == id,
+      orElse: () => _enterprises.first,
+    );
+  }
 
   /// Enterprises with an open flag, highest severity first — the dashboard's
   /// risk queue and the enterprise list's default sort both read this.
@@ -58,13 +155,24 @@ class OfficerSession extends ChangeNotifier {
     return <Enterprise>[...atRisk, ...watch];
   }
 
-  final List<Visit> _visits;
+  final VisitsRepository? _visitsRepository;
+  List<Visit> _visits;
+  bool _visitsLoading = false;
+  String? _visitsError;
 
-  /// The officer's visit plan, in mock order (done, then next, then
-  /// upcoming).
+  /// The officer's logged visits, newest first.
   List<Visit> get visits => List<Visit>.unmodifiable(_visits);
 
-  /// The next visit still to happen, if any.
+  /// Whether [loadVisits] is in flight.
+  bool get visitsLoading => _visitsLoading;
+
+  /// The last [loadVisits] failure, if any.
+  String? get visitsError => _visitsError;
+
+  /// The next visit still to happen, if any. Always `null` against real
+  /// data today — logging a visit always creates a "done" row (see
+  /// add_visit_dialog.dart's docstring: this app logs visits after the
+  /// fact, it doesn't schedule them) — kept for when scheduling exists.
   Visit? get nextVisit {
     for (final Visit visit in _visits) {
       if (visit.status == VisitStatus.next) {
@@ -74,108 +182,42 @@ class OfficerSession extends ChangeNotifier {
     return null;
   }
 
-  /// Records a new visit from the Add-visit dialog (5n).
-  void addVisit(Visit visit) {
-    _visits.add(visit);
+  /// Fetches the officer's visits from the backend. Called once, right
+  /// after sign-in, by `officer_portal_root.dart`'s loading phase.
+  Future<void> loadVisits() async {
+    final VisitsRepository? repository = _visitsRepository;
+    if (repository == null) return;
+
+    _visitsLoading = true;
     notifyListeners();
-  }
-
-  final Map<String, List<ActionStep>> _actionSteps = <String, List<ActionStep>>{};
-
-  List<ActionStep> _stepsFor(Enterprise enterprise) => _actionSteps
-      .putIfAbsent(enterprise.id, () => List<ActionStep>.of(OfficerDemoData.actionPlanFor(enterprise)));
-
-  /// The enterprise's action plan, including any manually-added or
-  /// since-deleted edits made this session.
-  List<ActionStep> actionStepsFor(Enterprise enterprise) =>
-      List<ActionStep>.unmodifiable(_stepsFor(enterprise));
-
-  /// Appends a manually-authored step to an enterprise's action plan.
-  void addActionStep({
-    required String enterpriseId,
-    required String title,
-    required String detail,
-    required ActionStepImpact impact,
-  }) {
-    final List<ActionStep> steps = _stepsFor(enterpriseById(enterpriseId));
-    steps.add(
-      ActionStep(
-        order: steps.length + 1,
-        title: title,
-        detail: detail,
-        impact: impact,
-      ),
-    );
-    notifyListeners();
-  }
-
-  /// Replaces an existing step's content in place (its order is kept).
-  void updateActionStep({
-    required String enterpriseId,
-    required ActionStep original,
-    required String title,
-    required String detail,
-    required ActionStepImpact impact,
-  }) {
-    final List<ActionStep> steps = _stepsFor(enterpriseById(enterpriseId));
-    final int index = steps.indexOf(original);
-    if (index == -1) return;
-    steps[index] = ActionStep(
-      order: original.order,
-      title: title,
-      detail: detail,
-      impact: impact,
-    );
-    notifyListeners();
-  }
-
-  /// Removes a step from an enterprise's action plan and renumbers the rest.
-  void removeActionStep({
-    required String enterpriseId,
-    required ActionStep step,
-  }) {
-    final List<ActionStep> steps = _stepsFor(enterpriseById(enterpriseId));
-    steps.remove(step);
-    for (int i = 0; i < steps.length; i++) {
-      final ActionStep current = steps[i];
-      steps[i] = ActionStep(
-        order: i + 1,
-        title: current.title,
-        detail: current.detail,
-        impact: current.impact,
-      );
+    try {
+      _visits = await repository.fetchVisits();
+      _visitsError = null;
+    } catch (e) {
+      _visitsError = e.toString();
+    } finally {
+      _visitsLoading = false;
+      notifyListeners();
     }
-    notifyListeners();
   }
 
-  final Map<String, List<ContactLogEntry>> _contactHistory =
-      <String, List<ContactLogEntry>>{};
-
-  List<ContactLogEntry> _historyFor(Enterprise enterprise) => _contactHistory
-      .putIfAbsent(
-        enterprise.id,
-        () => List<ContactLogEntry>.of(OfficerDemoData.contactHistoryFor(enterprise)),
-      );
-
-  /// The enterprise's visit/call history, newest first, including any notes
-  /// added this session.
-  List<ContactLogEntry> contactHistoryFor(Enterprise enterprise) {
-    final List<ContactLogEntry> entries = List<ContactLogEntry>.of(
-      _historyFor(enterprise),
-    )..sort((ContactLogEntry a, ContactLogEntry b) => b.date.compareTo(a.date));
-    return List<ContactLogEntry>.unmodifiable(entries);
-  }
-
-  /// Appends a manually-authored note to an enterprise's contact history.
-  void addContactNote({
-    required String enterpriseId,
+  /// Records a new visit from the Add-visit dialog (5n).
+  Future<void> addVisit({
+    required String businessId,
     required DateTime date,
-    required ContactKind kind,
-    required String note,
-  }) {
-    _historyFor(
-      enterpriseById(enterpriseId),
-    ).add(ContactLogEntry(date: date, kind: kind, note: note));
+    required String agenda,
+    RiskLevel? riskLevel,
+  }) async {
+    final VisitsRepository? repository = _visitsRepository;
+    if (repository == null) return;
+
+    final Visit visit = await repository.addVisit(
+      businessId: businessId,
+      date: date,
+      agenda: agenda,
+      riskLevel: riskLevel,
+    );
+    _visits.insert(0, visit);
     notifyListeners();
   }
 }

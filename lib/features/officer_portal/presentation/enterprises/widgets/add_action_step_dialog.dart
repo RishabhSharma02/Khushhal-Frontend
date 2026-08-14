@@ -5,36 +5,44 @@ library;
 import 'package:flutter/material.dart';
 
 import '../../../domain/action_step.dart';
-import '../../officer_session.dart';
 import '../../theme/officer_palette.dart';
 import '../../widgets/labeled_field.dart';
 import '../../widgets/officer_buttons.dart';
 import '../../widgets/officer_card.dart';
 
-/// Opens the Add-step dialog for [enterpriseId]'s action plan. Pass
-/// [existingStep] to edit a step in place instead of adding a new one.
+/// Opens the Add-step dialog. Pass [existingStep] to edit a step in place
+/// instead of adding a new one. [onSubmit] persists the change — the
+/// caller decides whether that means POST (add) or PATCH (edit) since it
+/// already knows which mode this is.
 Future<void> showAddActionStepDialog({
   required BuildContext context,
-  required String enterpriseId,
   ActionStep? existingStep,
+  required Future<void> Function({
+    required String title,
+    required String detail,
+    required ActionStepImpact impact,
+  })
+  onSubmit,
 }) {
   return showDialog<void>(
     context: context,
     builder: (BuildContext context) => _AddActionStepDialog(
-      enterpriseId: enterpriseId,
       existingStep: existingStep,
+      onSubmit: onSubmit,
     ),
   );
 }
 
 class _AddActionStepDialog extends StatefulWidget {
-  const _AddActionStepDialog({
-    required this.enterpriseId,
-    this.existingStep,
-  });
+  const _AddActionStepDialog({this.existingStep, required this.onSubmit});
 
-  final String enterpriseId;
   final ActionStep? existingStep;
+  final Future<void> Function({
+    required String title,
+    required String detail,
+    required ActionStepImpact impact,
+  })
+  onSubmit;
 
   @override
   State<_AddActionStepDialog> createState() => _AddActionStepDialogState();
@@ -59,7 +67,9 @@ class _AddActionStepDialogState extends State<_AddActionStepDialog> {
     super.dispose();
   }
 
-  void _submit() {
+  bool _submitting = false;
+
+  Future<void> _submit() async {
     if (_title.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Give the step a title first.')),
@@ -67,26 +77,22 @@ class _AddActionStepDialogState extends State<_AddActionStepDialog> {
       return;
     }
 
-    final OfficerSession session = OfficerSessionScope.of(context);
-    final ActionStep? existing = widget.existingStep;
-    if (existing == null) {
-      session.addActionStep(
-        enterpriseId: widget.enterpriseId,
+    setState(() => _submitting = true);
+    try {
+      await widget.onSubmit(
         title: _title.text.trim(),
         detail: _detail.text.trim(),
         impact: _impact,
       );
-    } else {
-      session.updateActionStep(
-        enterpriseId: widget.enterpriseId,
-        original: existing,
-        title: _title.text.trim(),
-        detail: _detail.text.trim(),
-        impact: _impact,
-      );
+      if (!mounted) return;
+      Navigator.of(context).pop();
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _submitting = false);
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Could not save: $e')));
     }
-
-    Navigator.of(context).pop();
   }
 
   @override
@@ -179,8 +185,10 @@ class _AddActionStepDialogState extends State<_AddActionStepDialog> {
               ),
               const SizedBox(height: 16),
               OfficerPrimaryButton(
-                label: _isEditing ? 'Save changes ✓' : 'Add step ✓',
-                onPressed: _submit,
+                label: _submitting
+                    ? 'Saving…'
+                    : (_isEditing ? 'Save changes ✓' : 'Add step ✓'),
+                onPressed: _submitting ? null : _submit,
               ),
             ],
           ),

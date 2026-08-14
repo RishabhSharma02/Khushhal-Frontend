@@ -8,7 +8,6 @@ library;
 import 'package:flutter/material.dart';
 
 import '../../../domain/enterprise.dart';
-import '../../../domain/visit.dart';
 import '../../officer_session.dart';
 import '../../theme/officer_palette.dart';
 import '../../widgets/labeled_field.dart';
@@ -84,7 +83,9 @@ class _AddVisitDialogState extends State<_AddVisitDialog> {
     }
   }
 
-  void _submit() {
+  bool _submitting = false;
+
+  Future<void> _submit() async {
     final Enterprise? enterprise = _enterprise;
     if (enterprise == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -93,29 +94,24 @@ class _AddVisitDialogState extends State<_AddVisitDialog> {
       return;
     }
 
-    final OfficerSession session = OfficerSessionScope.of(context);
-    session.addVisit(
-      Visit(
-        id: 'visit-${enterprise.id}-${DateTime(_date.year, _date.month, _date.day, _time.hour, _time.minute).millisecondsSinceEpoch}',
-        enterpriseId: enterprise.id,
-        enterpriseName: enterprise.name,
-        village: enterprise.village,
-        date: DateTime(
-          _date.year,
-          _date.month,
-          _date.day,
-          _time.hour,
-          _time.minute,
-        ),
-        agenda: _agenda.text.trim().isEmpty
-            ? 'Field visit'
-            : _agenda.text.trim(),
-        status: VisitStatus.done,
+    setState(() => _submitting = true);
+    try {
+      final OfficerSession session = OfficerSessionScope.of(context);
+      await session.addVisit(
+        businessId: enterprise.id,
+        date: DateTime(_date.year, _date.month, _date.day, _time.hour, _time.minute),
+        agenda: _agenda.text.trim().isEmpty ? 'Field visit' : _agenda.text.trim(),
         riskLevel: _status ?? enterprise.riskLevel,
-      ),
-    );
-
-    setState(() => _submitted = true);
+      );
+      if (!mounted) return;
+      setState(() => _submitted = true);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _submitting = false);
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Could not log the visit: $e')));
+    }
   }
 
   @override
@@ -197,8 +193,8 @@ class _AddVisitDialogState extends State<_AddVisitDialog> {
                     ),
                     const SizedBox(height: 16),
                     OfficerPrimaryButton(
-                      label: 'Log visit ✓',
-                      onPressed: _submit,
+                      label: _submitting ? 'Logging…' : 'Log visit ✓',
+                      onPressed: _submitting ? null : _submit,
                     ),
                   ],
                 ),

@@ -4,27 +4,36 @@ library;
 import 'package:flutter/material.dart';
 
 import '../../../domain/contact_log.dart';
-import '../../officer_session.dart';
 import '../../theme/officer_palette.dart';
 import '../../widgets/labeled_field.dart';
 import '../../widgets/officer_buttons.dart';
 import '../../widgets/officer_card.dart';
 
-/// Opens the Add-note dialog for [enterpriseId]'s contact history.
+/// Opens the Add-note dialog. [onSubmit] persists the note.
 Future<void> showAddNoteDialog({
   required BuildContext context,
-  required String enterpriseId,
+  required Future<void> Function({
+    required DateTime date,
+    required ContactKind kind,
+    required String note,
+  })
+  onSubmit,
 }) {
   return showDialog<void>(
     context: context,
-    builder: (BuildContext context) => _AddNoteDialog(enterpriseId: enterpriseId),
+    builder: (BuildContext context) => _AddNoteDialog(onSubmit: onSubmit),
   );
 }
 
 class _AddNoteDialog extends StatefulWidget {
-  const _AddNoteDialog({required this.enterpriseId});
+  const _AddNoteDialog({required this.onSubmit});
 
-  final String enterpriseId;
+  final Future<void> Function({
+    required DateTime date,
+    required ContactKind kind,
+    required String note,
+  })
+  onSubmit;
 
   @override
   State<_AddNoteDialog> createState() => _AddNoteDialogState();
@@ -61,7 +70,9 @@ class _AddNoteDialogState extends State<_AddNoteDialog> {
     }
   }
 
-  void _submit() {
+  bool _submitting = false;
+
+  Future<void> _submit() async {
     if (_note.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Write a note first.')),
@@ -69,14 +80,18 @@ class _AddNoteDialogState extends State<_AddNoteDialog> {
       return;
     }
 
-    OfficerSessionScope.of(context).addContactNote(
-      enterpriseId: widget.enterpriseId,
-      date: _date,
-      kind: _kind,
-      note: _note.text.trim(),
-    );
-
-    Navigator.of(context).pop();
+    setState(() => _submitting = true);
+    try {
+      await widget.onSubmit(date: _date, kind: _kind, note: _note.text.trim());
+      if (!mounted) return;
+      Navigator.of(context).pop();
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _submitting = false);
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Could not save: $e')));
+    }
   }
 
   @override
@@ -160,7 +175,10 @@ class _AddNoteDialogState extends State<_AddNoteDialog> {
                 hintText: 'e.g. verified stock, passbook up to date',
               ),
               const SizedBox(height: 16),
-              OfficerPrimaryButton(label: 'Add note ✓', onPressed: _submit),
+              OfficerPrimaryButton(
+                label: _submitting ? 'Saving…' : 'Add note ✓',
+                onPressed: _submitting ? null : _submit,
+              ),
             ],
           ),
         ),

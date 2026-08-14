@@ -4,9 +4,11 @@ library;
 
 import 'package:flutter/material.dart';
 
-import '../../data/officer_demo_data.dart';
+import '../../data/enterprises_repository.dart' show DataQuality;
 import '../../domain/action_step.dart';
+import '../../domain/contact_log.dart';
 import '../../domain/enterprise.dart';
+import '../../domain/forecast_month.dart';
 import '../officer_session.dart';
 import '../theme/officer_palette.dart';
 import '../widgets/officer_card.dart';
@@ -22,7 +24,7 @@ import 'widgets/data_quality_card.dart';
 import 'widgets/enterprise_header_card.dart';
 
 /// One enterprise's full file — money, forecast, plan, history, quality.
-class EnterpriseDetailScreen extends StatelessWidget {
+class EnterpriseDetailScreen extends StatefulWidget {
   /// Creates the enterprise detail screen.
   const EnterpriseDetailScreen({
     super.key,
@@ -37,14 +39,56 @@ class EnterpriseDetailScreen extends StatelessWidget {
   final ValueChanged<OfficerSection> onSectionSelected;
 
   @override
+  State<EnterpriseDetailScreen> createState() => _EnterpriseDetailScreenState();
+}
+
+class _EnterpriseDetailScreenState extends State<EnterpriseDetailScreen> {
+  Future<List<CashFlowMonth>>? _cashFlowFuture;
+  Future<DataQuality>? _dataQualityFuture;
+  Future<List<ActionStep>>? _actionStepsFuture;
+  Future<List<ContactLogEntry>>? _contactHistoryFuture;
+  String? _loadedForId;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Guarded by enterpriseId so this only (re-)fetches when navigating to
+    // a different enterprise — not on every session change (e.g. adding an
+    // action step notifies listeners too, and this screen depends on the
+    // session via OfficerSessionScope.of(context) below).
+    if (_loadedForId != widget.enterpriseId) {
+      _loadedForId = widget.enterpriseId;
+      final OfficerSession session = OfficerSessionScope.of(context);
+      _cashFlowFuture = session.enterprisesRepository?.fetchCashFlow(widget.enterpriseId);
+      _dataQualityFuture = session.enterprisesRepository?.fetchDataQuality(widget.enterpriseId);
+      _actionStepsFuture = session.actionPlanRepository?.fetchActionSteps(widget.enterpriseId);
+      _contactHistoryFuture = session.actionPlanRepository?.fetchContactLog(widget.enterpriseId);
+    }
+  }
+
+  void _reloadActionSteps() {
+    final OfficerSession session = OfficerSessionScope.of(context);
+    setState(() {
+      _actionStepsFuture = session.actionPlanRepository?.fetchActionSteps(widget.enterpriseId);
+    });
+  }
+
+  void _reloadContactHistory() {
+    final OfficerSession session = OfficerSessionScope.of(context);
+    setState(() {
+      _contactHistoryFuture = session.actionPlanRepository?.fetchContactLog(widget.enterpriseId);
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     final OfficerSession session = OfficerSessionScope.of(context);
-    final Enterprise enterprise = session.enterpriseById(enterpriseId);
+    final Enterprise enterprise = session.enterpriseById(widget.enterpriseId);
 
     return OfficerShellScaffold(
       section: OfficerSection.enterprises,
       onSectionSelected: (OfficerSection section) {
-        onSectionSelected(section);
+        widget.onSectionSelected(section);
         Navigator.of(context).pop();
       },
       children: <Widget>[
@@ -80,13 +124,20 @@ class EnterpriseDetailScreen extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: <Widget>[
-                  CashFlowForecastChart(
-                    months: OfficerDemoData.cashFlowFor(enterprise),
+                  FutureBuilder<List<CashFlowMonth>>(
+                    future: _cashFlowFuture,
+                    builder: (BuildContext context, AsyncSnapshot<List<CashFlowMonth>> snapshot) {
+                      if (!snapshot.hasData) {
+                        return const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 32),
+                          child: Center(child: CircularProgressIndicator()),
+                        );
+                      }
+                      return CashFlowForecastChart(months: snapshot.data!);
+                    },
                   ),
-                  if (enterprise.id == 'shanti-dairy')
-                    const AiFlagBanner(
-                      narrative: OfficerDemoData.shantiDairyFlagNarrative,
-                    ),
+                  if (enterprise.flagSummary != null)
+                    AiFlagBanner(narrative: enterprise.flagSummary!),
                 ],
               ),
             );
@@ -94,35 +145,82 @@ class EnterpriseDetailScreen extends StatelessWidget {
             final List<Widget> left = <Widget>[
               chartCard,
               const SizedBox(height: 14),
-              ContactHistoryCard(
-                entries: session.contactHistoryFor(enterprise),
-                onAddNote: () => showAddNoteDialog(
-                  context: context,
-                  enterpriseId: enterprise.id,
-                ),
+              FutureBuilder<List<ContactLogEntry>>(
+                future: _contactHistoryFuture,
+                builder: (BuildContext context, AsyncSnapshot<List<ContactLogEntry>> snapshot) {
+                  return ContactHistoryCard(
+                    entries: snapshot.data ?? const <ContactLogEntry>[],
+                    onAddNote: () => showAddNoteDialog(
+                      context: context,
+                      onSubmit: ({
+                        required DateTime date,
+                        required ContactKind kind,
+                        required String note,
+                      }) async {
+                        await session.actionPlanRepository?.addContactNote(
+                          enterprise.id,
+                          date: date,
+                          kind: kind,
+                          note: note,
+                        );
+                        _reloadContactHistory();
+                      },
+                    ),
+                  );
+                },
               ),
             ];
 
             final List<Widget> right = <Widget>[
-              ActionPlanCard(
-                steps: session.actionStepsFor(enterprise),
-                gapLabel: enterprise.flagSummary ?? '',
-                onAddStepManually: () => showAddActionStepDialog(
-                  context: context,
-                  enterpriseId: enterprise.id,
-                ),
-                onEditStep: (ActionStep step) => showAddActionStepDialog(
-                  context: context,
-                  enterpriseId: enterprise.id,
-                  existingStep: step,
-                ),
-                onDeleteStep: (ActionStep step) => session.removeActionStep(
-                  enterpriseId: enterprise.id,
-                  step: step,
-                ),
+              FutureBuilder<List<ActionStep>>(
+                future: _actionStepsFuture,
+                builder: (BuildContext context, AsyncSnapshot<List<ActionStep>> snapshot) {
+                  return ActionPlanCard(
+                    steps: snapshot.data ?? const <ActionStep>[],
+                    gapLabel: enterprise.flagSummary ?? '',
+                    onAddStepManually: () => showAddActionStepDialog(
+                      context: context,
+                      onSubmit: ({
+                        required String title,
+                        required String detail,
+                        required ActionStepImpact impact,
+                      }) async {
+                        await session.actionPlanRepository?.addActionStep(
+                          enterprise.id,
+                          title: title,
+                          detail: detail,
+                          impact: impact,
+                        );
+                        _reloadActionSteps();
+                      },
+                    ),
+                    onEditStep: (ActionStep step) => showAddActionStepDialog(
+                      context: context,
+                      existingStep: step,
+                      onSubmit: ({
+                        required String title,
+                        required String detail,
+                        required ActionStepImpact impact,
+                      }) async {
+                        await session.actionPlanRepository?.updateActionStep(
+                          enterprise.id,
+                          step.id!,
+                          title: title,
+                          detail: detail,
+                          impact: impact,
+                        );
+                        _reloadActionSteps();
+                      },
+                    ),
+                    onDeleteStep: (ActionStep step) async {
+                      await session.actionPlanRepository?.deleteActionStep(enterprise.id, step.id!);
+                      _reloadActionSteps();
+                    },
+                  );
+                },
               ),
               const SizedBox(height: 14),
-              _DataQuality(enterprise: enterprise),
+              _DataQuality(enterprise: enterprise, dataQualityFuture: _dataQualityFuture),
             ];
 
             if (constraints.maxWidth > 900) {
@@ -160,21 +258,27 @@ class EnterpriseDetailScreen extends StatelessWidget {
 }
 
 class _DataQuality extends StatelessWidget {
-  const _DataQuality({required this.enterprise});
+  const _DataQuality({required this.enterprise, required this.dataQualityFuture});
 
   final Enterprise enterprise;
+  final Future<DataQuality>? dataQualityFuture;
 
   @override
   Widget build(BuildContext context) {
-    final ({int entryStreakDaysPerWeek, int forecastConfidencePercent})
-    quality = OfficerDemoData.dataQualityFor(enterprise);
+    return FutureBuilder<DataQuality>(
+      future: dataQualityFuture,
+      builder: (BuildContext context, AsyncSnapshot<DataQuality> snapshot) {
+        final DataQuality quality =
+            snapshot.data ?? (entryStreakDaysPerWeek: 0, forecastConfidencePercent: 0);
 
-    return DataQualityCard(
-      entryStreakDaysPerWeek: quality.entryStreakDaysPerWeek,
-      lastSyncLabel: enterprise.lastSyncHoursAgo == null
-          ? '${enterprise.staleDays}d ⚠'
-          : '${enterprise.lastSyncHoursAgo}h ago ✓',
-      forecastConfidencePercent: quality.forecastConfidencePercent,
+        return DataQualityCard(
+          entryStreakDaysPerWeek: quality.entryStreakDaysPerWeek,
+          lastSyncLabel: enterprise.lastSyncHoursAgo == null
+              ? '${enterprise.staleDays}d ⚠'
+              : '${enterprise.lastSyncHoursAgo}h ago ✓',
+          forecastConfidencePercent: quality.forecastConfidencePercent,
+        );
+      },
     );
   }
 }

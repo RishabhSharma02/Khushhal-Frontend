@@ -3,7 +3,6 @@ library;
 
 import 'package:flutter/material.dart';
 
-import '../../../data/officer_demo_data.dart';
 import '../../theme/officer_palette.dart';
 import '../../widgets/officer_card.dart';
 import '../../widgets/status_chip.dart';
@@ -11,16 +10,53 @@ import '../../widgets/status_chip.dart';
 /// Avg-score line chart plus three mini stats.
 class HealthScoreCard extends StatelessWidget {
   /// Creates the health-score card.
-  const HealthScoreCard({super.key});
+  const HealthScoreCard({
+    super.key,
+    required this.enterpriseCount,
+    required this.averageScoreHistory,
+    required this.averageScoreDelta,
+    required this.emisOnTimePercent,
+    required this.emisOnTimeDelta,
+    required this.openFlagCount,
+    required this.openFlagDelta,
+  });
 
-  static const List<String> _months = <String>[
-    'Mar',
-    'Apr',
-    'May',
-    'Jun',
-    'Jul',
-    'Aug*',
+  /// Every enterprise on the officer's beat, for the subtitle count.
+  final int enterpriseCount;
+
+  /// Up to 6 months of average health score, oldest first.
+  final List<int> averageScoreHistory;
+
+  /// Change in average score vs. the previous period.
+  final int averageScoreDelta;
+
+  /// Percent of EMIs on time across all enterprises.
+  final int emisOnTimePercent;
+
+  /// Change in EMIs-on-time percent vs. the previous period.
+  final int emisOnTimeDelta;
+
+  /// Currently open flags.
+  final int openFlagCount;
+
+  /// Change in open-flag count vs. the previous period.
+  final int openFlagDelta;
+
+  static const List<String> _monthNames = <String>[
+    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
   ];
+
+  /// The last 6 months' labels ending at the current month, which is
+  /// marked "*" since it's still accruing entries.
+  List<String> _months() {
+    final DateTime now = DateTime.now();
+    return List<String>.generate(6, (int i) {
+      final int monthIndex = (now.month - 1 - (5 - i) + 24) % 12;
+      final String label = _monthNames[monthIndex];
+      return i == 5 ? '$label*' : label;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -37,11 +73,11 @@ class HealthScoreCard extends StatelessWidget {
                 color: OfficerPalette.forest,
               ),
               const SizedBox(width: 8),
-              const Expanded(
+              Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
-                    Text(
+                    const Text(
                       'Average business-health score',
                       style: TextStyle(
                         fontSize: 15,
@@ -49,10 +85,10 @@ class HealthScoreCard extends StatelessWidget {
                         color: OfficerPalette.ink,
                       ),
                     ),
-                    SizedBox(height: 2),
+                    const SizedBox(height: 2),
                     Text(
-                      'All 48 enterprises · 0–100 scale · last 6 months',
-                      style: TextStyle(
+                      'All $enterpriseCount enterprises · 0–100 scale · last 6 months',
+                      style: const TextStyle(
                         fontSize: 11,
                         color: OfficerPalette.muted,
                       ),
@@ -69,29 +105,27 @@ class HealthScoreCard extends StatelessWidget {
               Expanded(
                 child: _MiniStat(
                   label: 'Avg score',
-                  value: '${OfficerDemoData.averageScoreHistory.last}',
-                  deltaLabel:
-                      '${OfficerDemoData.averageScoreDelta >= 0 ? '+' : ''}${OfficerDemoData.averageScoreDelta}',
-                  positive: OfficerDemoData.averageScoreDelta >= 0,
+                  value: '${averageScoreHistory.isEmpty ? 0 : averageScoreHistory.last}',
+                  deltaLabel: '${averageScoreDelta >= 0 ? '+' : ''}$averageScoreDelta',
+                  positive: averageScoreDelta >= 0,
                 ),
               ),
               const SizedBox(width: 10),
               Expanded(
                 child: _MiniStat(
                   label: 'EMIs on time',
-                  value: '${OfficerDemoData.emisOnTimePercent}%',
-                  deltaLabel:
-                      '${OfficerDemoData.emisOnTimeDelta >= 0 ? '+' : ''}${OfficerDemoData.emisOnTimeDelta}%',
-                  positive: OfficerDemoData.emisOnTimeDelta >= 0,
+                  value: '$emisOnTimePercent%',
+                  deltaLabel: '${emisOnTimeDelta >= 0 ? '+' : ''}$emisOnTimeDelta%',
+                  positive: emisOnTimeDelta >= 0,
                 ),
               ),
               const SizedBox(width: 10),
               Expanded(
                 child: _MiniStat(
                   label: 'Flags open',
-                  value: '${OfficerDemoData.openFlagCount}',
-                  deltaLabel: '${OfficerDemoData.openFlagDelta}',
-                  positive: OfficerDemoData.openFlagDelta <= 0,
+                  value: '$openFlagCount',
+                  deltaLabel: '$openFlagDelta',
+                  positive: openFlagDelta <= 0,
                 ),
               ),
             ],
@@ -101,12 +135,12 @@ class HealthScoreCard extends StatelessWidget {
             height: 100,
             width: double.infinity,
             child: CustomPaint(
-              painter: _ScoreLinePainter(OfficerDemoData.averageScoreHistory),
+              painter: _ScoreLinePainter(averageScoreHistory),
             ),
           ),
           Row(
             children: <Widget>[
-              for (final String month in _months)
+              for (final String month in _months())
                 Expanded(
                   child: Text(
                     month,

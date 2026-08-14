@@ -5,8 +5,8 @@ import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 
-import '../../data/officer_demo_data.dart';
 import '../../domain/report_summary.dart';
+import '../officer_session.dart';
 import '../theme/officer_palette.dart';
 import '../widgets/file_download/file_download.dart';
 import '../widgets/officer_buttons.dart';
@@ -21,12 +21,29 @@ import 'widgets/sector_score_bars.dart';
 
 /// Aggregate KPIs, sector breakdown, forecast accuracy, and app adoption,
 /// with export buttons for the block office.
-class ReportsScreen extends StatelessWidget {
+class ReportsScreen extends StatefulWidget {
   /// Creates the reports screen.
   const ReportsScreen({super.key, required this.onSectionSelected});
 
   /// Called when a rail section is tapped.
   final ValueChanged<OfficerSection> onSectionSelected;
+
+  @override
+  State<ReportsScreen> createState() => _ReportsScreenState();
+}
+
+class _ReportsScreenState extends State<ReportsScreen> {
+  Future<ReportSummary>? _summaryFuture;
+  bool _loaded = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_loaded) {
+      _loaded = true;
+      _summaryFuture = OfficerSessionScope.of(context).reportsRepository?.fetchReports();
+    }
+  }
 
   static String _csvFor(ReportSummary summary) {
     final StringBuffer buffer = StringBuffer()
@@ -88,11 +105,46 @@ class ReportsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const ReportSummary summary = OfficerDemoData.reportSummary;
-
     return OfficerShellScaffold(
       section: OfficerSection.reports,
-      onSectionSelected: onSectionSelected,
+      onSectionSelected: widget.onSectionSelected,
+      children: <Widget>[
+        FutureBuilder<ReportSummary>(
+          future: _summaryFuture,
+          builder: (BuildContext context, AsyncSnapshot<ReportSummary> snapshot) {
+            if (!snapshot.hasData) {
+              return const Padding(
+                padding: EdgeInsets.symmetric(vertical: 48),
+                child: Center(child: CircularProgressIndicator()),
+              );
+            }
+            return _ReportsBody(
+              summary: snapshot.data!,
+              onExportPdf: _exportPdf,
+              onExportCsv: _exportCsv,
+            );
+          },
+        ),
+      ],
+    );
+  }
+}
+
+class _ReportsBody extends StatelessWidget {
+  const _ReportsBody({
+    required this.summary,
+    required this.onExportPdf,
+    required this.onExportCsv,
+  });
+
+  final ReportSummary summary;
+  final Future<void> Function(BuildContext context, ReportSummary summary) onExportPdf;
+  final void Function(BuildContext context, ReportSummary summary) onExportCsv;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
         ResponsiveHeader(
           title: Column(
@@ -116,11 +168,11 @@ class ReportsScreen extends StatelessWidget {
           actions: <Widget>[
             OfficerSecondaryButton(
               label: '⬇ PDF for block office',
-              onPressed: () => _exportPdf(context, summary),
+              onPressed: () => onExportPdf(context, summary),
             ),
             OfficerSecondaryButton(
               label: '⬇ CSV',
-              onPressed: () => _exportCsv(context, summary),
+              onPressed: () => onExportCsv(context, summary),
             ),
           ],
         ),

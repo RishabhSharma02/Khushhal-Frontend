@@ -3,7 +3,7 @@ library;
 
 import 'package:flutter/material.dart';
 
-import '../../data/officer_demo_data.dart';
+import '../../data/dashboard_repository.dart';
 import '../../domain/enterprise.dart';
 import '../enterprises/enterprise_detail_screen.dart';
 import '../officer_session.dart';
@@ -19,12 +19,29 @@ import 'widgets/risk_queue_card.dart';
 import 'widgets/visits_progress_card.dart';
 
 /// Greeting, KPIs, score trend, risk queue, visit progress, sync notice.
-class DashboardScreen extends StatelessWidget {
+class DashboardScreen extends StatefulWidget {
   /// Creates the dashboard screen.
   const DashboardScreen({super.key, required this.onSectionSelected});
 
   /// Called when a rail section is tapped.
   final ValueChanged<OfficerSection> onSectionSelected;
+
+  @override
+  State<DashboardScreen> createState() => _DashboardScreenState();
+}
+
+class _DashboardScreenState extends State<DashboardScreen> {
+  Future<DashboardTrends>? _trendsFuture;
+  bool _loaded = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_loaded) {
+      _loaded = true;
+      _trendsFuture = OfficerSessionScope.of(context).dashboardRepository?.fetchDashboard();
+    }
+  }
 
   void _openEnterprise(
     BuildContext context,
@@ -35,7 +52,7 @@ class DashboardScreen extends StatelessWidget {
       MaterialPageRoute<void>(
         builder: (BuildContext _) => EnterpriseDetailScreen(
           enterpriseId: enterprise.id,
-          onSectionSelected: onSectionSelected,
+          onSectionSelected: widget.onSectionSelected,
         ),
       ),
     );
@@ -44,54 +61,98 @@ class DashboardScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final OfficerSession session = OfficerSessionScope.of(context);
+    final List<Enterprise> enterprises = session.enterprises;
+    final int healthyCount = enterprises
+        .where((Enterprise e) => e.riskLevel == RiskLevel.healthy)
+        .length;
+    final int watchCount = enterprises
+        .where((Enterprise e) => e.riskLevel == RiskLevel.watch)
+        .length;
+    final int atRiskCount = enterprises
+        .where((Enterprise e) => e.riskLevel == RiskLevel.atRisk)
+        .length;
 
     return OfficerShellScaffold(
       section: OfficerSection.dashboard,
-      onSectionSelected: onSectionSelected,
+      onSectionSelected: widget.onSectionSelected,
       children: <Widget>[
         _Header(
           firstName: session.profile.fullName.trim().split(RegExp(r'\s+')).first,
+          enterpriseCount: enterprises.length,
           onLogVisit: () => showAddVisitDialog(context: context),
         ),
-        const KpiSummaryRow(),
-        LayoutBuilder(
-          builder: (BuildContext context, BoxConstraints constraints) {
-            final RiskQueueCard riskQueue = RiskQueueCard(
-              enterprises: session.riskQueue,
-              totalFlagged:
-                  OfficerDemoData.atRiskCount + OfficerDemoData.watchCount,
-              onEnterpriseSelected: (Enterprise e) =>
-                  _openEnterprise(context, session, e),
-              onViewAll: () => onSectionSelected(OfficerSection.enterprises),
-            );
-            final VisitsProgressCard visitsCard = VisitsProgressCard(
-              nextVisit: session.nextVisit,
-              onPlanRoute: () => onSectionSelected(OfficerSection.visits),
-            );
+        KpiSummaryRow(
+          totalEnterpriseCount: enterprises.length,
+          healthyCount: healthyCount,
+          watchCount: watchCount,
+          atRiskCount: atRiskCount,
+        ),
+        FutureBuilder<DashboardTrends>(
+          future: _trendsFuture,
+          builder: (BuildContext context, AsyncSnapshot<DashboardTrends> snapshot) {
+            final DashboardTrends trends =
+                snapshot.data ??
+                (
+                  averageScoreHistory: const <int>[],
+                  averageScoreDelta: 0,
+                  emisOnTimePercent: 0,
+                  emisOnTimeDelta: 0,
+                  openFlagCount: 0,
+                  openFlagDelta: 0,
+                  visitsDoneThisWeek: 0,
+                  visitsPlannedThisWeek: 0,
+                );
 
-            if (constraints.maxWidth > 860) {
-              return IntrinsicHeight(
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
+            return LayoutBuilder(
+              builder: (BuildContext context, BoxConstraints constraints) {
+                final RiskQueueCard riskQueue = RiskQueueCard(
+                  enterprises: session.riskQueue,
+                  totalFlagged: atRiskCount + watchCount,
+                  onEnterpriseSelected: (Enterprise e) =>
+                      _openEnterprise(context, session, e),
+                  onViewAll: () => widget.onSectionSelected(OfficerSection.enterprises),
+                );
+                final VisitsProgressCard visitsCard = VisitsProgressCard(
+                  nextVisit: session.nextVisit,
+                  visitsDoneThisWeek: trends.visitsDoneThisWeek,
+                  visitsPlannedThisWeek: trends.visitsPlannedThisWeek,
+                  onPlanRoute: () => widget.onSectionSelected(OfficerSection.visits),
+                );
+                final HealthScoreCard healthScoreCard = HealthScoreCard(
+                  enterpriseCount: enterprises.length,
+                  averageScoreHistory: trends.averageScoreHistory,
+                  averageScoreDelta: trends.averageScoreDelta,
+                  emisOnTimePercent: trends.emisOnTimePercent,
+                  emisOnTimeDelta: trends.emisOnTimeDelta,
+                  openFlagCount: trends.openFlagCount,
+                  openFlagDelta: trends.openFlagDelta,
+                );
+
+                if (constraints.maxWidth > 860) {
+                  return IntrinsicHeight(
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: <Widget>[
+                        Expanded(flex: 16, child: healthScoreCard),
+                        const SizedBox(width: 14),
+                        Expanded(flex: 10, child: riskQueue),
+                        const SizedBox(width: 14),
+                        Expanded(flex: 10, child: visitsCard),
+                      ],
+                    ),
+                  );
+                }
+
+                return Column(
                   children: <Widget>[
-                    const Expanded(flex: 16, child: HealthScoreCard()),
-                    const SizedBox(width: 14),
-                    Expanded(flex: 10, child: riskQueue),
-                    const SizedBox(width: 14),
-                    Expanded(flex: 10, child: visitsCard),
+                    healthScoreCard,
+                    const SizedBox(height: 14),
+                    riskQueue,
+                    const SizedBox(height: 14),
+                    visitsCard,
                   ],
-                ),
-              );
-            }
-
-            return Column(
-              children: <Widget>[
-                const HealthScoreCard(),
-                const SizedBox(height: 14),
-                riskQueue,
-                const SizedBox(height: 14),
-                visitsCard,
-              ],
+                );
+              },
             );
           },
         ),
@@ -101,10 +162,28 @@ class DashboardScreen extends StatelessWidget {
 }
 
 class _Header extends StatelessWidget {
-  const _Header({required this.firstName, required this.onLogVisit});
+  const _Header({
+    required this.firstName,
+    required this.enterpriseCount,
+    required this.onLogVisit,
+  });
 
   final String firstName;
+  final int enterpriseCount;
   final VoidCallback onLogVisit;
+
+  static const List<String> _weekdays = <String>[
+    'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun',
+  ];
+  static const List<String> _months = <String>[
+    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+  ];
+
+  String get _todayLabel {
+    final DateTime now = DateTime.now();
+    return '${_weekdays[now.weekday - 1]} ${now.day} ${_months[now.month - 1]} ${now.year}';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -129,9 +208,9 @@ class _Header extends StatelessWidget {
                       color: OfficerPalette.ink,
                     ),
                   ),
-                  const Text(
-                    'Health & activity of your 48 enterprises · Fri 1 Aug 2026',
-                    style: TextStyle(fontSize: 13, color: OfficerPalette.muted),
+                  Text(
+                    'Health & activity of your $enterpriseCount enterprises · $_todayLabel',
+                    style: const TextStyle(fontSize: 13, color: OfficerPalette.muted),
                   ),
                 ],
               ),

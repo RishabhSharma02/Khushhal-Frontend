@@ -3,7 +3,6 @@ library;
 
 import 'package:flutter/material.dart';
 
-import '../../../data/officer_demo_data.dart';
 import '../../../domain/visit.dart';
 import '../../theme/officer_palette.dart';
 import '../../widgets/officer_buttons.dart';
@@ -15,19 +14,27 @@ class VisitsProgressCard extends StatelessWidget {
   const VisitsProgressCard({
     super.key,
     required this.nextVisit,
+    required this.visitsDoneThisWeek,
+    required this.visitsPlannedThisWeek,
     required this.onPlanRoute,
   });
 
   /// The next visit to surface, if any.
   final Visit? nextVisit;
 
+  /// Visits completed this week.
+  final int visitsDoneThisWeek;
+
+  /// Visits planned this week.
+  final int visitsPlannedThisWeek;
+
   /// Called when "Plan route" is tapped.
   final VoidCallback onPlanRoute;
 
   @override
   Widget build(BuildContext context) {
-    final int done = OfficerDemoData.visitsDoneThisWeek;
-    final int planned = OfficerDemoData.visitsPlannedThisWeek;
+    final int done = visitsDoneThisWeek;
+    final int planned = visitsPlannedThisWeek;
 
     return OfficerCard(
       child: Column(
@@ -69,7 +76,7 @@ class VisitsProgressCard extends StatelessWidget {
                 children: <Widget>[
                   CustomPaint(
                     size: const Size(130, 130),
-                    painter: _DonutPainter(done / planned),
+                    painter: _DonutPainter(planned == 0 ? 0.0 : done / planned),
                   ),
                   Column(
                     mainAxisSize: MainAxisSize.min,
