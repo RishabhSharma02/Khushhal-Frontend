@@ -19,16 +19,23 @@ import 'package:khushhal/features/officer_portal/domain/visit.dart';
 import 'package:khushhal/features/officer_portal/presentation/officer_portal_root.dart';
 
 /// Stands in for [FirebaseOfficerAuthRepository] so widget tests never touch
-/// real Firebase/network — any OTP is accepted and returns the demo officer,
-/// matching the old mock login's "any email/password combination signs in".
+/// real Firebase/network — any email/password combination signs in as the
+/// demo officer.
 class _FakeOfficerAuthRepository implements OfficerAuthRepository {
   @override
-  Future<String> sendOtp(String phoneE164) async => 'fake-verification-id';
+  Future<OfficerProfile> signIn({required String email, required String password}) async =>
+      OfficerDemoData.officer;
 
   @override
-  Future<OfficerProfile> verifyOtp({
-    required String verificationId,
-    required String smsCode,
+  Future<OfficerProfile> register({
+    required String email,
+    required String password,
+    required String employeeId,
+    required String fullName,
+    required String mobile,
+    String? pincode,
+    String? block,
+    String? state,
   }) async => OfficerDemoData.officer;
 }
 
@@ -232,12 +239,9 @@ void main() {
       ),
     );
 
-    await tester.enterText(find.byType(TextField).first, '9876543210');
-    await tester.tap(find.text('Send OTP →'));
-    await tester.pumpAndSettle();
-
-    await tester.enterText(find.byType(TextField).first, '123456');
-    await tester.tap(find.text('Verify →'));
+    await tester.enterText(find.byType(TextFormField).at(0), 'ramesh@khush-hal.in');
+    await tester.enterText(find.byType(TextFormField).at(1), 'password123');
+    await tester.tap(find.text('Sign in →'));
     await tester.pumpAndSettle();
   }
 

@@ -1,8 +1,6 @@
-/// Phone-OTP sign-in for the officer portal, backed by Firebase Auth +
+/// Email/password sign-in for the officer portal, backed by Firebase Auth +
 /// `Khushhal-Backend`'s `/api/officer/v1` endpoints.
 library;
-
-import 'dart:async';
 
 import 'package:firebase_auth/firebase_auth.dart';
 
@@ -13,16 +11,23 @@ import '../domain/officer_profile.dart';
 /// Abstract so widget tests can inject a fake instead of talking to real
 /// Firebase/network — see `test/officer_portal_flow_test.dart`.
 abstract class OfficerAuthRepository {
-  /// Sends an OTP to [phoneE164] (e.g. "+919876543210"). Returns a
-  /// verification handle to pass into [verifyOtp].
-  Future<String> sendOtp(String phoneE164);
+  /// Signs in an existing officer and exchanges the resulting Firebase ID
+  /// token for their profile. Throws [OfficerNotRegisteredException] if the
+  /// Firebase account exists but has no matching `officers` row.
+  Future<OfficerProfile> signIn({required String email, required String password});
 
-  /// Confirms [smsCode] against [verificationId], signs in, and exchanges
-  /// the resulting Firebase ID token for the officer's profile. Throws
-  /// [OfficerNotRegisteredException] if no officer account matches.
-  Future<OfficerProfile> verifyOtp({
-    required String verificationId,
-    required String smsCode,
+  /// Creates a new Firebase account for a first-time officer, then
+  /// registers the matching `officers` row on the backend with the
+  /// supplied details.
+  Future<OfficerProfile> register({
+    required String email,
+    required String password,
+    required String employeeId,
+    required String fullName,
+    required String mobile,
+    String? pincode,
+    String? block,
+    String? state,
   });
 }
 
@@ -38,77 +43,75 @@ class FirebaseOfficerAuthRepository implements OfficerAuthRepository {
   /// moment the auth screen renders (see `officer_portal_root.dart`), and
   /// `FirebaseAuth.instance` throws if `Firebase.initializeApp()` hasn't
   /// succeeded (e.g. no project configured yet). Deferring the lookup to
-  /// first actual use means the phone/OTP screens still render — only
-  /// tapping "Send OTP" fails, with a catchable, on-screen error instead of
-  /// a blank app.
+  /// first actual use means the login/signup screens still render — only
+  /// tapping the submit button fails, with a catchable, on-screen error
+  /// instead of a blank app.
   FirebaseAuth get _firebaseAuth => _injectedFirebaseAuth ?? FirebaseAuth.instance;
 
   @override
-  Future<String> sendOtp(String phoneE164) {
-    final Completer<String> verificationIdCompleter = Completer<String>();
+  Future<OfficerProfile> signIn({required String email, required String password}) async {
+    final UserCredential userCredential;
+    try {
+      userCredential = await _firebaseAuth.signInWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+    } on FirebaseAuthException catch (e) {
+      throw OfficerApiException(e.message ?? 'Could not sign in');
+    }
 
-    _firebaseAuth.verifyPhoneNumber(
-      phoneNumber: phoneE164,
-      timeout: const Duration(seconds: 60),
-      verificationCompleted: (_) {
-        // Android auto-retrieval can complete without codeSent firing; the
-        // OTP screen still lets the officer type the code manually, so we
-        // don't need to special-case this beyond not leaving the completer
-        // hanging.
-        if (!verificationIdCompleter.isCompleted) {
-          verificationIdCompleter.complete('');
-        }
-      },
-      verificationFailed: (FirebaseAuthException e) {
-        if (!verificationIdCompleter.isCompleted) {
-          verificationIdCompleter.completeError(
-            OfficerApiException(e.message ?? 'Could not send the OTP'),
-          );
-        }
-      },
-      codeSent: (String verificationId, int? resendToken) {
-        if (!verificationIdCompleter.isCompleted) {
-          verificationIdCompleter.complete(verificationId);
-        }
-      },
-      codeAutoRetrievalTimeout: (_) {},
-    );
-
-    return verificationIdCompleter.future;
+    final String idToken = await _requireIdToken(userCredential);
+    final Map<String, dynamic> json = await _apiClient.createSession(idToken);
+    return _profileFromJson(json);
   }
 
   @override
-  Future<OfficerProfile> verifyOtp({
-    required String verificationId,
-    required String smsCode,
+  Future<OfficerProfile> register({
+    required String email,
+    required String password,
+    required String employeeId,
+    required String fullName,
+    required String mobile,
+    String? pincode,
+    String? block,
+    String? state,
   }) async {
-    final PhoneAuthCredential credential = PhoneAuthProvider.credential(
-      verificationId: verificationId,
-      smsCode: smsCode,
-    );
-
     final UserCredential userCredential;
     try {
-      userCredential = await _firebaseAuth.signInWithCredential(credential);
+      userCredential = await _firebaseAuth.createUserWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
     } on FirebaseAuthException catch (e) {
-      throw OfficerApiException(e.message ?? 'That code was not accepted');
+      throw OfficerApiException(e.message ?? 'Could not create the account');
     }
 
-    final String? idToken = await userCredential.user?.getIdToken();
+    final String idToken = await _requireIdToken(userCredential);
+    final Map<String, dynamic> json = await _apiClient.registerOfficer(idToken, <String, dynamic>{
+      'employee_id': employeeId,
+      'full_name': fullName,
+      'mobile_e164': mobile,
+      'pincode': ?pincode,
+      'block': ?block,
+      'state': ?state,
+    });
+    return _profileFromJson(json);
+  }
+
+  Future<String> _requireIdToken(UserCredential credential) async {
+    final String? idToken = await credential.user?.getIdToken();
     if (idToken == null) {
       throw const OfficerApiException('Sign-in did not return a token');
     }
-
-    final Map<String, dynamic> json = await _apiClient.createSession(idToken);
-    return _profileFromJson(json);
+    return idToken;
   }
 }
 
 /// Maps the backend's `OfficerRead` shape onto the domain [OfficerProfile].
 ///
-/// `coverage` isn't part of the Phase 0 auth/profile API yet (it's derived
-/// from enterprises/visits data that ships in later phases), so it's
-/// filled in from [OfficerDemoData] as a placeholder until then.
+/// `coverage` isn't part of the auth/profile API (it's derived from
+/// enterprises/visits data), so it's filled in from [OfficerDemoData] as a
+/// placeholder until a real endpoint exists for it.
 OfficerProfile _profileFromJson(Map<String, dynamic> json) {
   return OfficerProfile(
     fullName: json['full_name'] as String,

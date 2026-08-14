@@ -41,6 +41,15 @@ class OfficerApiClient {
     );
   }
 
+  Future<Map<String, dynamic>> registerOfficer(
+    String idToken,
+    Map<String, dynamic> body,
+  ) {
+    return _post('/api/officer/v1/auth/register', idToken, body: body).then(
+      (Map<String, dynamic> response) => response['officer'] as Map<String, dynamic>,
+    );
+  }
+
   Future<Map<String, dynamic>> fetchProfile(String idToken) {
     return _get('/api/officer/v1/profile', idToken);
   }
