@@ -155,6 +155,8 @@
 
   "offlineBanner": "नेटवर्क नहीं है — फिर भी सब चलता है। {count} एंट्री बाद में सिंक होंगी।",
   "offlineHealthHeadline": "बिज़नेस सेहतमंद है",
+  "offlineHealthHeadlineMedium": "बिज़नेस पर नज़र रखें",
+  "offlineHealthHeadlineHigh": "बिज़नेस पर जोखिम है",
   "offlineScoreLine": "स्कोर {score}/100 · {date} का",
   "offlineMandiStale": "मंडी के भाव {days} दिन पुराने",
 
@@ -283,7 +285,8 @@
   "authContinue": "आगे बढ़ें",
   "authWelcomeBack": "वापसी पर स्वागत है, {name}",
   "authEnterPin": "अपना 4-अंकों का PIN डालें",
-  "authForgotPin": "PIN भूल गए? OTP से लॉगिन करें",
+  "authForgotPin": "PIN भूल गए?",
+  "authLoginWithMobile": "मोबाइल नंबर से लॉगिन करें",
   "authEnterCode": "कोड डालें",
   "authSentTo": "{phone} पर भेजा · ",
   "authResendIn": "फिर से भेजें 0:{secs}",

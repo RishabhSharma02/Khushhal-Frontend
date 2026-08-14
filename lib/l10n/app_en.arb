@@ -359,6 +359,8 @@
     }
   },
   "offlineHealthHeadline": "Business is HEALTHY",
+  "offlineHealthHeadlineMedium": "Business is ON WATCH",
+  "offlineHealthHeadlineHigh": "Business is AT RISK",
   "offlineScoreLine": "Score {score}/100 · as on {date}",
   "@offlineScoreLine": {
     "placeholders": {
@@ -662,7 +664,8 @@
     "placeholders": { "name": { "type": "String" } }
   },
   "authEnterPin": "Enter your 4-digit PIN",
-  "authForgotPin": "Forgot PIN? Login with OTP",
+  "authForgotPin": "Forgot PIN?",
+  "authLoginWithMobile": "Login with mobile number",
   "authEnterCode": "Enter the code",
   "authSentTo": "Sent to {phone} · ",
   "@authSentTo": {

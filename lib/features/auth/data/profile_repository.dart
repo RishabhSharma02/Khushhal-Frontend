@@ -132,6 +132,20 @@ class ProfileRepository {
     String? language,
     bool? notificationsEnabled,
   }) async {
+    // No-op when nothing actually changed: idle screens re-emit the language
+    // pick and notification toggle on every rebuild, and enqueueing a PATCH
+    // for values the server already holds turns into a spurious sync error
+    // as soon as the device is offline. The cached row is authoritative for
+    // what the backend last saw for this device.
+    final LocalUser? current = await _local.activeUser();
+    if (current != null) {
+      final bool nameSame = name == null || name == current.name;
+      final bool languageSame = language == null || language == current.language;
+      final bool notifSame = notificationsEnabled == null
+          || notificationsEnabled == current.notificationsEnabled;
+      if (nameSame && languageSame && notifSame) return;
+    }
+
     final String? clientId = await _local.updateLocalProfile(
       name: name,
       language: language,

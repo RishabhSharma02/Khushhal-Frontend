@@ -175,6 +175,26 @@ class AppSession extends ChangeNotifier {
   bool get hasUnsavedBusiness =>
       _businesses.length > _backendBusinessIds.whereType<int>().length;
 
+  /// Wipes the business list and per-business state without touching the
+  /// signed-in profile. Called by [InsightsLoader] on mount so a fresh
+  /// sign-in never sees leftover state from the previous user while its own
+  /// `GET /businesses` is still in flight.
+  void resetBusinessList() {
+    if (hasUnsavedBusiness) return;
+    if (_businesses.isEmpty
+        && _backendBusinessIds.isEmpty
+        && !_businessesFetched
+        && _byBusiness.isEmpty) {
+      return;
+    }
+    _businesses.clear();
+    _backendBusinessIds.clear();
+    _byBusiness.clear();
+    _activeBusinessIndex = 0;
+    _businessesFetched = false;
+    notifyListeners();
+  }
+
   /// Records the backend-assigned id for the most recently added business.
   /// Called by SetupFlow after `POST /api/v1/businesses` returns.
   void registerBackendBusinessId(int id) {

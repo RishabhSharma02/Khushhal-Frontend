@@ -164,6 +164,7 @@ class AppDependencies {
         local: businessLocal,
         remote: businessRemote,
         outbox: outbox,
+        profileLocal: profileLocal,
       ),
       insightsRepository: InsightsRepository(
         local: insightsLocal,

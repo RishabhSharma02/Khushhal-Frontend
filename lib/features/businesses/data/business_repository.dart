@@ -1,10 +1,13 @@
 /// Local-first access to the user's businesses.
 library;
 
+import 'dart:async';
+
 import '../../../app/model/business.dart';
 import '../../../core/db/app_database.dart';
 import '../../../core/sync/outbox_dao.dart';
 import '../../../core/sync/sync_op.dart';
+import '../../auth/data/profile_local_datasource.dart';
 import 'business_api.dart';
 import 'business_local_datasource.dart';
 import 'business_remote_datasource.dart';
@@ -22,16 +25,33 @@ class BusinessRepository {
     required BusinessLocalDataSource local,
     required BusinessRemoteDataSource remote,
     required OutboxDao outbox,
+    ProfileLocalDataSource? profileLocal,
   }) : _local = local,
        _remote = remote,
-       _outbox = outbox;
+       _outbox = outbox,
+       _profileLocal = profileLocal;
 
   final BusinessLocalDataSource _local;
   final BusinessRemoteDataSource _remote;
   final OutboxDao _outbox;
 
-  /// Live list for the business switcher.
-  Stream<List<LocalBusinessRecord>> watchAll() => _local.watchAll();
+  /// Used to scope reads (and now creates) to the signed-in account so that
+  /// switching users on the same device never leaks the previous user's
+  /// businesses onto Home. Nullable for tests that pump the repository
+  /// without a full profile stack.
+  final ProfileLocalDataSource? _profileLocal;
+
+  /// Live list for the business switcher, scoped to the active account.
+  ///
+  /// Re-emits when the active user changes so a fresh sign-in never shows
+  /// the previous user's cached businesses while the pull is in flight.
+  Stream<List<LocalBusinessRecord>> watchAll() {
+    final ProfileLocalDataSource? profile = _profileLocal;
+    if (profile == null) return _local.watchAll();
+    return profile.watchActiveUser().asyncExpand((LocalUser? user) {
+      return _local.watchAll(ownerUserId: user?.serverId);
+    });
+  }
 
   /// Emits when the server's business list was last pulled onto this device,
   /// and null until it ever has been. An empty [watchAll] only means "this
@@ -64,12 +84,17 @@ class BusinessRepository {
   /// Creates a business on the server, then caches it. Requires a connection.
   Future<RemoteBusiness> create(Business business, {int? ownerUserId}) async {
     final RemoteBusiness created = await _remote.create(business);
+    // Fall back to the active user so watchAll's owner filter never hides a
+    // freshly-created business from Home just because the caller did not
+    // pass an id — the setup flow calls create() without one.
+    final int? resolvedOwner =
+        ownerUserId ?? (await _profileLocal?.activeUser())?.serverId;
     // The cached row is what Home reads back seconds later, so it carries the
     // opening savings the user typed on the wizard whenever the server's reply
     // does not mention money at all.
     await _local.insertCreated(
       created,
-      ownerUserId: ownerUserId,
+      ownerUserId: resolvedOwner,
       savingsInr: created.carriesMoney ? null : business.savingsInr,
       loanInr: created.carriesMoney ? null : business.loanInr,
     );

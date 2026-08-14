@@ -4,6 +4,7 @@ library;
 import 'dart:async';
 
 import '../../auth/data/profile_local_datasource.dart';
+import '../../../core/db/app_database.dart';
 import '../../../core/network/api_exception.dart';
 import '../../../core/sync/outbox_dao.dart';
 import '../../../core/sync/sync_op.dart';
@@ -90,6 +91,18 @@ class LocationRepository {
     final ProfileLocalDataSource? profile = _profileLocal;
     final OutboxDao? outbox = _outbox;
     if (profile == null || outbox == null) return;
+
+    // No-op when the location on the row already matches what would be
+    // written: settings and setup screens re-emit the current selection on
+    // every rebuild, and enqueueing a PATCH for values the server already
+    // has turns into a spurious sync error the moment the device is offline.
+    final LocalUser? current = await profile.activeUser();
+    if (current != null
+        && state == current.state
+        && district == current.district
+        && village == current.village) {
+      return;
+    }
 
     final String? clientId = await profile.updateLocalProfile(
       state: state,

@@ -40,13 +40,27 @@ class _InsightsLoaderState extends State<InsightsLoader> {
 
   List<LocalBusinessRecord> _rows = const <LocalBusinessRecord>[];
 
-  /// Whether `GET /businesses` has landed on this device for this account.
+  /// Whether `GET /businesses` has landed on this device for the account
+  /// this loader was mounted for. A pull stamp older than [_mountedAt] is
+  /// left over from a previous user's session and must not count — otherwise
+  /// switching to a new account (login-with-mobile) reads the previous
+  /// user's stamp on first frame, sees an empty business list (owner filter
+  /// hides the previous user's rows), and detours the new user through the
+  /// setup wizard before their own pull has had a chance to run.
   bool _serverConfirmed = false;
+  late final DateTime _mountedAt = DateTime.now();
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _watchBusinesses());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      // Blow away any leftover business-list state from a previous account
+      // so `_PhaseFlow` cannot briefly react to it before this loader's own
+      // pull has landed.
+      SessionScope.of(context).resetBusinessList();
+      _watchBusinesses();
+    });
   }
 
   @override
@@ -76,7 +90,10 @@ class _InsightsLoaderState extends State<InsightsLoader> {
     // stream never fires for it. Following the pull stamp as well is what
     // turns "the cache is empty" into "the account really has none".
     _pullSub = repo.watchServerPullTime().listen((DateTime? at) {
-      _serverConfirmed = at != null;
+      // Ignore the stamp until we see one written after this loader mounted
+      // — a stamp from a previous user's session must not stand in for the
+      // current user's pull.
+      _serverConfirmed = at != null && !at.isBefore(_mountedAt);
       _applyBusinesses();
     });
     _pullNow();
@@ -107,13 +124,14 @@ class _InsightsLoaderState extends State<InsightsLoader> {
     // SQLite, and replacing the list now would lose it.
     if (session.hasUnsavedBusiness) return;
 
-    final List<LocalBusinessRecord> saved = _rows
-        .where((LocalBusinessRecord r) => r.serverId != null)
-        .toList(growable: false);
-
+    // Include locally-created businesses that have not been POSTed yet —
+    // otherwise a user who added a business while sync was failing gets
+    // sent back through the setup wizard on next launch because their only
+    // business is filtered out here and _PhaseFlow treats them as if they
+    // had none. `applyBusinessList` accepts a null serverId per row.
     session.applyBusinessList(
-      saved.map((LocalBusinessRecord r) => r.business).toList(growable: false),
-      saved.map((LocalBusinessRecord r) => r.serverId).toList(growable: false),
+      _rows.map((LocalBusinessRecord r) => r.business).toList(growable: false),
+      _rows.map((LocalBusinessRecord r) => r.serverId).toList(growable: false),
       serverConfirmed: _serverConfirmed,
     );
   }

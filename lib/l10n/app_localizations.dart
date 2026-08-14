@@ -932,6 +932,18 @@ abstract class AppLocalizations {
   /// **'Business is HEALTHY'**
   String get offlineHealthHeadline;
 
+  /// No description provided for @offlineHealthHeadlineMedium.
+  ///
+  /// In en, this message translates to:
+  /// **'Business is ON WATCH'**
+  String get offlineHealthHeadlineMedium;
+
+  /// No description provided for @offlineHealthHeadlineHigh.
+  ///
+  /// In en, this message translates to:
+  /// **'Business is AT RISK'**
+  String get offlineHealthHeadlineHigh;
+
   /// No description provided for @offlineScoreLine.
   ///
   /// In en, this message translates to:
@@ -1637,8 +1649,14 @@ abstract class AppLocalizations {
   /// No description provided for @authForgotPin.
   ///
   /// In en, this message translates to:
-  /// **'Forgot PIN? Login with OTP'**
+  /// **'Forgot PIN?'**
   String get authForgotPin;
+
+  /// No description provided for @authLoginWithMobile.
+  ///
+  /// In en, this message translates to:
+  /// **'Login with mobile number'**
+  String get authLoginWithMobile;
 
   /// No description provided for @authEnterCode.
   ///

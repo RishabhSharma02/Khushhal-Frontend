@@ -489,6 +489,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get offlineHealthHeadline => 'Business is HEALTHY';
 
   @override
+  String get offlineHealthHeadlineMedium => 'Business is ON WATCH';
+
+  @override
+  String get offlineHealthHeadlineHigh => 'Business is AT RISK';
+
+  @override
   String offlineScoreLine(int score, String date) {
     return 'Score $score/100 · as on $date';
   }
@@ -915,7 +921,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get authEnterPin => 'Enter your 4-digit PIN';
 
   @override
-  String get authForgotPin => 'Forgot PIN? Login with OTP';
+  String get authForgotPin => 'Forgot PIN?';
+
+  @override
+  String get authLoginWithMobile => 'Login with mobile number';
 
   @override
   String get authEnterCode => 'Enter the code';

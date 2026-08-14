@@ -156,10 +156,7 @@ class SettingsScreen extends StatelessWidget {
           child: ListView(
             padding: const EdgeInsets.only(bottom: 8),
             children: <Widget>[
-              _ProfileCard(
-                name: session.ownerName ?? '—',
-                phone: session.ownerPhone ?? '—',
-              ),
+              _LocalProfileCard(session: session),
               const SizedBox(height: 13),
               SectionLabel(l10n.settingsMyBusinesses),
               const SizedBox(height: 7),
@@ -347,6 +344,52 @@ class _BusinessesCard extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Streams the owner's name and phone from the local user row so the card
+/// keeps rendering the last-known values when the device is offline —
+/// otherwise a rebuild that reads `session.ownerName` before `_AuthGate`
+/// reapplies it can flash an em-dash placeholder.
+class _LocalProfileCard extends StatelessWidget {
+  const _LocalProfileCard({required this.session});
+
+  final AppSession session;
+
+  Stream<LocalUser?>? _watchProfile(BuildContext context) {
+    try {
+      return context.read<ProfileRepository>().watch();
+    } catch (_) {
+      return null;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final Stream<LocalUser?>? stream = _watchProfile(context);
+    if (stream == null) {
+      return _ProfileCard(
+        name: session.ownerName ?? '—',
+        phone: session.ownerPhone ?? '—',
+      );
+    }
+    return StreamBuilder<LocalUser?>(
+      stream: stream,
+      builder: (context, snapshot) {
+        final LocalUser? row = snapshot.data;
+        final String name = (row?.name?.trim().isNotEmpty ?? false)
+            ? row!.name!.trim()
+            : (session.ownerName?.trim().isNotEmpty ?? false)
+                ? session.ownerName!.trim()
+                : '—';
+        final String phone = (row?.phoneE164?.trim().isNotEmpty ?? false)
+            ? row!.phoneE164!.trim()
+            : (session.ownerPhone?.trim().isNotEmpty ?? false)
+                ? session.ownerPhone!.trim()
+                : '—';
+        return _ProfileCard(name: name, phone: phone);
+      },
     );
   }
 }

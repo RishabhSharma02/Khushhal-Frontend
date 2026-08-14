@@ -90,6 +90,32 @@ class HomeScreen extends StatelessWidget {
         MoneyTileGrid(
           onEditTap: () => _push(context, const SavingsLoanScreen()),
         ),
+        // Alerts are cached per business by InsightsRepository (see the
+        // ApiException branch of fetchAll), so the last set the backend
+        // raised while online is still readable here. Rendering them offline
+        // means a user can act on a risk warning without waiting to
+        // reconnect.
+        if (session.alerts.isNotEmpty) ...<Widget>[
+          const SizedBox(height: 14),
+          Text(
+            l10n.homeWatch,
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: AppPalette.muted,
+              height: 1.3,
+            ),
+          ),
+          const SizedBox(height: 7),
+          WatchCard(
+            riskMonthLabel: riskMonth == null
+                ? null
+                : monthShort(context, riskMonth.month),
+            fromForecast: updateReady,
+            onOpenAlerts: () => _push(context, const AlertsScreen()),
+            onOpenPlan: () => _push(context, const AlertDetailScreen()),
+          ),
+        ],
         const SizedBox(height: 12),
         GradientCtaButton(
           label: l10n.homeWriteEntryCta,
@@ -316,6 +342,11 @@ class _OfflineHealthCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = AppLocalizations.of(context)!;
+    final (String headline, Color color) = switch (health.risk) {
+      RiskLevel.low => (l10n.offlineHealthHeadline, AppPalette.forest),
+      RiskLevel.medium => (l10n.offlineHealthHeadlineMedium, AppPalette.amberInk),
+      RiskLevel.high => (l10n.offlineHealthHeadlineHigh, AppPalette.danger),
+    };
 
     return KhushhalCard(
       radius: 20,
@@ -323,12 +354,12 @@ class _OfflineHealthCard extends StatelessWidget {
       child: Column(
         children: <Widget>[
           Text(
-            l10n.offlineHealthHeadline,
+            headline,
             textAlign: TextAlign.center,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.w700,
-              color: AppPalette.forest,
+              color: color,
               height: 1.3,
             ),
           ),

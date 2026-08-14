@@ -49,7 +49,7 @@ class _EditBusinessSheetState extends State<EditBusinessSheet> {
       Navigator.of(context).pop(_edited);
       return;
     }
-    BusinessRepository? repo;
+    final BusinessRepository repo;
     try {
       repo = context.read<BusinessRepository>();
     } catch (_) {

@@ -22,6 +22,7 @@ import 'features/auth/data/profile_repository.dart';
 import 'features/auth/presentation/mpin_setup_screen.dart';
 import 'features/auth/presentation/mpin_unlock_screen.dart';
 import 'features/auth/presentation/name_capture_screen.dart';
+import 'features/auth/presentation/otp_verify_screen.dart';
 import 'features/auth/presentation/phone_login_screen.dart';
 import 'features/businesses/data/business_repository.dart';
 import 'features/entries/data/ledger_outbox.dart';
@@ -107,10 +108,33 @@ class _MyAppState extends State<MyApp> {
   /// PIN unlock instead of stranding them without an account.
   bool _forcePhoneLogin = false;
 
+  /// Set alongside [_forcePhoneLogin] when the user tapped "Forgot PIN?" —
+  /// the same phone number is re-verified, so `_AuthGate` skips the
+  /// PhoneLoginScreen and drops the user straight onto the OTP screen while
+  /// the AuthBloc auto-sends the code.
+  bool _forgotPinFlow = false;
+
   void _startNumberChange() {
     if (!_forcePhoneLogin) {
-      setState(() => _forcePhoneLogin = true);
+      setState(() {
+        _forcePhoneLogin = true;
+        _forgotPinFlow = false;
+      });
     }
+  }
+
+  /// Kicks off a "Forgot PIN?" re-verify for the currently-signed-in phone
+  /// without asking the user to type it again. The caller has already
+  /// dispatched `AuthPhoneSubmitted` from a context that sits under the
+  /// `BlocProvider<AuthBloc>` (this state's own context does not); this
+  /// method just flips the gate to render OtpVerifyScreen directly. On
+  /// success the PIN is cleared and the LockGate routes the user to mPIN
+  /// setup.
+  void _startForgotPin() {
+    setState(() {
+      _forcePhoneLogin = true;
+      _forgotPinFlow = true;
+    });
   }
 
   /// Undoes [_startNumberChange] — used when a fresh OTP verify succeeds
@@ -122,7 +146,20 @@ class _MyAppState extends State<MyApp> {
       } catch (_) {/* best effort */}
     }
     if (!mounted) return;
-    setState(() => _forcePhoneLogin = false);
+    setState(() {
+      _forcePhoneLogin = false;
+      _forgotPinFlow = false;
+    });
+    // When the same phone re-verifies (Forgot PIN flow), the user id does
+    // not change so `_LockGate`'s key stays the same and its `initState`
+    // check() does not re-run. Kick the cubit ourselves so the newly-empty
+    // PIN transitions the gate to mPIN setup.
+    if (clearPin) {
+      try {
+        // ignore: discarded_futures
+        context.read<LockCubit>().check();
+      } catch (_) {/* no cubit in tests */}
+    }
   }
 
   @override
@@ -300,7 +337,10 @@ class _MyAppState extends State<MyApp> {
               // on _MyAppState actually re-runs `_AuthGate.build` — a
               // `const _AuthGate()` gets canonicalised by Flutter and
               // won't rebuild on ancestor changes alone.
-              ? _AuthGate(forcePhoneLogin: _forcePhoneLogin)
+              ? _AuthGate(
+                  forcePhoneLogin: _forcePhoneLogin,
+                  forgotPinFlow: _forgotPinFlow,
+                )
               : _LockGate(child: _phaseFlow(startAtHomeIfExisting: false)),
     );
   }
@@ -327,6 +367,19 @@ abstract class ChangeNumberScope {
     root._startNumberChange();
     return true;
   }
+
+  /// Same as [request] but for the "Forgot PIN?" path: reuses the current
+  /// phone number, auto-sends the OTP and drops the user on the OTP screen
+  /// rather than the phone-input screen. [context] must sit under
+  /// `BlocProvider<AuthBloc>` — the mPIN screen does; `_MyAppState`'s own
+  /// context does not.
+  static bool forgotPin(BuildContext context, String phoneE164) {
+    final root = context.findAncestorStateOfType<_MyAppState>();
+    if (root == null) return false;
+    context.read<AuthBloc>().add(AuthPhoneSubmitted(phoneE164));
+    root._startForgotPin();
+    return true;
+  }
 }
 
 /// Gates the whole app on the current auth state so a signed-out user only
@@ -337,9 +390,14 @@ abstract class ChangeNumberScope {
 /// flag rebuilds this widget — a const-constructed gate would be
 /// canonicalised by Flutter and skip the rebuild on ancestor setState.
 class _AuthGate extends StatelessWidget {
-  const _AuthGate({this.forcePhoneLogin = false});
+  const _AuthGate({this.forcePhoneLogin = false, this.forgotPinFlow = false});
 
   final bool forcePhoneLogin;
+
+  /// True when [forcePhoneLogin] was set by the "Forgot PIN?" path — the
+  /// same-number OTP is already in flight, so we render OtpVerifyScreen
+  /// directly instead of the phone-input screen.
+  final bool forgotPinFlow;
 
   @override
   Widget build(BuildContext context) {
@@ -372,6 +430,20 @@ class _AuthGate extends StatelessWidget {
         // until either the new OTP verifies (see the listener above,
         // which then flips the flag off) or the user kills the app.
         if (forcePhoneLogin) {
+          // Forgot-PIN reuses the current number: bloc already has phone /
+          // verificationId, so OtpVerifyScreen renders straight away — no
+          // PhoneLoginScreen flash. Falls back to a spinner while
+          // AuthPhoneSubmitted is being dispatched (state is still
+          // `authenticated` for the tick between setState and the frame
+          // callback that fires the event).
+          if (forgotPinFlow) {
+            if (state.status == AuthStatus.authenticated) {
+              return const Scaffold(
+                body: Center(child: CircularProgressIndicator()),
+              );
+            }
+            return const OtpVerifyScreen();
+          }
           return const PhoneLoginScreen();
         }
         switch (state.status) {
@@ -438,11 +510,6 @@ class _LockGateState extends State<_LockGate> {
   // NameCaptureScreen or Home before mPIN setup takes over.
   bool _settled = false;
 
-  /// True once this gate has observed the user pass through mPIN *setup*,
-  /// which only happens for someone enrolling on this device for the first
-  /// time. Unlocking with an existing PIN never sets it.
-  bool _cameThroughSetup = false;
-
   /// The name on the local user row. Null while still loading.
   String? _localName;
   bool _nameLoaded = false;
@@ -453,19 +520,10 @@ class _LockGateState extends State<_LockGate> {
     try {
       final cubit = context.read<LockCubit>();
       // Force a fresh mPIN check for the newly signed-in identity, then
-      // flip `_settled` so the builder starts trusting cubit state. Seed
-      // `_cameThroughSetup` from the post-check state — the BlocConsumer
-      // listener below only fires on transitions, so an identity that
-      // arrives already at `requiresSetup` would otherwise be treated as
-      // "not new" and skip the NameCaptureScreen.
+      // flip `_settled` so the builder starts trusting cubit state.
       cubit.check().whenComplete(() {
         if (!mounted) return;
-        setState(() {
-          _settled = true;
-          if (cubit.state.status == LockStatus.requiresSetup) {
-            _cameThroughSetup = true;
-          }
-        });
+        setState(() => _settled = true);
       });
       _hasCubit = true;
     } catch (_) {
@@ -495,9 +553,6 @@ class _LockGateState extends State<_LockGate> {
     return BlocConsumer<LockCubit, AppLockState>(
       listenWhen: (a, b) => a.status != b.status,
       listener: (context, state) {
-        if (state.status == LockStatus.requiresSetup) {
-          _cameThroughSetup = true;
-        }
         if (state.status == LockStatus.lockedOut) {
           final root = context.findAncestorStateOfType<_MyAppState>();
           // ignore: discarded_futures
@@ -536,14 +591,14 @@ class _LockGateState extends State<_LockGate> {
 
   /// Whether to ask for a name.
   ///
-  /// Only ever true for someone who just enrolled a PIN on this device and has
-  /// no name on record — either locally (SQLite / session) or on the server
-  /// row that `/auth/session` just returned. An existing account signing in
-  /// on a new device is a common case: the backend already knows their name
-  /// so we skip the capture screen (previously the session copy took a
-  /// post-frame tick to arrive and the screen would flash and disappear).
+  /// Fires whenever the signed-in account has no name on record — locally
+  /// (SQLite / session) or on the server row that `/auth/session` returned.
+  /// Covers both the fresh-PIN-enrolment case and a returning user whose
+  /// server row was created without a name (backend hiccup, a re-installed
+  /// device that never captured one, etc.). We hold off until the local
+  /// lookup has resolved to avoid a flash of the capture screen for a user
+  /// whose name is already cached.
   bool _shouldCaptureName(BuildContext context) {
-    if (!_cameThroughSetup) return false;
     if (!_nameLoaded) return false;
     if (_hasStoredName) return false;
     if ((_nameFromSession(context) ?? '').trim().isNotEmpty) return false;

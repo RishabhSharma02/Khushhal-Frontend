@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../app/session.dart';
+import '../../../core/widgets/online_required_notice.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../main.dart' show ChangeNumberScope;
 import '../bloc/lock_cubit.dart';
@@ -39,6 +40,25 @@ class _MpinUnlockScreenState extends State<MpinUnlockScreen> {
       context.read<LockCubit>().unlock(_controller.text);
       _controller.clear();
     }
+  }
+
+  /// Kicks off "Forgot PIN?" — auto-sends an OTP to the currently signed-in
+  /// number and takes the user straight to the OTP screen. The PIN is
+  /// cleared and the user prompted for a fresh one once verification
+  /// succeeds (see `_AuthGate` in main.dart).
+  void _onForgotPin(BuildContext context, AppSession session) {
+    final String? phone = session.ownerPhone;
+    if (phone == null || phone.isEmpty) {
+      // No cached phone — fall back to the number-entry screen so the user
+      // is never stuck. This only happens if the session was cleared but
+      // the PIN was somehow preserved.
+      ChangeNumberScope.request(context);
+      return;
+    }
+    // Sending an SMS needs the network; queueing this would just mean a
+    // code the user never receives.
+    if (!requireOnline(context, 'sign in')) return;
+    ChangeNumberScope.forgotPin(context, phone);
   }
 
   @override
@@ -111,23 +131,35 @@ class _MpinUnlockScreenState extends State<MpinUnlockScreen> {
                   ],
                   const SizedBox(height: 24),
                   GestureDetector(
-                    onTap: () {
-                      // Do NOT clear the PIN or sign Firebase out yet —
-                      // we only want to route to the phone screen so a
-                      // new number can be entered. The stored PIN and
-                      // cached identity are wiped only after that OTP
-                      // verifies (see `_AuthGate`'s BlocListener). If
-                      // the user drops out or kills the app before then,
-                      // the next launch drops them right back onto this
-                      // unlock screen with their existing account.
-                      ChangeNumberScope.request(context);
-                    },
+                    onTap: () => _onForgotPin(context, session),
                     child: Text(AppLocalizations.of(context)!.authForgotPin,
                         textAlign: TextAlign.center,
                         style: GoogleFonts.lexend(
                           fontSize: 13.5, color: const Color(0xFF5C6B62),
                           decoration: TextDecoration.underline,
                         )),
+                  ),
+                  const SizedBox(height: 14),
+                  GestureDetector(
+                    // Distinct from "Forgot PIN?" — this is for a user who
+                    // wants to sign in with a different number, so it takes
+                    // them to the phone-input screen. The stored PIN and
+                    // cached identity are wiped only after the new OTP
+                    // verifies (see `_AuthGate`'s BlocListener). If the
+                    // user drops out before then, the next launch drops
+                    // them right back onto this unlock screen with their
+                    // existing account.
+                    onTap: () => ChangeNumberScope.request(context),
+                    child: Text(
+                      AppLocalizations.of(context)!.authLoginWithMobile,
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.lexend(
+                        fontSize: 13.5,
+                        color: const Color(0xFF175235),
+                        fontWeight: FontWeight.w600,
+                        decoration: TextDecoration.underline,
+                      ),
+                    ),
                   ),
                   const Spacer(),
                 ],

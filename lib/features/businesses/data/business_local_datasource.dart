@@ -42,12 +42,24 @@ class BusinessLocalDataSource {
   // ── Reads ──────────────────────────────────────────────────────────────
 
   /// Live list of the user's businesses in server order.
-  Stream<List<LocalBusinessRecord>> watchAll() {
+  ///
+  /// [ownerUserId] scopes the result to one account's rows so a device that
+  /// has hosted multiple sign-ins (or a stale row left behind by an
+  /// in-progress user swap) never shows another user's businesses on Home.
+  /// Rows with a null `ownerUserId` are included as legacy fallbacks so a
+  /// row created before ownership was tracked is not silently hidden — the
+  /// next server pull will stamp the current user onto it.
+  Stream<List<LocalBusinessRecord>> watchAll({int? ownerUserId}) {
     final query = _db.select(_db.localBusinesses)
       ..orderBy([
         (t) => OrderingTerm.asc(t.sortOrder),
         (t) => OrderingTerm.asc(t.clientId),
       ]);
+    if (ownerUserId != null) {
+      query.where(
+        (t) => t.ownerUserId.equals(ownerUserId) | t.ownerUserId.isNull(),
+      );
+    }
     return query.watch().asyncMap(_withSnapshots);
   }
 
