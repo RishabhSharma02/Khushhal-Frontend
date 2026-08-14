@@ -33,6 +33,22 @@ android {
         versionName = flutter.versionName
     }
 
+    // Two personas, two installable apps: the consumer app (main.dart) and
+    // the Officer Portal (officer_portal_main.dart) — see `flutter run
+    // --flavor <name> -t lib/<entry>.dart` in README.md.
+    flavorDimensions += "persona"
+    productFlavors {
+        create("consumer") {
+            dimension = "persona"
+            resValue(type = "string", name = "app_name", value = "Khushhal")
+        }
+        create("officer") {
+            dimension = "persona"
+            applicationIdSuffix = ".officer"
+            resValue(type = "string", name = "app_name", value = "Khushhal Officer")
+        }
+    }
+
     buildTypes {
         release {
             // TODO: Add your own signing config for the release build.
