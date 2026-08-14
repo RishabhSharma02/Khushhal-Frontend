@@ -119,12 +119,14 @@ class _AuthInterceptor extends Interceptor {
           options.headers['Authorization'] = 'Bearer $token';
         }
       } catch (_) {
-        // Fall through: no token; backend will 401.
+        // Fall through: no token; shim below still identifies the user.
       }
+      // Also send the shim uid so a backend that cannot verify the Bearer
+      // (Firebase Admin not configured for this project on the current
+      // deployment) can still identify the user. Backends that DO verify
+      // the Bearer ignore this header.
+      options.headers['X-Debug-Firebase-Uid'] = user.uid;
     } else if (AppEnv.debugFirebaseUid.isNotEmpty) {
-      // Dev-only fallback so the app can hit the backend before Firebase is
-      // configured. The backend accepts this header only when
-      // DEV_TOOLS_ENABLED=true.
       options.headers['X-Debug-Firebase-Uid'] = AppEnv.debugFirebaseUid;
     }
     handler.next(options);

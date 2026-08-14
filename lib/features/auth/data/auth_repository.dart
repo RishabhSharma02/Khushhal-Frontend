@@ -34,8 +34,11 @@ class AuthRepository {
   bool get isSignedIn => _auth.currentUser != null;
 
   /// Starts phone verification. Resolves with a [CodeSent] when the SMS has
-  /// been dispatched, or throws if verification fails or auto-retrieval
-  /// completes sign-in immediately (in which case [autoSignedIn] fires too).
+  /// been dispatched.
+  ///
+  /// Auto-retrieved credentials (SMS Retriever on Android) are intentionally
+  /// ignored: the product requires the user to type the OTP themselves and
+  /// advance from the OTP screen only after a successful [verifyCode].
   Future<CodeSent> sendCode(
     String phoneE164, {
     int? resendToken,
@@ -46,11 +49,9 @@ class AuthRepository {
       phoneNumber: phoneE164,
       forceResendingToken: resendToken,
       timeout: const Duration(seconds: 60),
-      verificationCompleted: (PhoneAuthCredential cred) async {
-        try {
-          await _auth.signInWithCredential(cred);
-          if (onAutoSignedIn != null) onAutoSignedIn();
-        } catch (_) {/* surfaced via authStateChanges */}
+      verificationCompleted: (PhoneAuthCredential _) {
+        // No-op by design — see doc comment above. Do NOT signInWithCredential
+        // here or the user would be routed forward without entering the OTP.
       },
       verificationFailed: (FirebaseAuthException e) {
         if (!completer.isCompleted) {
