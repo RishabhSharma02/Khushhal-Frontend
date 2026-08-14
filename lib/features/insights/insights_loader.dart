@@ -1,9 +1,13 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../app/model/ledger.dart';
 import '../../app/session.dart';
+import '../../core/sync/sync_engine.dart';
+import '../businesses/data/business_local_datasource.dart';
 import '../businesses/data/business_repository.dart';
-import '../entries/data/ledger_api.dart';
 import '../entries/data/ledger_repository.dart';
 import 'bloc/insights_cubit.dart';
 
@@ -11,12 +15,14 @@ import 'bloc/insights_cubit.dart';
 /// shared [AppSession] so existing screens (Home / Forecast / Alerts /
 /// Settings) get real backend data without being rewritten.
 ///
-/// - On first mount fetches `GET /api/v1/businesses` and populates
-///   `AppSession.businesses` + `backendBusinessIds` (needed after cold
-///   restarts, where the app boots with an empty session).
+/// - Follows the cached business list from SQLite, so the switcher, the money
+///   baselines and each business's savings stay current after a business is
+///   added or a sync pulls fresh server values — online or off.
+/// - Follows the active business's ledger history, so a new entry moves Home's
+///   money tiles the moment it is written.
 /// - Subscribes to [AppSession] and re-fetches insights when the active
 ///   backend business id changes.
-/// - Mirrors [InsightsCubit] state into the session.
+/// - Mirrors [InsightsCubit] state into the session, keyed by business.
 class InsightsLoader extends StatefulWidget {
   const InsightsLoader({super.key, required this.child});
   final Widget child;
@@ -27,63 +33,121 @@ class InsightsLoader extends StatefulWidget {
 
 class _InsightsLoaderState extends State<InsightsLoader> {
   int? _lastFetchedBusinessId;
-  bool _businessesFetched = false;
+  StreamSubscription<List<LocalBusinessRecord>>? _businessSub;
+  StreamSubscription<DateTime?>? _pullSub;
+  StreamSubscription<List<LedgerEntry>>? _historySub;
+  int? _watchedHistoryId;
+
+  List<LocalBusinessRecord> _rows = const <LocalBusinessRecord>[];
+
+  /// Whether `GET /businesses` has landed on this device for this account.
+  bool _serverConfirmed = false;
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _fetchBusinessesOnce());
+    WidgetsBinding.instance.addPostFrameCallback((_) => _watchBusinesses());
   }
 
-  Future<void> _fetchBusinessesOnce() async {
-    if (_businessesFetched || !mounted) return;
-    _businessesFetched = true;
+  @override
+  void dispose() {
+    // ignore: discarded_futures
+    _businessSub?.cancel();
+    // ignore: discarded_futures
+    _pullSub?.cancel();
+    // ignore: discarded_futures
+    _historySub?.cancel();
+    super.dispose();
+  }
+
+  void _watchBusinesses() {
+    if (!mounted) return;
     BusinessRepository? repo;
     try {
       repo = context.read<BusinessRepository>();
     } catch (_) {
       return;
     }
+    _businessSub = repo.watchAll().listen((List<LocalBusinessRecord> rows) {
+      _rows = rows;
+      _applyBusinesses();
+    });
+    // A pull that finds no businesses writes nothing to SQLite, so the list
+    // stream never fires for it. Following the pull stamp as well is what
+    // turns "the cache is empty" into "the account really has none".
+    _pullSub = repo.watchServerPullTime().listen((DateTime? at) {
+      _serverConfirmed = at != null;
+      _applyBusinesses();
+    });
+    _pullNow();
+  }
+
+  /// Asks for one sync cycle as the home shell appears.
+  ///
+  /// The engine otherwise polls every five minutes and starts before sign-in,
+  /// so a user opening the app on a freshly installed phone could sit in front
+  /// of an empty Home — and, until the empty cache stopped counting as an
+  /// answer, be sent through onboarding — for minutes before their businesses
+  /// arrived.
+  void _pullNow() {
     try {
-      final rows = await repo.list();
-      if (!mounted) return;
-      final session = SessionScope.of(context);
-      // Only seed if the session is genuinely empty — a mid-session Add
-      // Business from Settings already pushed rows into the session, and
-      // we don't want to overwrite them.
-      if (session.businesses.isEmpty) {
-        session.applyBusinessList(
-          rows.map((r) => r.toDomain()).toList(growable: false),
-          rows.map((r) => r.id).cast<int?>().toList(growable: false),
-        );
-      }
+      // ignore: discarded_futures
+      context.read<SyncEngine>().syncNow();
     } catch (_) {
-      // Silent: no businesses to show is a valid empty state.
+      // No engine in this tree (widget tests, demo mode): the cache is all
+      // there is, which is what the streams above already serve.
     }
+  }
+
+  void _applyBusinesses() {
+    if (!mounted) return;
+    final AppSession session = SessionScope.of(context);
+
+    // A business the setup wizard has added but not yet POSTed is not in
+    // SQLite, and replacing the list now would lose it.
+    if (session.hasUnsavedBusiness) return;
+
+    final List<LocalBusinessRecord> saved = _rows
+        .where((LocalBusinessRecord r) => r.serverId != null)
+        .toList(growable: false);
+
+    session.applyBusinessList(
+      saved.map((LocalBusinessRecord r) => r.business).toList(growable: false),
+      saved.map((LocalBusinessRecord r) => r.serverId).toList(growable: false),
+      serverConfirmed: _serverConfirmed,
+    );
   }
 
   void _maybeFetchInsights(BuildContext context, int? businessId) {
     if (businessId == null || businessId == _lastFetchedBusinessId) return;
     _lastFetchedBusinessId = businessId;
     context.read<InsightsCubit>().load(businessId);
-    _fetchHistoryFor(context, businessId);
+    _watchHistoryFor(context, businessId);
   }
 
-  Future<void> _fetchHistoryFor(BuildContext context, int businessId) async {
-    LedgerRepository? repo;
-    AppSession? session;
+  void _watchHistoryFor(BuildContext context, int businessId) {
+    if (_watchedHistoryId == businessId) return;
+    _watchedHistoryId = businessId;
+
+    final LedgerRepository repo;
+    final AppSession session;
     try {
       repo = context.read<LedgerRepository>();
       session = SessionScope.of(context);
     } catch (_) {
       return;
     }
-    try {
-      final rows = await repo.history(businessId, limit: 100);
+
+    // ignore: discarded_futures
+    _historySub?.cancel();
+    // Streams from SQLite, so it resolves instantly, works offline, and moves
+    // Home's money tiles as soon as an entry is written or a pull lands.
+    _historySub = repo.watchHistory(businessId).listen((
+      List<LedgerEntry> entries,
+    ) {
       if (!mounted) return;
-      final entries = rows.map((r) => r.toLedgerEntry()).toList(growable: false);
-      session.applyLiveEntries(entries);
-    } catch (_) {/* silent — empty history is fine */}
+      session.applyLiveEntries(businessId, entries);
+    });
   }
 
   @override
@@ -91,10 +155,16 @@ class _InsightsLoaderState extends State<InsightsLoader> {
     return BlocListener<InsightsCubit, InsightsState>(
       listenWhen: (a, b) => a.status != b.status || a.businessId != b.businessId,
       listener: (context, state) {
+        // Insights arrive stamped with the business they were loaded for, so a
+        // late response from a business the user has already switched away
+        // from lands on that business rather than the one on screen.
+        final int? businessId = state.businessId;
+        if (businessId == null) return;
         final session = SessionScope.of(context);
-        session.applyLiveHealth(state.health?.toDomain());
-        session.applyLiveForecast(state.forecast?.toDomain());
+        session.applyLiveHealth(businessId, state.health?.toDomain());
+        session.applyLiveForecast(businessId, state.forecast?.toDomain());
         session.applyLiveAlerts(
+          businessId,
           state.alerts.map((a) => a.toDomain()).toList(growable: false),
         );
       },

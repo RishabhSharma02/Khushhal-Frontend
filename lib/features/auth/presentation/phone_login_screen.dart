@@ -3,6 +3,10 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../../../core/theme/theme.dart';
+import '../../../core/widgets/online_required_notice.dart';
+import '../../../l10n/app_localizations.dart';
+import '../../onboarding/domain/usp_slide.dart' show OnboardingAssets;
 import '../bloc/auth_bloc.dart';
 import 'otp_verify_screen.dart';
 import 'widgets/auth_backdrop.dart';
@@ -40,6 +44,9 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
 
   void _submit() {
     if (!_isValid) return;
+    // Firebase has to reach its servers to send an SMS; queueing this would
+    // just mean a code the user never receives.
+    if (!requireOnline(context, 'sign in')) return;
     context.read<AuthBloc>().add(
       AuthPhoneSubmitted('+91${_controller.text.trim()}'),
     );
@@ -72,9 +79,11 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   const _StatusBarSpacer(),
-                  const SizedBox(height: 26),
+                  const SizedBox(height: 18),
+                  const _BrandMark(),
+                  const SizedBox(height: 24),
                   Text(
-                    'Enter your mobile number',
+                    AppLocalizations.of(context)!.authPhoneTitle,
                     style: GoogleFonts.lexend(
                       fontSize: 22,
                       fontWeight: FontWeight.w600,
@@ -83,7 +92,7 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
                   ),
                   const SizedBox(height: 5),
                   Text(
-                    'We will send a 6-digit code by SMS. No password needed.',
+                    AppLocalizations.of(context)!.authPhoneSubtitle,
                     style: GoogleFonts.lexend(
                       fontSize: 13.5,
                       height: 1.5,
@@ -99,7 +108,9 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
                       child: LinearProgressIndicator(minHeight: 2),
                     ),
                   _GradientCta(
-                    label: sending ? 'Sending…' : 'Get OTP',
+                    label: sending
+                        ? AppLocalizations.of(context)!.authSending
+                        : AppLocalizations.of(context)!.authGetOtp,
                     enabled: _isValid && !sending,
                     onTap: _submit,
                   ),
@@ -121,6 +132,57 @@ class _StatusBarSpacer extends StatelessWidget {
     // Design shows the system 9:41 + battery/signal row; on iOS we already
     // pad via SafeArea inside AuthBackdrop, so nothing to draw here.
     return const SizedBox.shrink();
+  }
+}
+
+/// Compact brand mark shown at the top of auth screens (design 1a shrunk
+/// to a badge). Keeps the phone / PIN screens from feeling empty.
+class _BrandMark extends StatelessWidget {
+  const _BrandMark();
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    return Column(
+      children: <Widget>[
+        Container(
+          width: 60,
+          height: 60,
+          decoration: BoxDecoration(
+            color: AppPalette.onPrimary,
+            shape: BoxShape.circle,
+            boxShadow: <BoxShadow>[
+              BoxShadow(
+                color: AppPalette.forest.withValues(alpha: 0.35),
+                offset: const Offset(0, 10),
+                blurRadius: 18,
+                spreadRadius: -12,
+              ),
+            ],
+          ),
+          child: ClipOval(
+            child: Transform.scale(
+              scale: 2.1,
+              child: Image.asset(
+                OnboardingAssets.logo,
+                fit: BoxFit.cover,
+                semanticLabel: l10n.brandName,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 10),
+        Text(
+          l10n.brandName,
+          style: GoogleFonts.lexend(
+            fontSize: 22,
+            fontWeight: FontWeight.w600,
+            letterSpacing: 0.9,
+            color: AppPalette.ink,
+          ),
+        ),
+      ],
+    );
   }
 }
 

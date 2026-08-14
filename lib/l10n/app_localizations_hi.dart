@@ -425,6 +425,16 @@ class AppLocalizationsHi extends AppLocalizations {
   String get tileTapToEdit => 'बदलने के लिए टैप करें';
 
   @override
+  String tileMovedFrom(String amount, String month) {
+    return 'पहले $amount · $month';
+  }
+
+  @override
+  String tileMovedFromPlain(String amount) {
+    return 'पहले $amount';
+  }
+
+  @override
   String get homeWatch => 'नज़र रखें';
 
   @override
@@ -433,13 +443,22 @@ class AppLocalizationsHi extends AppLocalizations {
   }
 
   @override
+  String get watchTitleNoMonth => 'आगे पैसे की तंगी हो सकती है';
+
+  @override
   String get watchReasonMandi => 'सीतापुर में चारे का भाव बढ़ रहा है।';
+
+  @override
+  String get watchReasonScore => 'आपके ताज़ा स्कोर के हिसाब से।';
 
   @override
   String get watchReasonForecast => 'नए अनुमान के हिसाब से।';
 
   @override
   String get watchAction => 'यह करें: समूह के साथ चारा पहले ही खरीद लें';
+
+  @override
+  String get watchSeePlan => 'यह करें: देखें क्या करना है';
 
   @override
   String get homeWriteEntryCta => 'आज की एंट्री लिखें';
@@ -815,6 +834,20 @@ class AppLocalizationsHi extends AppLocalizations {
   String get settingsNotificationsValue => 'SMS + ऐप में चेतावनी चालू';
 
   @override
+  String get settingsNotificationsNone => 'अभी कोई चेतावनी नहीं';
+
+  @override
+  String settingsNotificationsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count चेतावनियाँ देखें',
+      one: '1 चेतावनी देखें',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get settingsSupport => 'मदद';
 
   @override
@@ -830,5 +863,112 @@ class AppLocalizationsHi extends AppLocalizations {
   String get settingsLogOut => 'लॉग आउट';
 
   @override
-  String get settingsPlaceValue => 'सीतापुर यूपी';
+  String get aboutIntro =>
+      'खुशहाल आपके छोटे बिज़नेस की हिसाब-किताब की डायरी है।';
+
+  @override
+  String get aboutHowItWorks =>
+      'जो पैसा आया और जो गया, वह लिख दें। रोज़ एक मिनट लगता है।';
+
+  @override
+  String get aboutScore =>
+      'हर महीने खुशहाल आपके बिज़नेस को सेहत स्कोर देता है और बताता है कि आगे क्या करें।';
+
+  @override
+  String get aboutOffline =>
+      'नेटवर्क न हो तो भी चलता है। आपकी एंट्री इस फ़ोन में सुरक्षित रहती है और बाद में ऑनलाइन चली जाती है।';
+
+  @override
+  String get aboutHelpTitle => 'हेल्पलाइन';
+
+  @override
+  String get aboutHelpBody => 'बात करने के लिए नंबर दबाएँ।';
+
+  @override
+  String get authWelcomeTitle => 'स्वागत है खुशहाल में!';
+
+  @override
+  String get authWhatToCallYou => 'आपको क्या नाम से पुकारें?';
+
+  @override
+  String get authFirstName => 'पहला नाम';
+
+  @override
+  String get authLastNameOptional => 'उपनाम (वैकल्पिक)';
+
+  @override
+  String get authSaving => 'सेव हो रहा है…';
+
+  @override
+  String authSaveFailed(String reason) {
+    return 'सेव नहीं हुआ: $reason';
+  }
+
+  @override
+  String get authContinue => 'आगे बढ़ें';
+
+  @override
+  String authWelcomeBack(String name) {
+    return 'वापसी पर स्वागत है, $name';
+  }
+
+  @override
+  String get authEnterPin => 'अपना 4-अंकों का PIN डालें';
+
+  @override
+  String get authForgotPin => 'PIN भूल गए? OTP से लॉगिन करें';
+
+  @override
+  String get authEnterCode => 'कोड डालें';
+
+  @override
+  String authSentTo(String phone) {
+    return '$phone पर भेजा · ';
+  }
+
+  @override
+  String authResendIn(String secs) {
+    return 'फिर से भेजें 0:$secs';
+  }
+
+  @override
+  String get authResendCode => 'फिर से भेजें';
+
+  @override
+  String get authPhoneTitle => 'अपना मोबाइल नंबर डालें';
+
+  @override
+  String get authPhoneSubtitle =>
+      'हम SMS से 6 अंकों का कोड भेजेंगे। पासवर्ड की ज़रूरत नहीं।';
+
+  @override
+  String get authGetOtp => 'OTP भेजें';
+
+  @override
+  String get authSending => 'भेज रहे हैं…';
+
+  @override
+  String get authTooManyTries => 'बहुत बार गलत — कृपया दोबारा साइन इन करें।';
+
+  @override
+  String authWrongPin(int left) {
+    return 'PIN गलत है। $left कोशिश बाकी।';
+  }
+
+  @override
+  String get authCreatePinTitle => 'अपना PIN बनाएँ';
+
+  @override
+  String get authCreatePinSubtitle =>
+      '4 अंक चुनें जो याद रहें।\nअगली बार ऐप खोलते ही यही डालना है।';
+
+  @override
+  String get authConfirmPinTitle => 'फिर से टाइप करें';
+
+  @override
+  String get authConfirmPinSubtitle =>
+      'पक्का करने के लिए वही 4 अंक एक बार और डालें।';
+
+  @override
+  String get authPinMismatch => 'PIN मेल नहीं खा रहे। फिर से कोशिश करें।';
 }

@@ -425,6 +425,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get tileTapToEdit => 'tap to edit';
 
   @override
+  String tileMovedFrom(String amount, String month) {
+    return 'was $amount · $month';
+  }
+
+  @override
+  String tileMovedFromPlain(String amount) {
+    return 'was $amount';
+  }
+
+  @override
   String get homeWatch => 'Watch';
 
   @override
@@ -433,13 +443,22 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get watchTitleNoMonth => 'Money may get tight soon';
+
+  @override
   String get watchReasonMandi => 'fodder price rising in Sitapur.';
+
+  @override
+  String get watchReasonScore => 'from your latest score.';
 
   @override
   String get watchReasonForecast => 'from the new forecast.';
 
   @override
   String get watchAction => 'Do this: buy fodder early with your group';
+
+  @override
+  String get watchSeePlan => 'Do this: see what to do';
 
   @override
   String get homeWriteEntryCta => 'Write today\'s entry';
@@ -815,6 +834,20 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsNotificationsValue => 'SMS + in-app alerts on';
 
   @override
+  String get settingsNotificationsNone => 'No alerts right now';
+
+  @override
+  String settingsNotificationsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count alerts to see',
+      one: '1 alert to see',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get settingsSupport => 'Support';
 
   @override
@@ -830,5 +863,111 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsLogOut => 'Log out';
 
   @override
-  String get settingsPlaceValue => 'Sitapur UP';
+  String get aboutIntro => 'Khushhal is a money diary for your small business.';
+
+  @override
+  String get aboutHowItWorks =>
+      'Write down the money that comes in and the money that goes out. It takes one minute a day.';
+
+  @override
+  String get aboutScore =>
+      'Every month Khushhal gives your business a health score and tells you what to do next.';
+
+  @override
+  String get aboutOffline =>
+      'It works without network. Your entries stay safe on this phone and go online later.';
+
+  @override
+  String get aboutHelpTitle => 'Helpline';
+
+  @override
+  String get aboutHelpBody => 'Tap the number to call us.';
+
+  @override
+  String get authWelcomeTitle => 'Hurray! Welcome to Khushhal';
+
+  @override
+  String get authWhatToCallYou => 'What should we call you?';
+
+  @override
+  String get authFirstName => 'First name';
+
+  @override
+  String get authLastNameOptional => 'Last name (optional)';
+
+  @override
+  String get authSaving => 'Saving…';
+
+  @override
+  String authSaveFailed(String reason) {
+    return 'Save failed: $reason';
+  }
+
+  @override
+  String get authContinue => 'Continue';
+
+  @override
+  String authWelcomeBack(String name) {
+    return 'Welcome back, $name';
+  }
+
+  @override
+  String get authEnterPin => 'Enter your 4-digit PIN';
+
+  @override
+  String get authForgotPin => 'Forgot PIN? Login with OTP';
+
+  @override
+  String get authEnterCode => 'Enter the code';
+
+  @override
+  String authSentTo(String phone) {
+    return 'Sent to $phone · ';
+  }
+
+  @override
+  String authResendIn(String secs) {
+    return 'Resend in 0:$secs';
+  }
+
+  @override
+  String get authResendCode => 'Resend code';
+
+  @override
+  String get authPhoneTitle => 'Enter your mobile number';
+
+  @override
+  String get authPhoneSubtitle =>
+      'We will send a 6-digit code by SMS. No password needed.';
+
+  @override
+  String get authGetOtp => 'Get OTP';
+
+  @override
+  String get authSending => 'Sending…';
+
+  @override
+  String get authTooManyTries => 'Too many wrong tries — please sign in again.';
+
+  @override
+  String authWrongPin(int left) {
+    return 'Wrong mPIN. $left attempts left.';
+  }
+
+  @override
+  String get authCreatePinTitle => 'Create your PIN';
+
+  @override
+  String get authCreatePinSubtitle =>
+      'Pick 4 digits you will remember.\nNext time you open the app, just enter this.';
+
+  @override
+  String get authConfirmPinTitle => 'Type it again';
+
+  @override
+  String get authConfirmPinSubtitle =>
+      'Enter the same 4 digits once more to confirm.';
+
+  @override
+  String get authPinMismatch => 'The PINs do not match. Try again.';
 }

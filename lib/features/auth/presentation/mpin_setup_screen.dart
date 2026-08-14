@@ -3,6 +3,9 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../../../core/theme/theme.dart';
+import '../../../l10n/app_localizations.dart';
+import '../../onboarding/domain/usp_slide.dart' show OnboardingAssets;
 import '../bloc/lock_cubit.dart';
 import 'widgets/auth_backdrop.dart';
 import 'widgets/pin_dots.dart';
@@ -52,7 +55,7 @@ class _MpinSetupScreenState extends State<MpinSetupScreen> {
       context.read<LockCubit>().confirmSetup(_controller.text);
     } else {
       setState(() {
-        _error = 'The PINs do not match. Try again.';
+        _error = AppLocalizations.of(context)!.authPinMismatch;
         _stage = _Stage.enter;
         _firstPin = null;
       });
@@ -69,10 +72,11 @@ class _MpinSetupScreenState extends State<MpinSetupScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final title = _stage == _Stage.enter ? 'Create your PIN' : 'Type it again';
+    final l10n = AppLocalizations.of(context)!;
+    final title = _stage == _Stage.enter ? l10n.authCreatePinTitle : l10n.authConfirmPinTitle;
     final subtitle = _stage == _Stage.enter
-        ? 'Pick 4 digits you will remember.\nNext time you open the app, just enter this.'
-        : 'Enter the same 4 digits once more to confirm.';
+        ? l10n.authCreatePinSubtitle
+        : l10n.authConfirmPinSubtitle;
     return Scaffold(
       body: AuthBackdrop(
         child: Padding(
@@ -81,8 +85,8 @@ class _MpinSetupScreenState extends State<MpinSetupScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               const SizedBox(height: 12),
-              const _VerifiedChip(),
-              const SizedBox(height: 26),
+              const _BrandMark(),
+              const SizedBox(height: 20),
               const Center(child: _LockIcon()),
               const SizedBox(height: 12),
               Text(title,
@@ -136,29 +140,50 @@ class _MpinSetupScreenState extends State<MpinSetupScreen> {
   }
 }
 
-class _VerifiedChip extends StatelessWidget {
-  const _VerifiedChip();
+/// Small brand badge shared with the phone-login screen so the mPIN setup
+/// step doesn't feel blank at the top.
+class _BrandMark extends StatelessWidget {
+  const _BrandMark();
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
+    final l10n = AppLocalizations.of(context)!;
+    return Column(
+      children: <Widget>[
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+          width: 60,
+          height: 60,
           decoration: BoxDecoration(
-            color: const Color(0xFFE7F5EC),
-            borderRadius: BorderRadius.circular(14),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(Icons.check, size: 16, color: Color(0xFF1F7A45)),
-              const SizedBox(width: 8),
-              Text('Number verified',
-                  style: GoogleFonts.lexend(
-                    fontSize: 13, fontWeight: FontWeight.w600, color: const Color(0xFF1F7A45),
-                  )),
+            color: AppPalette.onPrimary,
+            shape: BoxShape.circle,
+            boxShadow: <BoxShadow>[
+              BoxShadow(
+                color: AppPalette.forest.withValues(alpha: 0.35),
+                offset: const Offset(0, 10),
+                blurRadius: 18,
+                spreadRadius: -12,
+              ),
             ],
+          ),
+          child: ClipOval(
+            child: Transform.scale(
+              scale: 2.1,
+              child: Image.asset(
+                OnboardingAssets.logo,
+                fit: BoxFit.cover,
+                semanticLabel: l10n.brandName,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          l10n.brandName,
+          style: GoogleFonts.lexend(
+            fontSize: 20,
+            fontWeight: FontWeight.w600,
+            letterSpacing: 0.9,
+            color: AppPalette.ink,
           ),
         ),
       ],

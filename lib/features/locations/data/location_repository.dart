@@ -1,43 +1,112 @@
-import '../../../core/network/api_client.dart';
+/// Reference-data lookups for the location step, served from SQLite.
+library;
 
-class RemoteState {
-  const RemoteState({required this.code, required this.nameEn, required this.nameHi});
-  final String code;
-  final String nameEn;
-  final String nameHi;
+import 'dart:async';
 
-  factory RemoteState.fromJson(Map<String, dynamic> json) => RemoteState(
-        code: json['code'] as String,
-        nameEn: json['name_en'] as String,
-        nameHi: json['name_hi'] as String,
-      );
-}
+import '../../auth/data/profile_local_datasource.dart';
+import '../../../core/network/api_exception.dart';
+import '../../../core/sync/outbox_dao.dart';
+import '../../../core/sync/sync_op.dart';
+import 'location_local_datasource.dart';
+import 'location_remote_datasource.dart';
 
+export 'location_remote_datasource.dart' show RemoteState;
+
+/// States, districts, and saving the user's chosen location.
+///
+/// Reads always come from the local database, which is seeded from a bundled
+/// asset before the app has ever been online. The API is used only to refresh
+/// that copy in the background, so a slow or dead connection can never leave
+/// the location dropdowns empty.
 class LocationRepository {
-  LocationRepository(this._api);
-  final ApiClient _api;
+  LocationRepository({
+    required LocationLocalDataSource local,
+    required LocationRemoteDataSource remote,
+    ProfileLocalDataSource? profileLocal,
+    OutboxDao? outbox,
+  }) : _local = local,
+       _remote = remote,
+       _profileLocal = profileLocal,
+       _outbox = outbox;
 
+  final LocationLocalDataSource _local;
+  final LocationRemoteDataSource _remote;
+  final ProfileLocalDataSource? _profileLocal;
+  final OutboxDao? _outbox;
+
+  bool _refreshed = false;
+
+  /// Every state, from the local table.
+  ///
+  /// Kicks off a one-per-session background refresh but never waits on it: the
+  /// seeded list is complete, so blocking the picker on a network call would
+  /// trade a working screen for a spinner.
   Future<List<RemoteState>> listStates() async {
-    final rows = await _api.getList('/api/v1/locations/states');
-    return rows.cast<Map<String, dynamic>>().map(RemoteState.fromJson).toList(growable: false);
+    unawaited(_refreshInBackground());
+    return _local.states();
   }
 
-  Future<List<String>> listDistricts(String stateCode) async {
-    final rows = await _api.getList('/api/v1/locations/states/$stateCode/districts');
-    return rows.cast<Map<String, dynamic>>().map((r) => r['name_en'] as String).toList(growable: false);
+  /// Districts for a state, from the local table.
+  Future<List<String>> listDistricts(String stateCode) =>
+      _local.districts(stateCode);
+
+  Future<void> _refreshInBackground() async {
+    if (_refreshed) return;
+    _refreshed = true;
+    try {
+      final List<RemoteState> states = await _remote.listStates();
+      if (states.isEmpty) return;
+
+      // The list endpoint has no districts on it, so fetch them per state. This
+      // is the slow path by design — it runs detached from any UI.
+      final List<SeedState> seed = <SeedState>[];
+      for (final RemoteState s in states) {
+        final List<String> districts = await _remote.listDistricts(s.code);
+        seed.add(
+          SeedState(
+            code: s.code,
+            nameEn: s.nameEn,
+            nameHi: s.nameHi,
+            districts: districts,
+          ),
+        );
+      }
+      await _local.upsertStates(seed);
+    } on ApiException {
+      // Offline or the endpoint is down. The seeded copy stands.
+    }
   }
 
-  /// PATCH the current user's saved location so subsequent scoring picks up
-  /// the (state, district, village) tuple.
+  /// Saves the chosen location on the user's profile.
+  ///
+  /// Writes locally first and queues the PATCH, so changing a location from
+  /// Settings works offline. During onboarding the device is online anyway and
+  /// the queued op drains on the next cycle, moments later.
   Future<void> saveOnUser({
     required String? state,
     required String? district,
     required String? village,
   }) async {
-    await _api.patchJson('/api/v1/me', body: {
-      'state': ?state,
-      'district': ?district,
-      'village': ?village,
-    });
+    final ProfileLocalDataSource? profile = _profileLocal;
+    final OutboxDao? outbox = _outbox;
+    if (profile == null || outbox == null) return;
+
+    final String? clientId = await profile.updateLocalProfile(
+      state: state,
+      district: district,
+      village: village,
+    );
+    if (clientId == null) return;
+
+    await outbox.enqueue(
+      entity: SyncEntity.userProfile,
+      op: SyncOpKind.update,
+      localRowId: clientId,
+      payload: <String, dynamic>{
+        'state': ?state,
+        'district': ?district,
+        'village': ?village,
+      },
+    );
   }
 }

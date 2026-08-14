@@ -7,6 +7,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../app/model/business.dart';
 import '../../../app/session.dart';
+import '../../../core/widgets/online_required_notice.dart';
 import '../../../core/widgets/page_backdrop.dart';
 import '../../businesses/data/business_repository.dart';
 import '../domain/business_draft.dart';
@@ -73,10 +74,16 @@ class _SetupFlowState extends State<SetupFlow> {
   /// One stage backwards. Pops the whole flow when we're at the natural
   /// first stage — either LocationStep for the onboarding path or KindStep
   /// for the "Add new business from Settings" path.
+  ///
+  /// Uses `Navigator.pop` rather than `maybePop` because the surrounding
+  /// PopScope has `canPop: false` to intercept system-back gestures and
+  /// route them here; `maybePop` would loop back through that same scope
+  /// and be blocked. `pop` bypasses PopScope's willPop check.
   void _back() {
     if ((widget.startAtKind && _stage == _SetupStage.kind)
         || _stage == _SetupStage.location) {
-      Navigator.of(context).maybePop();
+      _closing = true;
+      Navigator.of(context).pop();
       return;
     }
     final _SetupStage previous = switch (_stage) {
@@ -91,6 +98,11 @@ class _SetupFlowState extends State<SetupFlow> {
   }
 
   Future<void> _submitBusiness(AppSession session, Business business) async {
+    // Creating a business is the one write that cannot be queued: entries,
+    // health scores and alerts all key off the server id this POST returns, so
+    // there is nothing to attach them to until it succeeds.
+    if (!requireOnline(context, 'add a business')) return;
+
     session.addBusiness(business);
 
     // Backend save FIRST — otherwise the add-from-Settings path pops the

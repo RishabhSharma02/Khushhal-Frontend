@@ -45,8 +45,7 @@ class _EditBusinessSheetState extends State<EditBusinessSheet> {
 
   Future<void> _save() async {
     if (widget.backendId == null) {
-      // Local-only edit — no backend id yet (offline setup). The next
-      // `GET /businesses` reconciles it.
+      // Nothing to address the local row by yet.
       Navigator.of(context).pop(_edited);
       return;
     }
@@ -62,12 +61,17 @@ class _EditBusinessSheetState extends State<EditBusinessSheet> {
       _error = null;
     });
     try {
-      await repo.update(
-        widget.backendId!,
-        name: _name.text.trim(),
-        staffCount: _staff,
-        tenure: BusinessApiMapper.tenure(_tenure),
-      );
+      // Writes to SQLite and queues the PATCH, so this returns immediately and
+      // succeeds with or without a connection.
+      final String? clientId = await repo.clientIdFor(widget.backendId!);
+      if (clientId != null) {
+        await repo.update(
+          clientId,
+          name: _name.text.trim(),
+          staffCount: _staff,
+          tenure: BusinessApiMapper.tenure(_tenure),
+        );
+      }
       if (!mounted) return;
       Navigator.of(context).pop(_edited);
     } catch (e) {

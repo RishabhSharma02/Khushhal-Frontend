@@ -1,6 +1,8 @@
 /// Setup 1 · Location (design 1h).
 library;
 
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_map/flutter_map.dart';
@@ -98,8 +100,24 @@ class _LocationStepState extends State<LocationStep> {
     if (!mounted) return;
     if (pin != null) {
       setState(() => _pin = pin);
-      _mapController.move(pin, 9.5);
+      _moveMap(pin, 9.5);
     }
+  }
+
+  /// FlutterMap only mounts once we have a pin, so the very first
+  /// `_mapController.move` after setState would run before the map exists
+  /// and throw. Defer to a post-frame callback so the widget has time to
+  /// build the map before we drive the controller.
+  void _moveMap(LatLng at, double zoom) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      try {
+        _mapController.move(at, zoom);
+      } catch (_) {
+        // Map may still be attaching; the pin is set so the next tap will
+        // render at the right centre via MapOptions.initialCenter anyway.
+      }
+    });
   }
 
   LocationRepository? _repo() {
@@ -153,17 +171,25 @@ class _LocationStepState extends State<LocationStep> {
       // that reliably returns.
       Position? pos;
       try {
-        pos = await Geolocator.getLastKnownPosition();
+        pos = await Geolocator.getLastKnownPosition()
+            .timeout(const Duration(seconds: 3));
       } catch (_) {/* ignore */}
+      // `LocationSettings.timeLimit` is not honoured on every platform +
+      // geolocator combo — wrap the call ourselves so an emulator without
+      // a fix throws a real TimeoutException instead of hanging forever
+      // (the source of the "future not completed" report).
       pos ??= await Geolocator.getCurrentPosition(
         locationSettings: const LocationSettings(
           accuracy: LocationAccuracy.medium,
           timeLimit: Duration(seconds: 15),
         ),
-      );
+      ).timeout(const Duration(seconds: 15));
       final at = LatLng(pos.latitude, pos.longitude);
-      // Reverse-geocode via Nominatim (Mappls would slot in here).
-      final res = await _geocoder.reverse(at);
+      // Reverse-geocode via Nominatim (Mappls would slot in here). Cap it
+      // so a stalled Nominatim response doesn't leave the button spinning.
+      final res = await _geocoder
+          .reverse(at)
+          .timeout(const Duration(seconds: 8), onTimeout: () => null);
       if (!mounted) return;
 
       // Match the returned state name to one we ship dropdowns for —
@@ -207,7 +233,7 @@ class _LocationStepState extends State<LocationStep> {
           }
         } catch (_) {}
       }
-      _mapController.move(at, 13);
+      _moveMap(at, 13);
     } catch (e) {
       if (!mounted) return;
       setState(() {

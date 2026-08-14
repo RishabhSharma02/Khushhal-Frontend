@@ -2,6 +2,7 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../data/mpin_repository.dart';
+import '../data/profile_repository.dart';
 
 enum LockStatus {
   unknown,      // still checking if mPIN is set
@@ -38,21 +39,34 @@ class AppLockState extends Equatable {
 ///   unlock → [unlock] → unlocked (or lockedOut after N wrong tries)
 ///   sign-out → [reset]
 class LockCubit extends Cubit<AppLockState> {
-  LockCubit(this._repo) : super(const AppLockState()) {
+  LockCubit(this._repo, {ProfileRepository? profile})
+    : _profile = profile,
+      super(const AppLockState()) {
     // Eagerly check on construction so the gate never sits at `unknown`
     // longer than the Keychain round-trip.
     check();
   }
+
   final MpinRepository _repo;
+
+  /// Consulted only when the keychain read fails — see [check].
+  final ProfileRepository? _profile;
 
   static const Duration _checkTimeout = Duration(seconds: 3);
 
   /// Reads the mPIN + attempt count and moves to requiresSetup / requiresUnlock.
   ///
-  /// If the Keychain read hangs or errors (iOS entitlements missing, cold
-  /// Keychain, etc.) we assume no PIN exists and route to setup — the user
-  /// will be prompted to (re-)create their PIN rather than seeing a stuck
-  /// loader forever.
+  /// The failure branch matters more than it looks. A keychain read can fail
+  /// for reasons that have nothing to do with whether a PIN exists — missing
+  /// iOS entitlements, a cold keychain on first unlock after boot. Treating
+  /// that as "no PIN" used to route an existing user to *setup*, which
+  /// silently replaced the PIN they already had and, before the profile was
+  /// stored locally, sent them back through name capture as if they were new.
+  ///
+  /// So a failure now checks the local user row: if this device has a
+  /// completed profile, someone has onboarded here and the right answer is to
+  /// ask them to unlock, not to re-enrol them. Only a device with neither a
+  /// readable PIN nor a local profile is genuinely new.
   Future<void> check() async {
     try {
       final has = await _repo.isSet().timeout(_checkTimeout);
@@ -63,7 +77,22 @@ class LockCubit extends Cubit<AppLockState> {
         clearError: true,
       ));
     } catch (_) {
-      emit(state.copyWith(status: LockStatus.requiresSetup, attempts: 0, clearError: true));
+      final bool known = await _hasLocalProfile();
+      emit(state.copyWith(
+        status: known ? LockStatus.requiresUnlock : LockStatus.requiresSetup,
+        attempts: 0,
+        clearError: true,
+      ));
+    }
+  }
+
+  Future<bool> _hasLocalProfile() async {
+    final ProfileRepository? profile = _profile;
+    if (profile == null) return false;
+    try {
+      return await profile.hasLocalProfile().timeout(_checkTimeout);
+    } catch (_) {
+      return false;
     }
   }
 
@@ -101,5 +130,19 @@ class LockCubit extends Cubit<AppLockState> {
   Future<void> reset() async {
     await _repo.clear();
     emit(const AppLockState());
+  }
+
+  /// Locks the app back down to the PIN prompt without touching the stored
+  /// PIN, cached profile, or Firebase session — used by Settings → Log out
+  /// so the user can hand the phone off and the next person is greeted by
+  /// the unlock screen instead of dropping straight into Home. To actually
+  /// switch accounts, the user chooses "Forgot PIN? Login with OTP" from
+  /// the unlock screen.
+  void lock() {
+    emit(state.copyWith(
+      status: LockStatus.requiresUnlock,
+      attempts: 0,
+      clearError: true,
+    ));
   }
 }

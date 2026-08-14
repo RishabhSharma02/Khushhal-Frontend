@@ -45,6 +45,9 @@ class RemoteBusiness {
     required this.staffCount,
     required this.isNewBusiness,
     required this.yearsInOperation,
+    this.savingsInr = 0,
+    this.loanInr = 0,
+    this.carriesMoney = true,
     this.latestSnapshot,
   });
 
@@ -56,6 +59,18 @@ class RemoteBusiness {
   final int staffCount;
   final bool isNewBusiness;
   final int yearsInOperation;
+
+  /// Savings and loan outstanding, held per business on the backend.
+  final int savingsInr;
+  final int loanInr;
+
+  /// Whether this response actually carried the money fields.
+  ///
+  /// A backend that has not had the per-business savings migration applied
+  /// omits them, which decodes as zero and is indistinguishable from a real
+  /// zero. Callers use this to leave the cached figures alone rather than
+  /// overwriting the user's own numbers with an absent field.
+  final bool carriesMoney;
 
   /// The most recent monthly baseline the backend has for this business —
   /// usually the setup-wizard row. Used to seed Home's money tiles before
@@ -74,6 +89,7 @@ class RemoteBusiness {
         basis: (rawSnap['basis'] as String?) == 'records'
             ? MoneyBasis.fromRecords
             : MoneyBasis.roughEstimate,
+        month: DateTime.tryParse((rawSnap['month'] as String?) ?? ''),
       );
     }
     return RemoteBusiness(
@@ -85,6 +101,10 @@ class RemoteBusiness {
       staffCount: json['staff_count'] as int,
       isNewBusiness: json['is_new_business'] as bool,
       yearsInOperation: json['years_in_operation'] as int,
+      savingsInr: (json['savings_inr'] as num?)?.toInt() ?? 0,
+      loanInr: (json['loan_inr'] as num?)?.toInt() ?? 0,
+      carriesMoney:
+          json['savings_inr'] != null || json['loan_inr'] != null,
       latestSnapshot: snap,
     );
   }
@@ -105,6 +125,8 @@ class RemoteBusiness {
             moneyIn: 0, moneyOut: 0, loanEmi: 0, savings: 0,
             basis: MoneyBasis.roughEstimate,
           ),
+      savingsInr: savingsInr,
+      loanInr: loanInr,
     );
   }
 }

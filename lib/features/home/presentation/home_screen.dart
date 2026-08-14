@@ -65,14 +65,11 @@ class HomeScreen extends StatelessWidget {
           spacing: 8,
           runSpacing: 6,
           children: <Widget>[
-            Text(
-              l10n.brandName,
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: AppPalette.forest,
-                height: 1.3,
-              ),
+            // The switcher works offline: the list, each business's baseline
+            // and its savings all come from SQLite.
+            BusinessPill(
+              label: session.activeBusiness?.name ?? l10n.brandName,
+              onTap: () => showBusinessSwitcher(context),
             ),
             SyncChip(
               status: session.connectivity,
@@ -88,7 +85,11 @@ class HomeScreen extends StatelessWidget {
         else
           const _HealthCardSkeleton(),
         const SizedBox(height: 10),
-        const MoneyTileGrid(compact: true),
+        // Savings and loan show offline too — they are per business, cached,
+        // and an edit queues through the outbox like any other write.
+        MoneyTileGrid(
+          onEditTap: () => _push(context, const SavingsLoanScreen()),
+        ),
         const SizedBox(height: 12),
         GradientCtaButton(
           label: l10n.homeWriteEntryCta,
@@ -155,9 +156,11 @@ class HomeScreen extends StatelessWidget {
         MoneyTileGrid(
           onEditTap: () => _push(context, const SavingsLoanScreen()),
         ),
-        // Watch section only appears when the backend surfaces at least
-        // one alert AND the ML has flagged a risk month in the forecast.
-        if (session.alerts.isNotEmpty && riskMonth != null) ...<Widget>[
+        // Every alert the backend raised is worth showing. A flagged risk
+        // month is a bonus that sharpens the wording — most low- and
+        // medium-risk businesses get alerts without one, and gating on it
+        // hid them entirely.
+        if (session.alerts.isNotEmpty) ...<Widget>[
           const SizedBox(height: 14),
           Text(
             l10n.homeWatch,
@@ -170,7 +173,9 @@ class HomeScreen extends StatelessWidget {
           ),
           const SizedBox(height: 7),
           WatchCard(
-            riskMonthLabel: monthShort(context, riskMonth.month),
+            riskMonthLabel: riskMonth == null
+                ? null
+                : monthShort(context, riskMonth.month),
             fromForecast: updateReady,
             onOpenAlerts: () => _push(context, const AlertsScreen()),
             onOpenPlan: () => _push(context, const AlertDetailScreen()),

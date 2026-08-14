@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
@@ -5,14 +7,18 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:provider/single_child_widget.dart';
 
+import 'app/bootstrap.dart';
 import 'app/session.dart';
+import 'core/db/app_database.dart';
 import 'core/network/api_client.dart';
 import 'core/network/env.dart';
+import 'core/sync/outbox_dao.dart';
+import 'core/sync/sync_engine.dart';
 import 'core/theme/theme.dart';
 import 'features/auth/bloc/auth_bloc.dart';
 import 'features/auth/bloc/lock_cubit.dart';
 import 'features/auth/data/auth_repository.dart';
-import 'features/auth/data/mpin_repository.dart';
+import 'features/auth/data/profile_repository.dart';
 import 'features/auth/presentation/mpin_setup_screen.dart';
 import 'features/auth/presentation/mpin_unlock_screen.dart';
 import 'features/auth/presentation/name_capture_screen.dart';
@@ -27,7 +33,6 @@ import 'features/insights/insights_loader.dart';
 import 'features/locations/data/location_repository.dart';
 import 'features/onboarding/domain/app_language.dart';
 import 'features/onboarding/presentation/onboarding_flow.dart';
-import 'features/settings/data/language_prefs.dart';
 import 'features/setup/presentation/setup_flow.dart';
 import 'firebase_options.dart';
 import 'l10n/app_localizations.dart';
@@ -53,81 +58,144 @@ Future<void> main() async {
     debugPrint('Firebase init: $e (firebaseReady=$firebaseReady)');
   }
 
+  // Hive survives only to hold the legacy ledger outbox until it is drained
+  // into SQLite; see LegacyOutboxMigration.
   await Hive.initFlutter();
-  final outbox = await LedgerOutbox.open();
+  final legacyOutbox = await LedgerOutbox.open();
 
-  final apiClient = ApiClient(auth: firebaseReady ? FirebaseAuth.instance : null);
-  final businessRepo = BusinessRepository(apiClient);
-  final ledgerRepo = LedgerRepository(apiClient: apiClient, outbox: outbox);
-  final insightsRepo = InsightsRepository(apiClient);
-  final locationRepo = LocationRepository(apiClient);
-  final mpinRepo = MpinRepository();
-  final languagePrefs = await LanguagePrefs.open();
-
-  runApp(MyApp(
+  final deps = await AppDependencies.boot(
     firebaseReady: firebaseReady,
-    apiClient: apiClient,
-    businessRepository: businessRepo,
-    ledgerRepository: ledgerRepo,
-    insightsRepository: insightsRepo,
-    locationRepository: locationRepo,
-    mpinRepository: mpinRepo,
-    ledgerOutbox: outbox,
-    languagePrefs: languagePrefs,
-  ));
+    legacyOutbox: legacyOutbox,
+  );
+
+  runApp(MyApp(firebaseReady: firebaseReady, deps: deps));
 }
 
 /// Root widget for the Khushhal application.
 ///
-/// All deps are optional so existing widget tests (which pump `MyApp()`
-/// bare) still compile. In production `main()` always supplies them.
+/// [deps] is optional so existing widget tests (which pump `MyApp()` bare)
+/// still compile. In production `main()` always supplies it.
 class MyApp extends StatefulWidget {
-  const MyApp({
-    super.key,
-    this.firebaseReady = false,
-    this.apiClient,
-    this.businessRepository,
-    this.ledgerRepository,
-    this.insightsRepository,
-    this.locationRepository,
-    this.mpinRepository,
-    this.ledgerOutbox,
-    this.languagePrefs,
-  });
+  const MyApp({super.key, this.firebaseReady = false, this.deps});
 
   final bool firebaseReady;
-  final ApiClient? apiClient;
-  final BusinessRepository? businessRepository;
-  final LedgerRepository? ledgerRepository;
-  final InsightsRepository? insightsRepository;
-  final LocationRepository? locationRepository;
-  final MpinRepository? mpinRepository;
-  final LedgerOutbox? ledgerOutbox;
-  final LanguagePrefs? languagePrefs;
+  final AppDependencies? deps;
 
   @override
   State<MyApp> createState() => _MyAppState();
 }
 
 class _MyAppState extends State<MyApp> {
-  late AppLanguage _language = widget.languagePrefs?.saved
+  late AppLanguage _language = widget.deps?.languagePrefs.saved
       ?? AppLanguage.fromLocale(WidgetsBinding.instance.platformDispatcher.locale);
 
   AppSession _session = AppSession();
 
+  /// True on the very first launch of this install — we show language
+  /// select + the USP carousel before the phone-login screen. Once the
+  /// carousel is finished (or the user has already picked a language on a
+  /// previous run) this flips to false and the auth gate takes over.
+  late bool _needsEntryOnboarding =
+      !(widget.deps?.languagePrefs.hasSelected ?? true);
+
+  /// Set by the mPIN unlock screen's "Forgot PIN? Login with OTP" action.
+  /// While true, `_AuthGate` forces the PhoneLoginScreen even for someone
+  /// who is technically authenticated via cached identity + saved PIN, so
+  /// the user can enter a new number. The saved PIN and cached row stay
+  /// intact until the new OTP verifies successfully — if the user drops
+  /// out (or kills the app), the next launch falls back to the existing
+  /// PIN unlock instead of stranding them without an account.
+  bool _forcePhoneLogin = false;
+
+  void _startNumberChange() {
+    if (!_forcePhoneLogin) {
+      setState(() => _forcePhoneLogin = true);
+    }
+  }
+
+  /// Undoes [_startNumberChange] — used when a fresh OTP verify succeeds
+  /// (see `_AuthGate`'s BlocListener) or when the caller explicitly cancels.
+  Future<void> _finishNumberChange({required bool clearPin}) async {
+    if (clearPin) {
+      try {
+        await widget.deps?.mpinRepository.clear();
+      } catch (_) {/* best effort */}
+    }
+    if (!mounted) return;
+    setState(() => _forcePhoneLogin = false);
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    final AppDependencies? deps = widget.deps;
+    if (deps != null) {
+      _session.bindSync(deps.syncStatus);
+    }
+  }
+
+  @override
+  void dispose() {
+    _session.dispose();
+    super.dispose();
+  }
+
   void _setLanguage(AppLanguage language) {
     setState(() => _language = language);
     // Persist so subsequent launches skip the language screen.
-    widget.languagePrefs?.save(language);
+    widget.deps?.languagePrefs.save(language);
+    // ignore: discarded_futures
+    widget.deps?.profileRepository.setLanguage(language.name);
   }
 
-  void _logout() {
-    setState(() => _session = AppSession());
-    // Wipe every trace of the previous account: mPIN, secure-storage
-    // attempts, and any ledger entries still queued in the Hive outbox.
-    widget.mpinRepository?.clear();
-    widget.ledgerOutbox?.clear();
-    if (widget.firebaseReady) FirebaseAuth.instance.signOut();
+  /// Signs out, syncing first so nothing queued is lost silently.
+  ///
+  /// Logout is the one moment offline-first has to stop being invisible: the
+  /// local database is about to be wiped, and anything still in the outbox goes
+  /// with it. So the user is told the count and asked, rather than finding out
+  /// later that a week of entries never made it.
+  Future<void> _logout() async {
+    final AppDependencies? deps = widget.deps;
+    if (deps == null) {
+      setState(() => _session = AppSession());
+      if (widget.firebaseReady) await FirebaseAuth.instance.signOut();
+      return;
+    }
+
+    final int unsent = await deps.syncEngine.flushBeforeLogout();
+    if (unsent > 0 && mounted) {
+      final bool discard = await _confirmDiscard(unsent) ?? false;
+      if (!discard) return;
+    }
+
+    await deps.logout(firebaseReady: widget.firebaseReady);
+    if (!mounted) return;
+    setState(() {
+      _session = AppSession()..bindSync(deps.syncStatus);
+    });
+  }
+
+  Future<bool?> _confirmDiscard(int unsent) {
+    return showDialog<bool>(
+      context: context,
+      builder: (BuildContext ctx) => AlertDialog(
+        title: const Text('Some changes are not saved online'),
+        content: Text(
+          '$unsent change${unsent == 1 ? '' : 's'} could not reach the server. '
+          'Signing out now will discard ${unsent == 1 ? 'it' : 'them'}.',
+        ),
+        actions: <Widget>[
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Stay signed in'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Sign out anyway'),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -136,17 +204,29 @@ class _MyAppState extends State<MyApp> {
     // registers under the concrete type, not `dynamic`. A raw list type of
     // `<RepositoryProvider>` collapses each element to
     // `RepositoryProvider<dynamic>` and `context.read<T>()` will fail.
+    final AppDependencies? deps = widget.deps;
     final providers = <SingleChildWidget>[
-      if (widget.apiClient != null)
-        RepositoryProvider<ApiClient>.value(value: widget.apiClient!),
-      if (widget.businessRepository != null)
-        RepositoryProvider<BusinessRepository>.value(value: widget.businessRepository!),
-      if (widget.ledgerRepository != null)
-        RepositoryProvider<LedgerRepository>.value(value: widget.ledgerRepository!),
-      if (widget.insightsRepository != null)
-        RepositoryProvider<InsightsRepository>.value(value: widget.insightsRepository!),
-      if (widget.locationRepository != null)
-        RepositoryProvider<LocationRepository>.value(value: widget.locationRepository!),
+      if (deps != null) ...<SingleChildWidget>[
+        RepositoryProvider<ApiClient>.value(value: deps.apiClient),
+        RepositoryProvider<BusinessRepository>.value(
+          value: deps.businessRepository,
+        ),
+        RepositoryProvider<LedgerRepository>.value(
+          value: deps.ledgerRepository,
+        ),
+        RepositoryProvider<InsightsRepository>.value(
+          value: deps.insightsRepository,
+        ),
+        RepositoryProvider<LocationRepository>.value(
+          value: deps.locationRepository,
+        ),
+        RepositoryProvider<ProfileRepository>.value(
+          value: deps.profileRepository,
+        ),
+        RepositoryProvider<SyncEngine>.value(value: deps.syncEngine),
+        RepositoryProvider<OutboxDao>.value(value: deps.outbox),
+        RepositoryProvider<AppDatabase>.value(value: deps.db),
+      ],
     ];
 
     // When DEBUG_FIREBASE_UID is set (dev / iOS simulator), always use the
@@ -155,7 +235,7 @@ class _MyAppState extends State<MyApp> {
     // simulator, and the backend already accepts the shim header behind
     // DEV_TOOLS_ENABLED=true.
     final useAuthGate = widget.firebaseReady
-        && widget.apiClient != null
+        && deps != null
         && AppEnv.debugFirebaseUid.isEmpty;
 
     Widget app = _buildApp(withAuthGate: useAuthGate);
@@ -163,23 +243,27 @@ class _MyAppState extends State<MyApp> {
     if (useAuthGate) {
       app = BlocProvider(
         create: (_) => AuthBloc(
-          repository: AuthRepository(apiClient: widget.apiClient!),
+          repository: AuthRepository(apiClient: deps.apiClient),
+          profile: deps.profileRepository,
+          mpin: deps.mpinRepository,
         )..add(const AuthStarted()),
         child: app,
       );
     }
 
-    if (widget.insightsRepository != null) {
+    if (deps != null) {
       app = BlocProvider(
-        create: (_) => InsightsCubit(widget.insightsRepository!),
+        create: (_) => InsightsCubit(deps.insightsRepository),
         child: app,
       );
-    }
-
-    if (widget.mpinRepository != null) {
       app = MultiBlocProvider(
         providers: [
-          BlocProvider<LockCubit>(create: (_) => LockCubit(widget.mpinRepository!)),
+          BlocProvider<LockCubit>(
+            create: (_) => LockCubit(
+              deps.mpinRepository,
+              profile: deps.profileRepository,
+            ),
+          ),
         ],
         child: app,
       );
@@ -201,9 +285,23 @@ class _MyAppState extends State<MyApp> {
       builder: (BuildContext context, Widget? child) {
         return SessionScope(session: _session, child: child!);
       },
-      home: withAuthGate
-          ? const _AuthGate()
-          : _LockGate(child: _phaseFlow(startAtHomeIfExisting: false)),
+      home: _needsEntryOnboarding
+          // Fresh install: language select → USP carousel → phone login.
+          // `_setLanguage` already persists the pref, so on the next run
+          // `_needsEntryOnboarding` boots false and we fall straight into
+          // the auth gate.
+          ? OnboardingFlow(
+              language: _language,
+              onLanguageSelected: _setLanguage,
+              onCompleted: () => setState(() => _needsEntryOnboarding = false),
+            )
+          : withAuthGate
+              // Pass `_forcePhoneLogin` as an explicit prop so a setState
+              // on _MyAppState actually re-runs `_AuthGate.build` — a
+              // `const _AuthGate()` gets canonicalised by Flutter and
+              // won't rebuild on ancestor changes alone.
+              ? _AuthGate(forcePhoneLogin: _forcePhoneLogin)
+              : _LockGate(child: _phaseFlow(startAtHomeIfExisting: false)),
     );
   }
 
@@ -213,21 +311,69 @@ class _MyAppState extends State<MyApp> {
       onLanguageSelected: _setLanguage,
       onLogout: _logout,
       startAtHomeIfExisting: startAtHomeIfExisting,
-      skipLanguageScreen: widget.languagePrefs?.hasSelected ?? false,
+      skipLanguageScreen: widget.deps?.languagePrefs.hasSelected ?? false,
     );
+  }
+}
+
+/// Public bridge so callers outside this file can start a "change number"
+/// flow without depending on the private [_MyAppState]. Returns whether a
+/// state to receive the request was found (i.e., we're inside a running
+/// [MyApp]).
+abstract class ChangeNumberScope {
+  static bool request(BuildContext context) {
+    final root = context.findAncestorStateOfType<_MyAppState>();
+    if (root == null) return false;
+    root._startNumberChange();
+    return true;
   }
 }
 
 /// Gates the whole app on the current auth state so a signed-out user only
 /// ever sees the login screen. New users are routed through Onboarding →
 /// Setup; returning users land on the home shell directly.
+///
+/// [forcePhoneLogin] is passed down from `_MyAppState` so a change in the
+/// flag rebuilds this widget — a const-constructed gate would be
+/// canonicalised by Flutter and skip the rebuild on ancestor setState.
 class _AuthGate extends StatelessWidget {
-  const _AuthGate();
+  const _AuthGate({this.forcePhoneLogin = false});
+
+  final bool forcePhoneLogin;
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<AuthBloc, AuthState>(
+    final root = context.findAncestorStateOfType<_MyAppState>();
+    return BlocConsumer<AuthBloc, AuthState>(
+      // Watch for a successful OTP verification while the user is in the
+      // middle of a "change number" flow. We compare `me?.id` as well as
+      // the status because the bloc may already be at `authenticated`
+      // (old identity via cache) when the flow starts — only a new user
+      // id landing here means a fresh OTP verified. In the `me?.id`-
+      // unchanged case (same account, just cycling PIN), a transition
+      // *into* `authenticated` from verifying is enough.
+      listenWhen: (a, b) =>
+          a.status != b.status || a.me?.id != b.me?.id,
+      listener: (context, state) {
+        final _MyAppState? root = context.findAncestorStateOfType<_MyAppState>();
+        if (state.status == AuthStatus.authenticated
+            && (root?._forcePhoneLogin ?? false)) {
+          // Fire-and-forget: don't block the rebuild on Keystore IO.
+          // ignore: discarded_futures
+          root!._finishNumberChange(clearPin: true);
+        }
+      },
       builder: (context, state) {
+        // Force the phone screen while a change-number flow is in flight,
+        // no matter what the bloc says. The user tapped "Forgot PIN?
+        // Login with OTP" from MpinUnlockScreen, so the bloc is still at
+        // `authenticated` (cached identity + saved PIN) — we must still
+        // hand the screen over to PhoneLoginScreen and keep it there
+        // until either the new OTP verifies (see the listener above,
+        // which then flips the flag off) or the user kills the app.
+        if (forcePhoneLogin) {
+          return const PhoneLoginScreen();
+        }
         switch (state.status) {
           case AuthStatus.unknown:
             return const Scaffold(body: Center(child: CircularProgressIndicator()));
@@ -238,15 +384,12 @@ class _AuthGate extends StatelessWidget {
           case AuthStatus.error:
             return const PhoneLoginScreen();
           case AuthStatus.authenticated:
-            final root = context.findAncestorStateOfType<_MyAppState>();
             // Mirror the signed-in user's name + phone into AppSession so
             // Settings + mPIN unlock stop showing '—' placeholders.
             WidgetsBinding.instance.addPostFrameCallback((_) {
               final me = state.me;
               if (me == null) return;
               root!._session.applyProfile(name: me.name, phone: me.phoneE164);
-              root._session.savingsInr = me.savingsInr;
-              root._session.loanInr = me.loanInr;
             });
             return _LockGate(
               // Keying by user id forces a fresh _PhaseFlowState (and a
@@ -260,7 +403,8 @@ class _AuthGate extends StatelessWidget {
                 onLanguageSelected: root._setLanguage,
                 onLogout: root._logout,
                 startAtHomeIfExisting: !state.isNew,
-                skipLanguageScreen: root.widget.languagePrefs?.hasSelected ?? false,
+                skipLanguageScreen:
+                    root.widget.deps?.languagePrefs.hasSelected ?? false,
               ),
             );
         }
@@ -285,10 +429,7 @@ class _LockGate extends StatefulWidget {
 
 class _LockGateState extends State<_LockGate> {
   bool _hasCubit = false;
-  // Set to true after the user finishes NameCaptureScreen (or on unlock
-  // when their profile already has a name). Prevents re-prompting on
-  // every widget rebuild inside the session.
-  bool _nameCaptured = false;
+
   // The LockCubit is provided app-wide and its state persists across sign-
   // outs (the `unlocked` from the previous session can linger until the
   // fresh check() emits). We block rendering the mPIN/Name flows until we
@@ -297,20 +438,56 @@ class _LockGateState extends State<_LockGate> {
   // NameCaptureScreen or Home before mPIN setup takes over.
   bool _settled = false;
 
+  /// True once this gate has observed the user pass through mPIN *setup*,
+  /// which only happens for someone enrolling on this device for the first
+  /// time. Unlocking with an existing PIN never sets it.
+  bool _cameThroughSetup = false;
+
+  /// The name on the local user row. Null while still loading.
+  String? _localName;
+  bool _nameLoaded = false;
+
   @override
   void initState() {
     super.initState();
     try {
+      final cubit = context.read<LockCubit>();
       // Force a fresh mPIN check for the newly signed-in identity, then
-      // flip `_settled` so the builder starts trusting cubit state.
-      context.read<LockCubit>().check().whenComplete(() {
-        if (mounted) setState(() => _settled = true);
+      // flip `_settled` so the builder starts trusting cubit state. Seed
+      // `_cameThroughSetup` from the post-check state — the BlocConsumer
+      // listener below only fires on transitions, so an identity that
+      // arrives already at `requiresSetup` would otherwise be treated as
+      // "not new" and skip the NameCaptureScreen.
+      cubit.check().whenComplete(() {
+        if (!mounted) return;
+        setState(() {
+          _settled = true;
+          if (cubit.state.status == LockStatus.requiresSetup) {
+            _cameThroughSetup = true;
+          }
+        });
       });
       _hasCubit = true;
     } catch (_) {
       _hasCubit = false;
     }
+    unawaited(_loadLocalName());
   }
+
+  Future<void> _loadLocalName() async {
+    try {
+      final user = await context.read<ProfileRepository>().current();
+      if (!mounted) return;
+      setState(() {
+        _localName = user?.name;
+        _nameLoaded = true;
+      });
+    } catch (_) {
+      if (mounted) setState(() => _nameLoaded = true);
+    }
+  }
+
+  bool get _hasStoredName => (_localName ?? '').trim().isNotEmpty;
 
   @override
   Widget build(BuildContext context) {
@@ -318,11 +495,15 @@ class _LockGateState extends State<_LockGate> {
     return BlocConsumer<LockCubit, AppLockState>(
       listenWhen: (a, b) => a.status != b.status,
       listener: (context, state) {
+        if (state.status == LockStatus.requiresSetup) {
+          _cameThroughSetup = true;
+        }
         if (state.status == LockStatus.lockedOut) {
           final root = context.findAncestorStateOfType<_MyAppState>();
+          // ignore: discarded_futures
           root?._logout();
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Too many wrong tries — please sign in again.')),
+            SnackBar(content: Text(AppLocalizations.of(context)!.authTooManyTries)),
           );
         }
       },
@@ -338,14 +519,9 @@ class _LockGateState extends State<_LockGate> {
           case LockStatus.requiresUnlock:
             return const MpinUnlockScreen();
           case LockStatus.unlocked:
-            // First-time users have no name yet — prompt once between
-            // mPIN setup and the rest of the flow. On every subsequent
-            // unlock the session already carries a name from `/me`.
-            final session = SessionScope.of(context);
-            final hasName = (session.ownerName ?? '').trim().isNotEmpty;
-            if (!_nameCaptured && !hasName) {
+            if (_shouldCaptureName(context)) {
               return NameCaptureScreen(
-                onDone: () => setState(() => _nameCaptured = true),
+                onDone: () => setState(() => _localName = _nameFromSession(context)),
               );
             }
             return widget.child;
@@ -357,6 +533,33 @@ class _LockGateState extends State<_LockGate> {
       },
     );
   }
+
+  /// Whether to ask for a name.
+  ///
+  /// Only ever true for someone who just enrolled a PIN on this device and has
+  /// no name on record — either locally (SQLite / session) or on the server
+  /// row that `/auth/session` just returned. An existing account signing in
+  /// on a new device is a common case: the backend already knows their name
+  /// so we skip the capture screen (previously the session copy took a
+  /// post-frame tick to arrive and the screen would flash and disappear).
+  bool _shouldCaptureName(BuildContext context) {
+    if (!_cameThroughSetup) return false;
+    if (!_nameLoaded) return false;
+    if (_hasStoredName) return false;
+    if ((_nameFromSession(context) ?? '').trim().isNotEmpty) return false;
+    // Session name is populated via a post-frame callback in `_AuthGate`,
+    // so on the first frame after mPIN setup it may still be empty even
+    // though `/auth/session` returned a name. Read the AuthBloc state
+    // directly to avoid the one-frame flash.
+    try {
+      final serverName = (context.read<AuthBloc>().state.me?.name ?? '').trim();
+      if (serverName.isNotEmpty) return false;
+    } catch (_) {/* AuthBloc not provided — fall through */}
+    return true;
+  }
+
+  String? _nameFromSession(BuildContext context) =>
+      SessionScope.of(context).ownerName;
 }
 
 /// The three-stage flow (onboarding → setup → home) that runs after auth.
@@ -383,8 +586,12 @@ class _PhaseFlow extends StatefulWidget {
 enum _AppPhase { onboarding, setup, home }
 
 class _PhaseFlowState extends State<_PhaseFlow> {
+  // Language + USP are now shown pre-auth on a fresh install, so a signed-
+  // in new user drops straight into the setup wizard rather than seeing
+  // the carousel again. `_AppPhase.onboarding` is only reached via the
+  // "returning user with no businesses" detour below.
   late _AppPhase _phase =
-      widget.startAtHomeIfExisting ? _AppPhase.home : _AppPhase.onboarding;
+      widget.startAtHomeIfExisting ? _AppPhase.home : _AppPhase.setup;
 
   @override
   Widget build(BuildContext context) {
@@ -394,13 +601,14 @@ class _PhaseFlowState extends State<_PhaseFlow> {
     // enough — if a returning user re-signs in without ever completing
     // setup, `is_new=false` would drop them onto Home with nothing to show.
     // Once `InsightsLoader` confirms there are 0 businesses on the server,
-    // detour into the setup flow so they can create one.
+    // detour into the setup wizard so they can create one. (We skip the
+    // USP carousel — an existing user has already seen it pre-auth.)
     if (_phase == _AppPhase.home
         && session.businessesFetched
         && session.businesses.isEmpty) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted && _phase == _AppPhase.home) {
-          setState(() => _phase = _AppPhase.onboarding);
+          setState(() => _phase = _AppPhase.setup);
         }
       });
     }

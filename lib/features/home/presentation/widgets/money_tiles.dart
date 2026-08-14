@@ -3,6 +3,7 @@ library;
 
 import 'package:flutter/material.dart';
 
+import '../../../../app/model/business.dart';
 import '../../../../app/session.dart';
 import '../../../../core/formatting.dart';
 import '../../../../core/theme/theme.dart';
@@ -23,10 +24,30 @@ class MoneyTileGrid extends StatelessWidget {
   /// Opens savings & loan (1t) from the editable tiles.
   final VoidCallback? onEditTap;
 
+  /// The figure this tile moved on from, once live entries have taken over.
+  ///
+  /// The baseline is what the owner typed on the setup wizard for this
+  /// business. It is not necessarily what the score was computed from — once
+  /// there are entries the backend scores their monthly average instead — so
+  /// the wording says where the number came from, not what it decided.
+  String? _movedFrom(BuildContext context, AppLocalizations l10n, int amount) {
+    final AppSession session = SessionScope.of(context);
+    final MonthlyMoney? snap = session.baseline;
+    if (snap == null || !session.moneyIsFromLedger) return null;
+    if (snap.month == null) {
+      return l10n.tileMovedFromPlain(rupees(context, amount));
+    }
+    return l10n.tileMovedFrom(
+      rupees(context, amount),
+      monthShort(context, snap.month!),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = AppLocalizations.of(context)!;
     final AppSession session = SessionScope.of(context);
+    final MonthlyMoney? baseline = session.baseline;
 
     return Column(
       children: <Widget>[
@@ -38,6 +59,9 @@ class MoneyTileGrid extends StatelessWidget {
                 label: l10n.tileMoneyIn,
                 amount: rupees(context, session.monthMoneyIn),
                 footer: l10n.tileThisMonth,
+                subFooter: baseline == null
+                    ? null
+                    : _movedFrom(context, l10n, baseline.moneyIn),
                 footerColor: AppPalette.idle,
               ),
             ),
@@ -48,6 +72,9 @@ class MoneyTileGrid extends StatelessWidget {
                 label: l10n.tileMoneyOut,
                 amount: rupees(context, session.monthMoneyOut),
                 footer: l10n.tileThisMonth,
+                subFooter: baseline == null
+                    ? null
+                    : _movedFrom(context, l10n, baseline.moneyOut),
                 footerColor: AppPalette.idle,
               ),
             ),
@@ -92,6 +119,7 @@ class _MoneyTile extends StatelessWidget {
     required this.amount,
     required this.footer,
     required this.footerColor,
+    this.subFooter,
     this.onTap,
   });
 
@@ -99,6 +127,9 @@ class _MoneyTile extends StatelessWidget {
   final String label;
   final String amount;
   final String footer;
+
+  /// Optional second footer line — the figure this tile moved on from.
+  final String? subFooter;
   final Color footerColor;
   final VoidCallback? onTap;
 
@@ -157,6 +188,17 @@ class _MoneyTile extends StatelessWidget {
               height: 1.3,
             ),
           ),
+          if (subFooter != null)
+            Text(
+              subFooter!,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                fontSize: 11,
+                color: AppPalette.hint,
+                height: 1.3,
+              ),
+            ),
         ],
       ),
     );

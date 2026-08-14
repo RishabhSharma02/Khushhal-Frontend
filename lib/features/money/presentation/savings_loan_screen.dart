@@ -3,8 +3,10 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../app/session.dart';
+import '../../businesses/data/business_repository.dart';
 import '../../../core/formatting.dart';
 import '../../../core/theme/theme.dart';
 import '../../../core/widgets/back_header.dart';
@@ -19,6 +21,35 @@ import '../../../l10n/app_localizations.dart';
 class SavingsLoanScreen extends StatelessWidget {
   /// Creates the screen.
   const SavingsLoanScreen({super.key});
+
+  /// Writes both numbers to SQLite against the active business and queues the
+  /// PATCH.
+  ///
+  /// Savings and loan belong to a business, not the household, so this rides
+  /// the business update op — which means it works offline like every other
+  /// business edit. Both numbers go out together even when one changed, since
+  /// they are read back as a pair.
+  Future<void> _persist(BuildContext context, AppSession session) async {
+    final int? businessId = session.activeBackendBusinessId;
+    if (businessId == null) return;
+
+    final BusinessRepository repo;
+    try {
+      repo = context.read<BusinessRepository>();
+    } catch (_) {
+      // No repository (demo mode) — the session value is all there is.
+      return;
+    }
+
+    final String? clientId = await repo.clientIdFor(businessId);
+    if (clientId == null) return;
+
+    await repo.update(
+      clientId,
+      savingsInr: session.savingsInr,
+      loanInr: session.loanInr,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -41,14 +72,22 @@ class SavingsLoanScreen extends StatelessWidget {
                       label: l10n.tileSavings,
                       amount: session.savingsInr,
                       hint: l10n.savingsHint,
-                      onChanged: (int value) => session.savingsInr = value,
+                      onChanged: (int value) {
+                        session.savingsInr = value;
+                        // ignore: discarded_futures
+                        _persist(context, session);
+                      },
                     ),
                     const SizedBox(height: 10),
                     _AmountCard(
                       label: l10n.tileLoan,
                       amount: session.loanInr,
                       hint: l10n.loanHint,
-                      onChanged: (int value) => session.loanInr = value,
+                      onChanged: (int value) {
+                        session.loanInr = value;
+                        // ignore: discarded_futures
+                        _persist(context, session);
+                      },
                     ),
                   ],
                 ),

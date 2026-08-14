@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../../../l10n/app_localizations.dart';
 import '../bloc/auth_bloc.dart';
 import 'widgets/auth_backdrop.dart';
 import 'widgets/otp_boxes.dart';
@@ -96,14 +97,14 @@ class _OtpVerifyScreenState extends State<OtpVerifyScreen> {
                     ),
                   ),
                   const SizedBox(height: 8),
-                  Text('Enter the code',
+                  Text(AppLocalizations.of(context)!.authEnterCode,
                       style: GoogleFonts.lexend(
                         fontSize: 22, fontWeight: FontWeight.w600, color: const Color(0xFF123B27),
                       )),
                   const SizedBox(height: 5),
                   Row(
                     children: [
-                      Text('Sent to $phone · ',
+                      Text(AppLocalizations.of(context)!.authSentTo(phone),
                           style: GoogleFonts.lexend(
                             fontSize: 13.5, color: const Color(0xFF5C6B62),
                           )),
@@ -147,7 +148,10 @@ class _OtpVerifyScreenState extends State<OtpVerifyScreen> {
                   const SizedBox(height: 18),
                   Center(
                     child: _secondsLeft > 0
-                        ? Text('Resend in 0:${_secondsLeft.toString().padLeft(2, '0')}',
+                        ? Text(
+                            AppLocalizations.of(context)!.authResendIn(
+                              _secondsLeft.toString().padLeft(2, '0'),
+                            ),
                             style: GoogleFonts.lexend(
                               fontSize: 13.5, color: const Color(0xFF5C6B62),
                             ))
@@ -156,7 +160,7 @@ class _OtpVerifyScreenState extends State<OtpVerifyScreen> {
                               context.read<AuthBloc>().add(const AuthResendRequested());
                               _startResendTimer();
                             },
-                            child: Text('Resend code',
+                            child: Text(AppLocalizations.of(context)!.authResendCode,
                                 style: GoogleFonts.lexend(
                                   fontSize: 13.5, color: const Color(0xFF175235),
                                   fontWeight: FontWeight.w600,

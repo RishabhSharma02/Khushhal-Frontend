@@ -36,8 +36,12 @@ class SetupProgressHeader extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: <Widget>[
-        // Back arrow — hosting SetupFlow uses PopScope(canPop:false) and
-        // routes the resulting maybePop() through its `_back()` handler.
+        // Back arrow — hosting SetupFlow wraps itself in a PopScope that
+        // intercepts pops and reroutes them through its stepwise `_back()`
+        // handler. `maybePop` is what we want here — it triggers PopScope's
+        // callback, which decides between "go one step back" and "pop the
+        // whole route" (that final pop is a `Navigator.pop`, which bypasses
+        // PopScope's block).
         if (showBack)
           InkWell(
             onTap: () => Navigator.of(context).maybePop(),

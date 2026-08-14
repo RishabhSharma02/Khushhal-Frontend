@@ -3,8 +3,10 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../app/session.dart';
-import '../../../core/network/api_client.dart';
+import '../../../core/sync/sync_engine.dart';
 import '../../../core/widgets/gradient_cta_button.dart';
+import '../../../l10n/app_localizations.dart';
+import '../data/profile_repository.dart';
 import 'widgets/auth_backdrop.dart';
 
 /// One-shot "who are we saving?" screen — shown right after the mPIN gets
@@ -44,25 +46,37 @@ class _NameCaptureScreenState extends State<NameCaptureScreen> {
       _error = null;
     });
     try {
-      final api = context.read<ApiClient>();
-      await api.patchJson('/api/v1/me', body: {'name': name});
+      // Local-first: the name lands in SQLite and the PATCH is queued. The
+      // old bare PATCH left a user on a weak connection stuck on this form
+      // with no way past it, even though they had already set their mPIN.
+      await context.read<ProfileRepository>().setName(name);
       if (!mounted) return;
       SessionScope.of(context).applyProfile(
         name: name,
         phone: SessionScope.of(context).ownerPhone,
       );
+      // Nudge the sync engine so the PATCH /me goes out right now instead of
+      // waiting for the 5-minute poll. Without this, signing in on another
+      // device (or on this one after uninstall) before the poll fires means
+      // the backend still has `name = null` and the name-capture screen
+      // asks for the name a second time.
+      try {
+        // ignore: discarded_futures
+        context.read<SyncEngine>().syncNow();
+      } catch (_) {/* engine may not be provided in tests */}
       widget.onDone();
     } catch (e) {
       if (!mounted) return;
       setState(() {
         _saving = false;
-        _error = 'Save failed: $e';
+        _error = AppLocalizations.of(context)!.authSaveFailed(e.toString());
       });
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       body: AuthBackdrop(
         child: Padding(
@@ -71,23 +85,23 @@ class _NameCaptureScreenState extends State<NameCaptureScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               const SizedBox(height: 40),
-              Text('Hurray! Welcome to Khushhal',
+              Text(l10n.authWelcomeTitle,
                   style: GoogleFonts.lexend(
                     fontSize: 22,
                     fontWeight: FontWeight.w600,
                     color: const Color(0xFF123B27),
                   )),
               const SizedBox(height: 5),
-              Text('What should we call you?',
+              Text(l10n.authWhatToCallYou,
                   style: GoogleFonts.lexend(
                     fontSize: 16,
                     fontWeight: FontWeight.w500,
                     color: const Color(0xFF1C2B24),
                   )),
               const SizedBox(height: 28),
-              _NameField(controller: _first, label: 'First name', autofocus: true, onChanged: (_) => setState(() {})),
+              _NameField(controller: _first, label: l10n.authFirstName, autofocus: true, onChanged: (_) => setState(() {})),
               const SizedBox(height: 12),
-              _NameField(controller: _last, label: 'Last name (optional)', autofocus: false, onChanged: (_) => setState(() {})),
+              _NameField(controller: _last, label: l10n.authLastNameOptional, autofocus: false, onChanged: (_) => setState(() {})),
               if (_error != null) ...[
                 const SizedBox(height: 12),
                 Text(_error!, style: TextStyle(color: Theme.of(context).colorScheme.error, fontSize: 13)),
@@ -98,7 +112,7 @@ class _NameCaptureScreenState extends State<NameCaptureScreen> {
                 child: LinearProgressIndicator(minHeight: 2),
               ),
               GradientCtaButton(
-                label: _saving ? 'Saving…' : 'Continue',
+                label: _saving ? l10n.authSaving : l10n.authContinue,
                 onPressed: (_isValid && !_saving) ? _submit : () {},
               ),
               // Keeps the color right when disabled — hint to the eye.

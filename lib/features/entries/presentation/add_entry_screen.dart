@@ -60,7 +60,10 @@ class _AddEntryScreenState extends State<AddEntryScreen> {
   }
 
   int get _amountValue => int.tryParse(_amount.text.trim()) ?? 0;
-  bool get _isEditing => widget.editing?.backendId != null;
+
+  /// An entry is editable once it exists in the local database, which is true
+  /// from the moment it is saved — it does not need a server id first.
+  bool get _isEditing => widget.editing?.clientId != null;
 
   void _save() {
     if (_amountValue <= 0) {
@@ -70,15 +73,13 @@ class _AddEntryScreenState extends State<AddEntryScreen> {
     final session = SessionScope.of(context);
     final businessId = session.activeBackendBusinessId;
 
-    if (_isEditing && businessId != null) {
-      // PATCH /entries/{id}
-      final entryId = widget.editing!.backendId!;
+    if (_isEditing) {
+      // Writes to SQLite and queues the PATCH; works with no connection.
       try {
         final repo = context.read<LedgerRepository>();
         // ignore: discarded_futures
         repo.updateEntry(
-          businessId: businessId,
-          entryId: entryId,
+          clientId: widget.editing!.clientId!,
           amountInr: _amountValue,
           categoryWire: LedgerApiMapper.category(_category),
           recordedAt: widget.editing!.recordedAt,
@@ -99,11 +100,10 @@ class _AddEntryScreenState extends State<AddEntryScreen> {
       recordedAt: now,
     );
 
-    session.addEntry(entry);
-
     // Fire-and-forget backend submit via outbox — safe offline, idempotent
     // via client_entry_id. Nothing blocks the pop() below.
     if (businessId != null) {
+      session.addEntry(businessId, entry);
       try {
         final repo = context.read<LedgerRepository>();
         // ignore: discarded_futures

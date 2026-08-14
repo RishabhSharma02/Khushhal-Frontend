@@ -1,10 +1,11 @@
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../app/session.dart';
+import '../../../l10n/app_localizations.dart';
+import '../../../main.dart' show ChangeNumberScope;
 import '../bloc/lock_cubit.dart';
 import 'widgets/auth_backdrop.dart';
 import 'widgets/pin_dots.dart';
@@ -66,13 +67,13 @@ class _MpinUnlockScreenState extends State<MpinUnlockScreen> {
                   const SizedBox(height: 34),
                   Center(child: _Avatar(initial: initial)),
                   const SizedBox(height: 12),
-                  Text('Welcome back, $firstName',
+                  Text(AppLocalizations.of(context)!.authWelcomeBack(firstName),
                       textAlign: TextAlign.center,
                       style: GoogleFonts.lexend(
                         fontSize: 22, fontWeight: FontWeight.w600, color: const Color(0xFF123B27),
                       )),
                   const SizedBox(height: 4),
-                  Text('Enter your 4-digit PIN',
+                  Text(AppLocalizations.of(context)!.authEnterPin,
                       textAlign: TextAlign.center,
                       style: GoogleFonts.lexend(
                         fontSize: 14, color: const Color(0xFF5C6B62),
@@ -110,17 +111,18 @@ class _MpinUnlockScreenState extends State<MpinUnlockScreen> {
                   ],
                   const SizedBox(height: 24),
                   GestureDetector(
-                    onTap: () async {
-                      // Sign out FIRST so `_AuthGate` flips to
-                      // PhoneLoginScreen and unmounts this widget — that
-                      // prevents `_LockGate` from flashing its `unknown`
-                      // spinner. Reset the cubit afterwards via the
-                      // captured reference (context is dead by then).
-                      final cubit = context.read<LockCubit>();
-                      await FirebaseAuth.instance.signOut();
-                      await cubit.reset();
+                    onTap: () {
+                      // Do NOT clear the PIN or sign Firebase out yet —
+                      // we only want to route to the phone screen so a
+                      // new number can be entered. The stored PIN and
+                      // cached identity are wiped only after that OTP
+                      // verifies (see `_AuthGate`'s BlocListener). If
+                      // the user drops out or kills the app before then,
+                      // the next launch drops them right back onto this
+                      // unlock screen with their existing account.
+                      ChangeNumberScope.request(context);
                     },
-                    child: Text('Forgot PIN? Login with OTP',
+                    child: Text(AppLocalizations.of(context)!.authForgotPin,
                         textAlign: TextAlign.center,
                         style: GoogleFonts.lexend(
                           fontSize: 13.5, color: const Color(0xFF5C6B62),

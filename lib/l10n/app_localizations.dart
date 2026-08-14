@@ -824,6 +824,18 @@ abstract class AppLocalizations {
   /// **'tap to edit'**
   String get tileTapToEdit;
 
+  /// No description provided for @tileMovedFrom.
+  ///
+  /// In en, this message translates to:
+  /// **'was {amount} · {month}'**
+  String tileMovedFrom(String amount, String month);
+
+  /// No description provided for @tileMovedFromPlain.
+  ///
+  /// In en, this message translates to:
+  /// **'was {amount}'**
+  String tileMovedFromPlain(String amount);
+
   /// No description provided for @homeWatch.
   ///
   /// In en, this message translates to:
@@ -836,11 +848,23 @@ abstract class AppLocalizations {
   /// **'{month} may be tight'**
   String watchTitle(String month);
 
+  /// No description provided for @watchTitleNoMonth.
+  ///
+  /// In en, this message translates to:
+  /// **'Money may get tight soon'**
+  String get watchTitleNoMonth;
+
   /// No description provided for @watchReasonMandi.
   ///
   /// In en, this message translates to:
   /// **'fodder price rising in Sitapur.'**
   String get watchReasonMandi;
+
+  /// No description provided for @watchReasonScore.
+  ///
+  /// In en, this message translates to:
+  /// **'from your latest score.'**
+  String get watchReasonScore;
 
   /// No description provided for @watchReasonForecast.
   ///
@@ -853,6 +877,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Do this: buy fodder early with your group'**
   String get watchAction;
+
+  /// No description provided for @watchSeePlan.
+  ///
+  /// In en, this message translates to:
+  /// **'Do this: see what to do'**
+  String get watchSeePlan;
 
   /// No description provided for @homeWriteEntryCta.
   ///
@@ -1472,6 +1502,18 @@ abstract class AppLocalizations {
   /// **'SMS + in-app alerts on'**
   String get settingsNotificationsValue;
 
+  /// No description provided for @settingsNotificationsNone.
+  ///
+  /// In en, this message translates to:
+  /// **'No alerts right now'**
+  String get settingsNotificationsNone;
+
+  /// No description provided for @settingsNotificationsCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 alert to see} other{{count} alerts to see}}'**
+  String settingsNotificationsCount(int count);
+
   /// No description provided for @settingsSupport.
   ///
   /// In en, this message translates to:
@@ -1502,11 +1544,191 @@ abstract class AppLocalizations {
   /// **'Log out'**
   String get settingsLogOut;
 
-  /// No description provided for @settingsPlaceValue.
+  /// No description provided for @aboutIntro.
   ///
   /// In en, this message translates to:
-  /// **'Sitapur UP'**
-  String get settingsPlaceValue;
+  /// **'Khushhal is a money diary for your small business.'**
+  String get aboutIntro;
+
+  /// No description provided for @aboutHowItWorks.
+  ///
+  /// In en, this message translates to:
+  /// **'Write down the money that comes in and the money that goes out. It takes one minute a day.'**
+  String get aboutHowItWorks;
+
+  /// No description provided for @aboutScore.
+  ///
+  /// In en, this message translates to:
+  /// **'Every month Khushhal gives your business a health score and tells you what to do next.'**
+  String get aboutScore;
+
+  /// No description provided for @aboutOffline.
+  ///
+  /// In en, this message translates to:
+  /// **'It works without network. Your entries stay safe on this phone and go online later.'**
+  String get aboutOffline;
+
+  /// No description provided for @aboutHelpTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Helpline'**
+  String get aboutHelpTitle;
+
+  /// No description provided for @aboutHelpBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap the number to call us.'**
+  String get aboutHelpBody;
+
+  /// No description provided for @authWelcomeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Hurray! Welcome to Khushhal'**
+  String get authWelcomeTitle;
+
+  /// No description provided for @authWhatToCallYou.
+  ///
+  /// In en, this message translates to:
+  /// **'What should we call you?'**
+  String get authWhatToCallYou;
+
+  /// No description provided for @authFirstName.
+  ///
+  /// In en, this message translates to:
+  /// **'First name'**
+  String get authFirstName;
+
+  /// No description provided for @authLastNameOptional.
+  ///
+  /// In en, this message translates to:
+  /// **'Last name (optional)'**
+  String get authLastNameOptional;
+
+  /// No description provided for @authSaving.
+  ///
+  /// In en, this message translates to:
+  /// **'Saving…'**
+  String get authSaving;
+
+  /// No description provided for @authSaveFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Save failed: {reason}'**
+  String authSaveFailed(String reason);
+
+  /// No description provided for @authContinue.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue'**
+  String get authContinue;
+
+  /// No description provided for @authWelcomeBack.
+  ///
+  /// In en, this message translates to:
+  /// **'Welcome back, {name}'**
+  String authWelcomeBack(String name);
+
+  /// No description provided for @authEnterPin.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter your 4-digit PIN'**
+  String get authEnterPin;
+
+  /// No description provided for @authForgotPin.
+  ///
+  /// In en, this message translates to:
+  /// **'Forgot PIN? Login with OTP'**
+  String get authForgotPin;
+
+  /// No description provided for @authEnterCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the code'**
+  String get authEnterCode;
+
+  /// No description provided for @authSentTo.
+  ///
+  /// In en, this message translates to:
+  /// **'Sent to {phone} · '**
+  String authSentTo(String phone);
+
+  /// No description provided for @authResendIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Resend in 0:{secs}'**
+  String authResendIn(String secs);
+
+  /// No description provided for @authResendCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Resend code'**
+  String get authResendCode;
+
+  /// No description provided for @authPhoneTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter your mobile number'**
+  String get authPhoneTitle;
+
+  /// No description provided for @authPhoneSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'We will send a 6-digit code by SMS. No password needed.'**
+  String get authPhoneSubtitle;
+
+  /// No description provided for @authGetOtp.
+  ///
+  /// In en, this message translates to:
+  /// **'Get OTP'**
+  String get authGetOtp;
+
+  /// No description provided for @authSending.
+  ///
+  /// In en, this message translates to:
+  /// **'Sending…'**
+  String get authSending;
+
+  /// No description provided for @authTooManyTries.
+  ///
+  /// In en, this message translates to:
+  /// **'Too many wrong tries — please sign in again.'**
+  String get authTooManyTries;
+
+  /// No description provided for @authWrongPin.
+  ///
+  /// In en, this message translates to:
+  /// **'Wrong mPIN. {left} attempts left.'**
+  String authWrongPin(int left);
+
+  /// No description provided for @authCreatePinTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Create your PIN'**
+  String get authCreatePinTitle;
+
+  /// No description provided for @authCreatePinSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick 4 digits you will remember.\nNext time you open the app, just enter this.'**
+  String get authCreatePinSubtitle;
+
+  /// No description provided for @authConfirmPinTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Type it again'**
+  String get authConfirmPinTitle;
+
+  /// No description provided for @authConfirmPinSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the same 4 digits once more to confirm.'**
+  String get authConfirmPinSubtitle;
+
+  /// No description provided for @authPinMismatch.
+  ///
+  /// In en, this message translates to:
+  /// **'The PINs do not match. Try again.'**
+  String get authPinMismatch;
 }
 
 class _AppLocalizationsDelegate

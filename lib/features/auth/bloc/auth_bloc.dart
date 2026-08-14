@@ -5,6 +5,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../data/auth_repository.dart';
+import '../data/mpin_repository.dart';
+import '../data/profile_repository.dart';
 import '../data/session_user.dart';
 
 // ---------------- events ----------------
@@ -108,8 +110,13 @@ class AuthState extends Equatable {
 // ---------------- bloc ----------------
 
 class AuthBloc extends Bloc<AuthEvent, AuthState> {
-  AuthBloc({required AuthRepository repository})
-      : _repo = repository,
+  AuthBloc({
+    required AuthRepository repository,
+    ProfileRepository? profile,
+    MpinRepository? mpin,
+  })  : _repo = repository,
+        _profile = profile,
+        _mpin = mpin,
         super(const AuthState()) {
     on<AuthStarted>(_onStarted);
     on<AuthPhoneSubmitted>(_onPhoneSubmitted);
@@ -122,23 +129,94 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   }
 
   final AuthRepository _repo;
+
+  /// Source of the offline fallback session. See [_cachedSession].
+  final ProfileRepository? _profile;
+
+  /// Used to keep a device with a saved PIN on the mPIN unlock screen even
+  /// when the Firebase session has been torn down (token revoked, cleared
+  /// keychain, etc.). Without this the user would be sent through phone/OTP
+  /// again just to reach a PIN they still have.
+  final MpinRepository? _mpin;
+
   late final StreamSubscription<User?> _sub;
 
   Future<void> _onStarted(AuthStarted _, Emitter<AuthState> emit) async {
-    if (_repo.isSignedIn) {
-      try {
-        final result = await _repo.exchangeSessionWithBackend();
+    if (!_repo.isSignedIn) {
+      // Even without an active Firebase session, if this device has a PIN
+      // enrolled and a cached user, treat that as authenticated so the
+      // shell shows mPIN unlock instead of the phone screen. The user can
+      // still switch numbers via "Forgot PIN? Login with OTP" on the
+      // unlock screen, which wipes both the PIN and the cached row.
+      final SessionUser? cached = await _cachedSession();
+      final bool hasPin = await _hasSavedPin();
+      if (cached != null && hasPin) {
         emit(state.copyWith(
           status: AuthStatus.authenticated,
-          me: result.me,
-          isNew: result.isNew,
+          me: cached,
+          isNew: false,
           clearError: true,
         ));
-      } catch (e) {
-        emit(state.copyWith(status: AuthStatus.unauthenticated, errorMessage: e.toString()));
+        return;
       }
-    } else {
       emit(state.copyWith(status: AuthStatus.unauthenticated, clearError: true));
+      return;
+    }
+    try {
+      final result = await _repo.exchangeSessionWithBackend();
+      await _seedLocalRow(result.me);
+      emit(state.copyWith(
+        status: AuthStatus.authenticated,
+        me: result.me,
+        isNew: result.isNew,
+        clearError: true,
+      ));
+    } catch (e) {
+      final SessionUser? cached = await _cachedSession();
+      if (cached != null) {
+        emit(state.copyWith(
+          status: AuthStatus.authenticated,
+          me: cached,
+          isNew: false,
+          clearError: true,
+        ));
+        return;
+      }
+      emit(state.copyWith(status: AuthStatus.unauthenticated, errorMessage: e.toString()));
+    }
+  }
+
+  /// Mirrors `/auth/session`'s `me` into SQLite so subsequent local writes
+  /// (name capture, profile edits, …) find an active row and enqueue their
+  /// PATCH to the outbox. Without this, the very first setName after a
+  /// fresh sign-in falls through with no local user and never syncs.
+  Future<void> _seedLocalRow(SessionUser me) async {
+    try {
+      await _profile?.captureSession(me);
+    } catch (_) {/* best effort — sync pull will still upsert later */}
+  }
+
+  Future<bool> _hasSavedPin() async {
+    try {
+      return await _mpin?.isSet() ?? false;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// The profile from the last successful sign-in, if this device has one.
+  ///
+  /// Firebase keeps the refresh token across restarts, so `isSignedIn` stays
+  /// true offline; only the `/auth/session` exchange fails. Falling back to the
+  /// cached row keeps that user signed in instead of bouncing them to the phone
+  /// screen, where they would be stuck — sending an SMS needs the network they
+  /// do not have. A device with no cached row has never completed onboarding,
+  /// so the sign-out is correct there.
+  Future<SessionUser?> _cachedSession() async {
+    try {
+      return await _profile?.cachedSessionUser();
+    } catch (_) {
+      return null;
     }
   }
 
@@ -178,6 +256,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     emit(state.copyWith(status: AuthStatus.verifying, clearError: true));
     try {
       final result = await _repo.verifyCode(verificationId: vid, smsCode: e.code);
+      await _seedLocalRow(result.me);
       emit(state.copyWith(
         status: AuthStatus.authenticated,
         me: result.me,
@@ -206,15 +285,43 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     if (e.user != null && state.status != AuthStatus.authenticated && !busy) {
       try {
         final result = await _repo.exchangeSessionWithBackend();
+        await _seedLocalRow(result.me);
         emit(state.copyWith(
           status: AuthStatus.authenticated,
           me: result.me,
           isNew: result.isNew,
         ));
       } catch (err) {
+        final SessionUser? cached = await _cachedSession();
+        if (cached != null) {
+          emit(state.copyWith(
+            status: AuthStatus.authenticated,
+            me: cached,
+            isNew: false,
+            clearError: true,
+          ));
+          return;
+        }
         emit(state.copyWith(status: AuthStatus.error, errorMessage: err.toString()));
       }
     } else if (e.user == null && state.status == AuthStatus.authenticated) {
+      // Firebase reports "no user" — either an explicit signOut or a
+      // revoked/expired session. If this device still has a PIN and a
+      // cached row, keep the user signed in via the offline identity so
+      // they land on mPIN unlock instead of the phone screen; only the
+      // explicit "Forgot PIN? Login with OTP" path (which clears both
+      // the PIN and the cached row) should bounce them to phone login.
+      final SessionUser? cached = await _cachedSession();
+      final bool hasPin = await _hasSavedPin();
+      if (cached != null && hasPin) {
+        emit(state.copyWith(
+          status: AuthStatus.authenticated,
+          me: cached,
+          isNew: false,
+          clearError: true,
+        ));
+        return;
+      }
       emit(const AuthState(status: AuthStatus.unauthenticated));
     }
   }

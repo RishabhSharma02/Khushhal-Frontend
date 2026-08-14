@@ -2,19 +2,25 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../app/labels.dart';
 import '../../../app/model/business.dart';
 import '../../../app/session.dart';
+import '../../../core/db/app_database.dart';
 import '../../../core/theme/theme.dart';
 import '../../../core/widgets/khushhal_card.dart';
 import '../../../core/widgets/section_label.dart';
 import '../../../core/widgets/sync_chip.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../auth/bloc/lock_cubit.dart';
+import '../../auth/data/profile_repository.dart';
 import '../../businesses/presentation/edit_business_sheet.dart';
+import '../../forecast/presentation/alerts_screen.dart';
 import '../../onboarding/domain/app_language.dart';
 import '../../setup/presentation/setup_flow.dart';
 import '../../sync/presentation/sync_screen.dart';
+import 'about_screen.dart';
 
 /// The settings tab: who is signed in, their businesses, and the few
 /// preferences the app has.
@@ -93,6 +99,18 @@ class SettingsScreen extends StatelessWidget {
     if (saved != null) session.updateBusiness(index, saved);
   }
 
+  void _openAlerts(BuildContext context) {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(builder: (BuildContext _) => const AlertsScreen()),
+    );
+  }
+
+  void _openAbout(BuildContext context) {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(builder: (BuildContext _) => const AboutScreen()),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = AppLocalizations.of(context)!;
@@ -141,40 +159,14 @@ class SettingsScreen extends StatelessWidget {
               _ProfileCard(
                 name: session.ownerName ?? '—',
                 phone: session.ownerPhone ?? '—',
-                editLabel: l10n.settingsEdit,
               ),
               const SizedBox(height: 13),
               SectionLabel(l10n.settingsMyBusinesses),
               const SizedBox(height: 7),
-              KhushhalCard(
-                padding: EdgeInsets.zero,
-                child: Column(
-                  children: <Widget>[
-                    for (final (int idx, Business business) in session.businesses.indexed)
-                      _SettingsRow(
-                        well: _IconWell(
-                          icon:
-                              _sectorIcons[business.sector] ??
-                              Icons.work_rounded,
-                        ),
-                        title: business.name,
-                        subtitle:
-                            '${business.sector.label(l10n)} · '
-                            '${l10n.settingsPlaceValue}',
-                        divider: true,
-                        onTap: () => _openEditBusinessSheet(context, session, idx, business),
-                      ),
-                    _SettingsRow(
-                      well: const _IconWell(
-                        icon: Icons.add_rounded,
-                        dashed: true,
-                      ),
-                      title: l10n.settingsAddBusiness,
-                      titleColor: AppPalette.leaf,
-                      onTap: () => _openAddBusiness(context),
-                    ),
-                  ],
-                ),
+              _BusinessesCard(
+                onEditBusiness: (int idx, Business business) =>
+                    _openEditBusinessSheet(context, session, idx, business),
+                onAddBusiness: () => _openAddBusiness(context),
               ),
               const SizedBox(height: 13),
               SectionLabel(l10n.settingsPreferences),
@@ -192,11 +184,17 @@ class SettingsScreen extends StatelessWidget {
                         onSelected: onLanguageSelected,
                       ),
                     ),
+                    // Alerts are stamped per business, so this counts the
+                    // active one's — the same set the alerts list shows.
                     _SettingsRow(
                       well: const _IconWell(icon: Icons.notifications_rounded),
                       title: l10n.settingsNotifications,
-                      subtitle: l10n.settingsNotificationsValue,
-                      onTap: () {},
+                      subtitle: session.alerts.isEmpty
+                          ? l10n.settingsNotificationsNone
+                          : l10n.settingsNotificationsCount(
+                              session.alerts.length,
+                            ),
+                      onTap: () => _openAlerts(context),
                     ),
                   ],
                 ),
@@ -211,14 +209,15 @@ class SettingsScreen extends StatelessWidget {
                     _SettingsRow(
                       well: const _IconWell(icon: Icons.support_agent_rounded),
                       title: l10n.settingsContact,
+                      subtitle: helplineDisplay,
                       divider: true,
-                      onTap: () {},
+                      onTap: () => dialHelpline(context),
                     ),
                     _SettingsRow(
                       well: const _IconWell(icon: Icons.info_rounded),
                       title: l10n.settingsAbout,
                       subtitle: l10n.settingsVersion,
-                      onTap: () {},
+                      onTap: () => _openAbout(context),
                     ),
                   ],
                 ),
@@ -234,7 +233,20 @@ class SettingsScreen extends StatelessWidget {
                   ),
                 ),
                 child: InkWell(
-                  onTap: onLogout,
+                  onTap: () {
+                    // "Log out" here means "lock the app back to the PIN
+                    // screen" — the stored PIN, cached profile and Firebase
+                    // session all stay intact. To actually switch accounts
+                    // the user chooses "Forgot PIN? Login with OTP" from
+                    // the unlock screen (see `ChangeNumberScope`).
+                    try {
+                      context.read<LockCubit>().lock();
+                    } catch (_) {
+                      // No LockCubit in scope (tests): fall back to the
+                      // hard-logout callback so the caller can decide.
+                      onLogout();
+                    }
+                  },
                   borderRadius: BorderRadius.circular(16),
                   child: Container(
                     width: double.infinity,
@@ -260,17 +272,94 @@ class SettingsScreen extends StatelessWidget {
   }
 }
 
+/// The "My businesses" list, each row captioned with its line of work and the
+/// place the owner entered during setup.
+///
+/// Location is held per user on the backend (`users.state` / `users.district`)
+/// and asked for once, so every row carries the same place. It is read from the
+/// cached profile rather than the session because the session only learns a
+/// name and phone at sign-in.
+class _BusinessesCard extends StatelessWidget {
+  const _BusinessesCard({
+    required this.onEditBusiness,
+    required this.onAddBusiness,
+  });
+
+  final void Function(int index, Business business) onEditBusiness;
+  final VoidCallback onAddBusiness;
+
+  /// "District, State" — whatever of it is known.
+  static String? _place(LocalUser? user) {
+    if (user == null) return null;
+    final List<String> parts = <String>[
+      ?user.district?.trim(),
+      ?user.state?.trim(),
+    ].where((String s) => s.isNotEmpty).toList(growable: false);
+    return parts.isEmpty ? null : parts.join(', ');
+  }
+
+  Stream<LocalUser?>? _profile(BuildContext context) {
+    try {
+      return context.read<ProfileRepository>().watch();
+    } catch (_) {
+      return null;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final Stream<LocalUser?>? profile = _profile(context);
+    if (profile == null) return _card(context, null);
+    return StreamBuilder<LocalUser?>(
+      stream: profile,
+      builder: (BuildContext context, AsyncSnapshot<LocalUser?> snapshot) =>
+          _card(context, _place(snapshot.data)),
+    );
+  }
+
+  Widget _card(BuildContext context, String? place) {
+    final AppLocalizations l10n = AppLocalizations.of(context)!;
+    final AppSession session = SessionScope.of(context);
+
+    return KhushhalCard(
+      padding: EdgeInsets.zero,
+      child: Column(
+        children: <Widget>[
+          for (final (int idx, Business business) in session.businesses.indexed)
+            _SettingsRow(
+              well: _IconWell(
+                icon:
+                    SettingsScreen._sectorIcons[business.sector] ??
+                    Icons.work_rounded,
+              ),
+              title: business.name,
+              subtitle: place == null
+                  ? business.sector.label(l10n)
+                  : '${business.sector.label(l10n)} · $place',
+              divider: true,
+              onTap: () => onEditBusiness(idx, business),
+            ),
+          _SettingsRow(
+            well: const _IconWell(icon: Icons.add_rounded, dashed: true),
+            title: l10n.settingsAddBusiness,
+            titleColor: AppPalette.leaf,
+            onTap: onAddBusiness,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 /// The owner card on top.
 class _ProfileCard extends StatelessWidget {
   const _ProfileCard({
     required this.name,
     required this.phone,
-    required this.editLabel,
   });
 
   final String name;
   final String phone;
-  final String editLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -323,32 +412,6 @@ class _ProfileCard extends StatelessWidget {
                   ),
                 ),
               ],
-            ),
-          ),
-          const SizedBox(width: 8),
-          Material(
-            color: AppPalette.onPrimary,
-            shape: const StadiumBorder(
-              side: BorderSide(color: AppPalette.outline, width: 1.5),
-            ),
-            child: InkWell(
-              onTap: () {},
-              customBorder: const StadiumBorder(),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 14,
-                  vertical: 7,
-                ),
-                child: Text(
-                  editLabel,
-                  style: const TextStyle(
-                    fontSize: 12.5,
-                    fontWeight: FontWeight.w600,
-                    color: AppPalette.forest,
-                    height: 1.2,
-                  ),
-                ),
-              ),
             ),
           ),
         ],

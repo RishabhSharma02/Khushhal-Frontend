@@ -314,6 +314,19 @@
   "tileSavings": "Savings",
   "tileLoan": "Loan",
   "tileTapToEdit": "tap to edit",
+  "tileMovedFrom": "was {amount} · {month}",
+  "@tileMovedFrom": {
+    "placeholders": {
+      "amount": { "type": "String", "example": "₹32,000" },
+      "month": { "type": "String", "example": "Aug" }
+    }
+  },
+  "tileMovedFromPlain": "was {amount}",
+  "@tileMovedFromPlain": {
+    "placeholders": {
+      "amount": { "type": "String", "example": "₹32,000" }
+    }
+  },
   "homeWatch": "Watch",
   "watchTitle": "{month} may be tight",
   "@watchTitle": {
@@ -321,9 +334,12 @@
       "month": { "type": "String", "example": "Nov" }
     }
   },
+  "watchTitleNoMonth": "Money may get tight soon",
   "watchReasonMandi": "fodder price rising in Sitapur.",
+  "watchReasonScore": "from your latest score.",
   "watchReasonForecast": "from the new forecast.",
   "watchAction": "Do this: buy fodder early with your group",
+  "watchSeePlan": "Do this: see what to do",
   "homeWriteEntryCta": "Write today's entry",
   "homeMonthClosedBanner": "{month} is closed — new score ready",
   "@homeMonthClosedBanner": {
@@ -611,10 +627,64 @@
   "settingsLanguage": "Language",
   "settingsNotifications": "Notifications",
   "settingsNotificationsValue": "SMS + in-app alerts on",
+  "settingsNotificationsNone": "No alerts right now",
+  "settingsNotificationsCount": "{count, plural, =1{1 alert to see} other{{count} alerts to see}}",
+  "@settingsNotificationsCount": {
+    "placeholders": {
+      "count": { "type": "int", "example": "2" }
+    }
+  },
   "settingsSupport": "Support",
   "settingsContact": "Contact us",
   "settingsAbout": "About Khushhal",
   "settingsVersion": "v1.0.0",
   "settingsLogOut": "Log out",
-  "settingsPlaceValue": "Sitapur UP"
+
+  "aboutIntro": "Khushhal is a money diary for your small business.",
+  "aboutHowItWorks": "Write down the money that comes in and the money that goes out. It takes one minute a day.",
+  "aboutScore": "Every month Khushhal gives your business a health score and tells you what to do next.",
+  "aboutOffline": "It works without network. Your entries stay safe on this phone and go online later.",
+  "aboutHelpTitle": "Helpline",
+  "aboutHelpBody": "Tap the number to call us.",
+
+  "authWelcomeTitle": "Hurray! Welcome to Khushhal",
+  "authWhatToCallYou": "What should we call you?",
+  "authFirstName": "First name",
+  "authLastNameOptional": "Last name (optional)",
+  "authSaving": "Saving…",
+  "authSaveFailed": "Save failed: {reason}",
+  "@authSaveFailed": {
+    "placeholders": { "reason": { "type": "String" } }
+  },
+  "authContinue": "Continue",
+  "authWelcomeBack": "Welcome back, {name}",
+  "@authWelcomeBack": {
+    "placeholders": { "name": { "type": "String" } }
+  },
+  "authEnterPin": "Enter your 4-digit PIN",
+  "authForgotPin": "Forgot PIN? Login with OTP",
+  "authEnterCode": "Enter the code",
+  "authSentTo": "Sent to {phone} · ",
+  "@authSentTo": {
+    "placeholders": { "phone": { "type": "String" } }
+  },
+  "authResendIn": "Resend in 0:{secs}",
+  "@authResendIn": {
+    "placeholders": { "secs": { "type": "String" } }
+  },
+  "authResendCode": "Resend code",
+  "authPhoneTitle": "Enter your mobile number",
+  "authPhoneSubtitle": "We will send a 6-digit code by SMS. No password needed.",
+  "authGetOtp": "Get OTP",
+  "authSending": "Sending…",
+  "authTooManyTries": "Too many wrong tries — please sign in again.",
+  "authWrongPin": "Wrong mPIN. {left} attempts left.",
+  "@authWrongPin": {
+    "placeholders": { "left": { "type": "int" } }
+  },
+  "authCreatePinTitle": "Create your PIN",
+  "authCreatePinSubtitle": "Pick 4 digits you will remember.\nNext time you open the app, just enter this.",
+  "authConfirmPinTitle": "Type it again",
+  "authConfirmPinSubtitle": "Enter the same 4 digits once more to confirm.",
+  "authPinMismatch": "The PINs do not match. Try again."
 }

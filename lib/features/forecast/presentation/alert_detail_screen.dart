@@ -96,7 +96,17 @@ class _AlertDetailScreenState extends State<AlertDetailScreen> {
     if (businessId == null || alert == null) return;
     try {
       final repo = context.read<InsightsRepository>();
-      final updated = await repo.togglePlanAction(
+      // Writes to SQLite and queues the PATCH, so ticking a box works in the
+      // field with no signal. The new state is known without a response.
+      final updated = RemotePlanAction(
+        id: action.id,
+        role: action.role,
+        ordinal: action.ordinal,
+        labelEn: action.labelEn,
+        labelHi: action.labelHi,
+        done: !action.done,
+      );
+      await repo.togglePlanAction(
         businessId: businessId,
         alertId: alert.id,
         actionId: action.id,

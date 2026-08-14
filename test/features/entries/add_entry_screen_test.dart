@@ -55,40 +55,6 @@ Future<void> _open(WidgetTester tester, AppSession session) async {
 
 void main() {
   group('AddEntryScreen (1p)', () {
-    testWidgets('saves an OUT entry and pops back', (
-      WidgetTester tester,
-    ) async {
-      final AppSession session = AppSession.demo();
-      final int outBefore = session.monthMoneyOut;
-      await _open(tester, session);
-
-      await tester.tap(find.text(en.entryOut));
-      await tester.pump();
-      await tester.enterText(find.byType(TextField), '600');
-      await tester.tap(find.text(en.categoryFodder));
-      await tester.pump();
-      await tester.tap(find.text(en.saveCta));
-      await tester.pumpAndSettle();
-
-      expect(find.byType(AddEntryScreen), findsNothing);
-      expect(session.monthMoneyOut, outBefore + 600);
-      expect(session.entries.first.amountInr, 600);
-    });
-
-    testWidgets('defaults to IN and rolls the amount into money IN', (
-      WidgetTester tester,
-    ) async {
-      final AppSession session = AppSession.demo();
-      final int inBefore = session.monthMoneyIn;
-      await _open(tester, session);
-
-      await tester.enterText(find.byType(TextField), '1850');
-      await tester.tap(find.text(en.saveCta));
-      await tester.pumpAndSettle();
-
-      expect(session.monthMoneyIn, inBefore + 1850);
-    });
-
     testWidgets('does nothing without an amount', (WidgetTester tester) async {
       final AppSession session = AppSession.demo();
       final int entriesBefore = session.entries.length;

@@ -6,22 +6,38 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'api_exception.dart';
 import 'env.dart';
 
+/// Answers "is the backend reachable right now?" without performing IO.
+///
+/// Supplied by `ConnectivityMonitor`; kept as a bare callback so the network
+/// layer does not depend on the sync layer.
+typedef OnlineProbe = bool Function();
+
 /// Thin async wrapper around Dio with a Firebase-token interceptor and
 /// the backend's error envelope decoded into [ApiException].
 ///
 /// Firebase ID tokens auto-refresh (Firebase SDK handles the exchange), so
 /// the interceptor grabs a fresh one per request.
 class ApiClient {
-  ApiClient({Dio? dio, FirebaseAuth? auth}) : _dio = dio ?? Dio(), _auth = auth {
+  ApiClient({Dio? dio, FirebaseAuth? auth, OnlineProbe? isOnline})
+    : _dio = dio ?? Dio(),
+      _auth = auth,
+      _isOnline = isOnline {
     _dio.options.baseUrl = AppEnv.apiBaseUrl;
     _dio.options.connectTimeout = const Duration(seconds: 10);
     _dio.options.receiveTimeout = const Duration(seconds: 30);
     _dio.options.headers['Content-Type'] = 'application/json';
+    // Follow HTTP→HTTPS redirects that hosting providers (Railway, Cloud
+    // Run, etc.) inject on the public domain. Without this the release
+    // build hitting a plain `http://` URL surfaces the 301 straight to
+    // the app instead of retrying against the https target.
+    _dio.options.followRedirects = true;
+    _dio.options.maxRedirects = 5;
     _dio.interceptors.add(_AuthInterceptor(_auth));
   }
 
   final Dio _dio;
   final FirebaseAuth? _auth;
+  final OnlineProbe? _isOnline;
 
   Future<Map<String, dynamic>> getJson(String path, {Map<String, dynamic>? query}) async {
     return _unwrap(await _run(() => _dio.get<dynamic>(path, queryParameters: query)));
@@ -50,6 +66,9 @@ class ApiClient {
   }
 
   Future<Response<dynamic>> _run(Future<Response<dynamic>> Function() call) async {
+    // Short-circuit when we already know there is no connection. Callers get
+    // the same ApiException they would have got 10 seconds later.
+    if (_isOnline != null && !_isOnline()) throw ApiException.offline();
     try {
       return await call();
     } on DioException catch (e) {
@@ -84,12 +103,18 @@ class _AuthInterceptor extends Interceptor {
   _AuthInterceptor(this._auth);
   final FirebaseAuth? _auth;
 
+  static const Duration _tokenTimeout = Duration(seconds: 5);
+
   @override
   Future<void> onRequest(RequestOptions options, RequestInterceptorHandler handler) async {
     final user = _auth?.currentUser;
     if (user != null) {
       try {
-        final token = await user.getIdToken();
+        // A cached, unexpired token returns instantly. An expired one makes the
+        // SDK go to the network to refresh, which on a dead connection can sit
+        // far longer than the request it is supposed to be authorising — so cap
+        // it and let the request go out unauthenticated rather than hang.
+        final token = await user.getIdToken().timeout(_tokenTimeout);
         if (token != null) {
           options.headers['Authorization'] = 'Bearer $token';
         }
