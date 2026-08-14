@@ -13,10 +13,19 @@ import '../theme/theme.dart';
 /// border — a first-class state, never styled as an error.
 class SyncChip extends StatelessWidget {
   /// Creates the chip for [status].
-  const SyncChip({super.key, required this.status, this.onTap});
+  const SyncChip({
+    super.key,
+    required this.status,
+    this.onTap,
+    this.pendingCount = 0,
+  });
 
   /// Network state to show.
   final ConnectivityStatus status;
+
+  /// How many writes are queued. Rendered next to the label so "offline" also
+  /// answers the question it immediately raises — how much is waiting.
+  final int pendingCount;
 
   /// Usually a push of the sync screen (1w).
   final VoidCallback? onTap;
@@ -26,11 +35,12 @@ class SyncChip extends StatelessWidget {
     final AppLocalizations l10n = AppLocalizations.of(context)!;
     final bool offline = status == ConnectivityStatus.offline;
 
-    final String label = switch (status) {
+    final String base = switch (status) {
       ConnectivityStatus.synced => l10n.chipSynced,
       ConnectivityStatus.syncing => l10n.chipSyncing,
       ConnectivityStatus.offline => l10n.chipOffline,
     };
+    final String label = pendingCount > 0 ? '$base · $pendingCount' : base;
 
     return Material(
       color: offline ? const Color(0xFFFBF6E3) : AppPalette.mintChip,

@@ -3,7 +3,6 @@ library;
 
 import 'package:flutter/material.dart';
 
-import '../../../app/demo_data.dart';
 import '../../../app/labels.dart';
 import '../../../app/model/ledger.dart';
 import '../../../app/session.dart';
@@ -36,6 +35,9 @@ class HistoryScreen extends StatefulWidget {
 
 class _HistoryScreenState extends State<HistoryScreen> {
   _HistoryFilter _filter = _HistoryFilter.all;
+  // The month whose entries are currently on screen. Defaults to today's
+  // month; user can move backwards via the month pill.
+  late DateTime _month = DateTime(DateTime.now().year, DateTime.now().month, 1);
 
   bool _matches(LedgerEntry entry) {
     return switch (_filter) {
@@ -48,16 +50,54 @@ class _HistoryScreenState extends State<HistoryScreen> {
     };
   }
 
-  void _push(Widget screen) {
-    Navigator.of(
-      context,
-    ).push(MaterialPageRoute<void>(builder: (BuildContext _) => screen));
+  bool _inSelectedMonth(LedgerEntry e) =>
+      e.recordedAt.year == _month.year && e.recordedAt.month == _month.month;
+
+  Future<T?> _push<T>(Widget screen) {
+    return Navigator.of(context).push<T>(
+      MaterialPageRoute<T>(builder: (BuildContext _) => screen),
+    );
   }
 
-  /// Day headers relative to the scenario's "today".
+  Future<void> _pickMonth() async {
+    // Simple month picker: bottom sheet with the last 12 months.
+    final now = DateTime.now();
+    final months = List.generate(
+      12,
+      (i) => DateTime(now.year, now.month - i, 1),
+      growable: false,
+    );
+    final picked = await showModalBottomSheet<DateTime>(
+      context: context,
+      backgroundColor: AppPalette.onPrimary,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
+      ),
+      builder: (_) => SafeArea(
+        child: ListView.separated(
+          shrinkWrap: true,
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          itemCount: months.length,
+          separatorBuilder: (_, _) => const Divider(height: 1, color: AppPalette.line),
+          itemBuilder: (_, i) {
+            final m = months[i];
+            final selected = m.year == _month.year && m.month == _month.month;
+            return ListTile(
+              title: Text(monthShort(context, m)),
+              trailing: selected ? const Icon(Icons.check_rounded, color: AppPalette.forest) : null,
+              onTap: () => Navigator.of(context).pop(m),
+            );
+          },
+        ),
+      ),
+    );
+    if (picked != null && mounted) setState(() => _month = picked);
+  }
+
+  /// Day headers relative to the actual current date.
   String _dayLabel(BuildContext context, DateTime day) {
     final AppLocalizations l10n = AppLocalizations.of(context)!;
-    final DateTime today = DemoData.today;
+    final DateTime today = DateTime.now();
     final DateTime date = DateTime(day.year, day.month, day.day);
     final int daysAgo = DateTime(
       today.year,
@@ -78,8 +118,18 @@ class _HistoryScreenState extends State<HistoryScreen> {
     final AppSession session = SessionScope.of(context);
 
     final List<LedgerEntry> entries = session.entries
+        .where(_inSelectedMonth)
         .where(_matches)
         .toList(growable: false);
+    int monthIn = 0, monthOut = 0, monthLoan = 0;
+    for (final e in session.entries.where(_inSelectedMonth)) {
+      if (e.kind == EntryKind.moneyIn) {
+        monthIn += e.amountInr;
+      } else {
+        monthOut += e.amountInr;
+      }
+      if (e.category == EntryCategory.emi) monthLoan += e.amountInr;
+    }
 
     // Group by calendar day, newest first (entries are already sorted).
     final List<(DateTime, List<LedgerEntry>)> groups =
@@ -135,7 +185,10 @@ class _HistoryScreenState extends State<HistoryScreen> {
               ),
             ),
             const SizedBox(width: 8),
-            _MonthPill(label: monthShort(context, DemoData.today)),
+            _MonthPill(
+              label: monthShort(context, _month),
+              onTap: _pickMonth,
+            ),
           ],
         ),
         const SizedBox(height: 10),
@@ -163,10 +216,10 @@ class _HistoryScreenState extends State<HistoryScreen> {
         ),
         const SizedBox(height: 10),
         _TotalsCard(
-          monthLabel: monthShort(context, DemoData.today),
-          moneyIn: session.monthMoneyIn,
-          moneyOut: session.monthMoneyOut,
-          loanPaid: session.monthLoanPaid,
+          monthLabel: monthShort(context, _month),
+          moneyIn: monthIn,
+          moneyOut: monthOut,
+          loanPaid: monthLoan,
         ),
         Expanded(
           child: ListView(
@@ -183,7 +236,12 @@ class _HistoryScreenState extends State<HistoryScreen> {
                     padding: const EdgeInsets.only(bottom: 7),
                     child: _EntryRow(
                       entry: entry,
-                      onTap: () => _push(const AddEntryScreen()),
+                      onTap: () async {
+                        final saved = await _push<bool>(
+                          AddEntryScreen(editing: entry),
+                        );
+                        if (saved == true && mounted) setState(() {});
+                      },
                     ),
                   ),
               ],
@@ -206,40 +264,45 @@ class _HistoryScreenState extends State<HistoryScreen> {
   }
 }
 
-/// The outlined month selector pill (static in this build).
+/// The outlined month selector pill — opens a picker on tap.
 class _MonthPill extends StatelessWidget {
-  const _MonthPill({required this.label});
+  const _MonthPill({required this.label, required this.onTap});
 
   final String label;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-      decoration: BoxDecoration(
-        color: AppPalette.onPrimary,
-        border: Border.all(color: AppPalette.forest, width: 1.5),
-        borderRadius: BorderRadius.circular(99),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: <Widget>[
-          Text(
-            label,
-            style: const TextStyle(
-              fontSize: 12.5,
-              fontWeight: FontWeight.w600,
-              color: AppPalette.forest,
-              height: 1.2,
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(99),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+        decoration: BoxDecoration(
+          color: AppPalette.onPrimary,
+          border: Border.all(color: AppPalette.forest, width: 1.5),
+          borderRadius: BorderRadius.circular(99),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            Text(
+              label,
+              style: const TextStyle(
+                fontSize: 12.5,
+                fontWeight: FontWeight.w600,
+                color: AppPalette.forest,
+                height: 1.2,
+              ),
             ),
-          ),
-          const SizedBox(width: 3),
-          const Icon(
-            Icons.expand_more_rounded,
-            size: 14,
-            color: AppPalette.forest,
-          ),
-        ],
+            const SizedBox(width: 3),
+            const Icon(
+              Icons.expand_more_rounded,
+              size: 14,
+              color: AppPalette.forest,
+            ),
+          ],
+        ),
       ),
     );
   }

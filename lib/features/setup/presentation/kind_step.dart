@@ -22,6 +22,7 @@ class KindStep extends StatefulWidget {
     required this.draft,
     required this.businessNumber,
     required this.onNext,
+    this.standalone = false,
   });
 
   /// The draft being filled in.
@@ -32,6 +33,10 @@ class KindStep extends StatefulWidget {
 
   /// Advances to details (1l).
   final VoidCallback onNext;
+
+  /// When true (Settings → Add business), the header renders "Step 1 of 3"
+  /// instead of "Step 3 of 5" so the user doesn't wonder where steps 1–2 are.
+  final bool standalone;
 
   @override
   State<KindStep> createState() => _KindStepState();
@@ -63,11 +68,12 @@ class _KindStepState extends State<KindStep> {
     return StepPage(
       header: SetupProgressHeader(
         label: l10n.setupStepOfBusiness(
-          3,
-          5,
+          widget.standalone ? 1 : 3,
+          widget.standalone ? 3 : 5,
           l10n.businessN(widget.businessNumber),
         ),
-        filled: 3,
+        filled: widget.standalone ? 1 : 3,
+        total: widget.standalone ? 3 : 5,
       ),
       cta: GradientCtaButton(
         label: l10n.setupNextCta,
@@ -126,12 +132,21 @@ class _KindStepState extends State<KindStep> {
             ],
           ),
         ],
-        if (draft.sector == BusinessSector.dairy) ...<Widget>[
-          const SizedBox(height: 12),
-          InfoNote(text: l10n.kindDairyHint),
-        ],
+        const SizedBox(height: 12),
+        InfoNote(text: _sectorHint(l10n, draft.sector)),
       ],
     );
+  }
+
+  String _sectorHint(AppLocalizations l10n, BusinessSector sector) {
+    switch (sector) {
+      case BusinessSector.dairy: return l10n.kindDairyHint;
+      case BusinessSector.poultry: return l10n.kindPoultryHint;
+      case BusinessSector.foodProcessing: return l10n.kindFoodProcessingHint;
+      case BusinessSector.crafts: return l10n.kindCraftsHint;
+      case BusinessSector.shop: return l10n.kindShopHint;
+      case BusinessSector.other: return l10n.kindOtherHint;
+    }
   }
 
   Widget _sectorCell(BusinessSector sector) {

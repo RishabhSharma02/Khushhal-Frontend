@@ -22,6 +22,7 @@ class OnboardingFlow extends StatefulWidget {
     required this.language,
     required this.onLanguageSelected,
     required this.onCompleted,
+    this.skipLanguage = false,
   });
 
   /// The language currently on screen.
@@ -33,12 +34,16 @@ class OnboardingFlow extends StatefulWidget {
   /// Called once the user leaves the carousel.
   final VoidCallback onCompleted;
 
+  /// When true, the language screen is skipped — the user's language was
+  /// already saved on a previous run and can only be changed from Settings.
+  final bool skipLanguage;
+
   @override
   State<OnboardingFlow> createState() => _OnboardingFlowState();
 }
 
 class _OnboardingFlowState extends State<OnboardingFlow> {
-  bool _languageConfirmed = false;
+  late bool _languageConfirmed = widget.skipLanguage;
 
   @override
   Widget build(BuildContext context) {

@@ -3,7 +3,6 @@ library;
 
 import 'package:flutter/material.dart';
 
-import '../../../app/demo_data.dart';
 import '../../../app/model/insights.dart';
 import '../../../app/session.dart';
 import '../../../core/formatting.dart';
@@ -55,6 +54,7 @@ class _AlertsScreenState extends State<AlertsScreen> {
     final AppLocalizations l10n = AppLocalizations.of(context)!;
     final AppSession session = SessionScope.of(context);
     final List<RiskAlert> alerts = session.alerts;
+    final ForecastMonth? riskMonth = session.forecast.flaggedRiskMonth;
     final int urgentCount = alerts
         .where((RiskAlert a) => a.severity == AlertSeverity.urgent)
         .length;
@@ -95,7 +95,11 @@ class _AlertsScreenState extends State<AlertsScreen> {
                     for (final RiskAlert alert in alerts.where(
                       _matches,
                     )) ...<Widget>[
-                      _AlertCard(alert: alert, onOpenPlan: _openPlan),
+                      _AlertCard(
+                        alert: alert,
+                        riskMonth: riskMonth,
+                        onOpenPlan: _openPlan,
+                      ),
                       const SizedBox(height: 9),
                     ],
                     const SizedBox(height: 3),
@@ -150,9 +154,18 @@ class _AlertsScreenState extends State<AlertsScreen> {
 
 /// One alert row; the urgent one wears amber and opens the plan.
 class _AlertCard extends StatelessWidget {
-  const _AlertCard({required this.alert, required this.onOpenPlan});
+  const _AlertCard({
+    required this.alert,
+    required this.riskMonth,
+    required this.onOpenPlan,
+  });
 
   final RiskAlert alert;
+
+  /// The month the live forecast flags, or null when it flags none — the
+  /// savings alert names it instead of naming the month it was stamped in.
+  final ForecastMonth? riskMonth;
+
   final VoidCallback onOpenPlan;
 
   @override
@@ -162,16 +175,12 @@ class _AlertCard extends StatelessWidget {
 
     final (String title, String detail) = switch (alert.kind) {
       AlertKind.savingsRunningLow => (
-        l10n.alertSavingsTitle(
-          monthName(
-            context,
-            DemoData.forecast.firstWhere((m) => m.isRiskMonth).month,
-          ),
-        ),
-        l10n.alertSavingsDetail(
-          rupees(context, DemoData.forecastSavingsFloor),
-          alert.raisedOn == null ? '' : dayMonth(context, alert.raisedOn!),
-        ),
+        riskMonth == null
+            ? l10n.alertSavingsTitleNoMonth
+            : l10n.alertSavingsTitle(monthName(context, riskMonth!.month)),
+        alert.raisedOn == null
+            ? l10n.alertSavingsDetailUndated
+            : l10n.alertSavingsDetail(dayMonth(context, alert.raisedOn!)),
       ),
       AlertKind.fodderPriceUp => (
         l10n.alertFodderTitle,

@@ -23,21 +23,6 @@ Widget _app(AppSession session) {
 
 void main() {
   group('SyncScreen (1w)', () {
-    testWidgets('shows the queue while entries wait', (
-      WidgetTester tester,
-    ) async {
-      // The demo ledger has one entry still to send.
-      await tester.pumpWidget(_app(AppSession.demo()));
-      await tester.pumpAndSettle();
-
-      expect(find.text(en.syncSending(1)), findsOneWidget);
-      expect(find.text(en.chipSyncing), findsOneWidget);
-      expect(find.text(en.syncStatusSent), findsOneWidget);
-      expect(find.text(en.syncStatusSending), findsOneWidget);
-      expect(find.text(en.syncAutoNote), findsOneWidget);
-      expect(find.text(en.syncLastFull), findsOneWidget);
-    });
-
     testWidgets('Sync now empties the queue and settles the chip', (
       WidgetTester tester,
     ) async {

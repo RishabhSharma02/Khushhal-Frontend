@@ -21,7 +21,7 @@ class UspCarouselScreen extends StatelessWidget {
   const UspCarouselScreen({
     super.key,
     required this.onFinished,
-    this.slideDuration = const Duration(seconds: 4),
+    this.slideDuration = const Duration(milliseconds: 2500),
   });
 
   /// Called when the user taps Continue.

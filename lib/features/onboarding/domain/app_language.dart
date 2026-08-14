@@ -11,18 +11,26 @@ import '../../../l10n/app_localizations.dart';
 /// coming soon" line instead of a longer regional list.
 enum AppLanguage {
   /// हिंदी — Hindi (India).
-  hindi(endonym: 'हिंदी', code: 'hi'),
+  hindi(endonym: 'हिंदी', shortEndonym: 'हिंदी', code: 'hi'),
 
   /// English (India).
-  english(endonym: 'English', code: 'en');
+  english(endonym: 'English', shortEndonym: 'Eng', code: 'en');
 
-  const AppLanguage({required this.endonym, required this.code});
+  const AppLanguage({
+    required this.endonym,
+    required this.shortEndonym,
+    required this.code,
+  });
 
   /// The language's name in its own script, used as the card title.
   ///
   /// Never translated: a reader of either language has to be able to find
   /// their own row before any language has been chosen.
   final String endonym;
+
+  /// [endonym] shortened to fit the inline toggle in Settings, still in the
+  /// language's own script and, like [endonym], never translated.
+  final String shortEndonym;
 
   /// ISO 639-1 language code.
   final String code;

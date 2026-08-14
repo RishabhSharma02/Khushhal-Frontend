@@ -53,6 +53,16 @@ class BusinessDraft {
       tenure: tenure,
       staffCount: staffCount,
       monthly: monthly,
+      // The wizard's savings figure is this business's opening balance, and
+      // the backend seeds the same value from the create payload. Setting it
+      // here means Home's savings tile is right before the first list refresh
+      // comes back.
+      savingsInr: monthly.savings,
+      // The wizard only asks for a monthly EMI — surface that on Home's
+      // loan tile as an initial value so it isn't zero after onboarding.
+      // The owner can replace it with the true outstanding balance from
+      // the savings & loan screen.
+      loanInr: monthly.loanEmi,
     );
   }
 }

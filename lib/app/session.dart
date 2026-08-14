@@ -3,7 +3,7 @@ library;
 
 import 'package:flutter/widgets.dart';
 
-import 'demo_data.dart';
+import '../core/sync/sync_status.dart';
 import 'model/business.dart';
 import 'model/insights.dart';
 import 'model/ledger.dart';
@@ -23,30 +23,30 @@ enum ConnectivityStatus {
 /// The running state of the app: businesses, ledger, score, alerts, sync.
 ///
 /// One instance lives above `MaterialApp`; screens reach it through
-/// [SessionScope]. Model output (score, forecast, alerts) is demo content
-/// from [DemoData] until there is a backend; everything the user edits
-/// (businesses, entries, savings, loan, plan actions) is live state.
+/// [SessionScope]. Nothing is seeded from demo data anymore — every field
+/// starts empty/null and is filled by the backend (or by the user).
 class AppSession extends ChangeNotifier {
-  /// A session for a fresh install: no businesses yet, demo model output.
-  AppSession()
-    : _entries = List<LedgerEntry>.of(DemoData.entries),
-      _current = DemoData.currentHealth,
-      _pending = DemoData.pendingHealth,
-      _alerts = List<RiskAlert>.of(DemoData.alerts),
-      _actions = List<PlanAction>.of(DemoData.planActions);
+  AppSession();
 
-  /// A session that starts fully set up — for tests and previews.
-  factory AppSession.demo() {
-    return AppSession().._businesses.add(DemoData.business);
-  }
+  /// Test-only convenience — kept as a no-op so pre-existing widget tests
+  /// that call `AppSession.demo()` still compile.
+  factory AppSession.demo() => AppSession();
 
   // ── Profile ────────────────────────────────────────────────────────────
 
-  /// Owner's display name.
-  String get ownerName => DemoData.ownerName;
+  String? _ownerName;
+  String? _ownerPhone;
 
-  /// Owner's phone number.
-  String get ownerPhone => DemoData.ownerPhone;
+  String? get ownerName => _ownerName;
+  String? get ownerPhone => _ownerPhone;
+
+  /// Called by the auth flow when a user's session is exchanged with the
+  /// backend so Settings / mPIN unlock can display their name + phone.
+  void applyProfile({String? name, String? phone}) {
+    _ownerName = name;
+    _ownerPhone = phone;
+    notifyListeners();
+  }
 
   // ── Guided setup ───────────────────────────────────────────────────────
 
@@ -70,7 +70,7 @@ class AppSession extends ChangeNotifier {
   /// Whether design 1h has been confirmed.
   bool get locationConfirmed => _locationConfirmed;
 
-  /// Confirms the (demo-detected) location.
+  /// Confirms the location.
   void confirmLocation() {
     _locationConfirmed = true;
     notifyListeners();
@@ -96,128 +96,303 @@ class AppSession extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Mirrors an edit saved on Settings' edit sheet back into the session, so
+  /// Home's name pill and health-card headline update without a restart.
+  void updateBusiness(int index, Business business) {
+    if (index >= 0 && index < _businesses.length) {
+      _businesses[index] = business;
+      notifyListeners();
+    }
+  }
+
+  bool _businessesFetched = false;
+
+  /// True once this session knows how many businesses the account really has.
+  /// Consumers use this to distinguish "still loading" from "there are zero
+  /// businesses" (which forces the setup flow).
+  ///
+  /// An empty list only counts once the server has been heard from. The list
+  /// arrives from the local cache, which is also empty on a phone that has
+  /// just been signed in to and has not synced yet — treating that as
+  /// authoritative sent existing users back through onboarding.
+  bool get businessesFetched => _businessesFetched;
+
+  /// Wholesale replace — used by [InsightsLoader] as the cached business list
+  /// changes. Preserves the active index when possible.
+  ///
+  /// [serverConfirmed] says whether a `GET /businesses` has landed on this
+  /// device; an empty list without it is "we don't know yet", not "none".
+  void applyBusinessList(
+    List<Business> businesses,
+    List<int?> backendIds, {
+    bool serverConfirmed = true,
+  }) {
+    final int? activeId = activeBackendBusinessId;
+
+    _businesses
+      ..clear()
+      ..addAll(businesses);
+    _backendBusinessIds
+      ..clear()
+      ..addAll(backendIds);
+
+    // Follow the business the user was looking at rather than its old index —
+    // a refresh that reorders the list should not silently switch businesses.
+    final int moved = activeId == null
+        ? -1
+        : _backendBusinessIds.indexOf(activeId);
+    if (moved >= 0) {
+      _activeBusinessIndex = moved;
+    } else if (_activeBusinessIndex >= _businesses.length) {
+      _activeBusinessIndex = _businesses.isEmpty ? 0 : _businesses.length - 1;
+    }
+    if (businesses.isNotEmpty || serverConfirmed) _businessesFetched = true;
+    // Drop state for businesses the server no longer lists, so a deleted
+    // business cannot leave its entries or score behind for a later id to
+    // pick up.
+    final Set<int> live = backendIds.whereType<int>().toSet();
+    _byBusiness.removeWhere((int id, _) => !live.contains(id));
+    notifyListeners();
+  }
+
+  // Backend id per business (populated after a successful POST /businesses).
+  // Parallel to [_businesses] by index; missing entries fall back to null.
+  final List<int?> _backendBusinessIds = <int?>[];
+
+  /// Read-only view of backend ids in the same order as [businesses].
+  List<int?> get backendBusinessIds => List<int?>.unmodifiable(_backendBusinessIds);
+
+  /// The backend id assigned to the currently-active business, if any.
+  int? get activeBackendBusinessId {
+    if (_activeBusinessIndex >= _backendBusinessIds.length) return null;
+    return _backendBusinessIds[_activeBusinessIndex];
+  }
+
+  /// True while a business sits in the session without a backend id — the
+  /// window between the setup wizard adding it and `POST /businesses`
+  /// returning. A cache refresh landing inside that window would drop the
+  /// half-created business, so the loader waits it out.
+  bool get hasUnsavedBusiness =>
+      _businesses.length > _backendBusinessIds.whereType<int>().length;
+
+  /// Wipes the business list and per-business state without touching the
+  /// signed-in profile. Called by [InsightsLoader] on mount so a fresh
+  /// sign-in never sees leftover state from the previous user while its own
+  /// `GET /businesses` is still in flight.
+  void resetBusinessList() {
+    if (hasUnsavedBusiness) return;
+    if (_businesses.isEmpty
+        && _backendBusinessIds.isEmpty
+        && !_businessesFetched
+        && _byBusiness.isEmpty) {
+      return;
+    }
+    _businesses.clear();
+    _backendBusinessIds.clear();
+    _byBusiness.clear();
+    _activeBusinessIndex = 0;
+    _businessesFetched = false;
+    notifyListeners();
+  }
+
+  /// Records the backend-assigned id for the most recently added business.
+  /// Called by SetupFlow after `POST /api/v1/businesses` returns.
+  void registerBackendBusinessId(int id) {
+    while (_backendBusinessIds.length < _businesses.length - 1) {
+      _backendBusinessIds.add(null);
+    }
+    _backendBusinessIds.add(id);
+    notifyListeners();
+  }
+
+  // ── Per-business state ─────────────────────────────────────────────────
+
+  /// Ledger and insights for one business, keyed by backend id.
+  ///
+  /// Everything in here used to be a single global value, which meant the
+  /// first business you opened decided what every other one displayed.
+  final Map<int, _BusinessState> _byBusiness = <int, _BusinessState>{};
+
+  _BusinessState? _activeState() {
+    final int? id = activeBackendBusinessId;
+    return id == null ? null : _byBusiness[id];
+  }
+
+  _BusinessState _stateFor(int businessId) =>
+      _byBusiness.putIfAbsent(businessId, _BusinessState.new);
+
   // ── Money ──────────────────────────────────────────────────────────────
 
-  int _savingsInr = DemoData.savings;
+  /// Savings held for the active business.
+  int get savingsInr => activeBusiness?.savingsInr ?? 0;
 
-  /// Savings balance — editable on 1t.
-  int get savingsInr => _savingsInr;
+  set savingsInr(int value) => _replaceActive(
+    (Business b) => b.copyWith(savingsInr: value),
+  );
 
-  set savingsInr(int value) {
-    _savingsInr = value;
+  /// Loan outstanding for the active business.
+  int get loanInr => activeBusiness?.loanInr ?? 0;
+
+  set loanInr(int value) => _replaceActive(
+    (Business b) => b.copyWith(loanInr: value),
+  );
+
+  void _replaceActive(Business Function(Business) change) {
+    final Business? biz = activeBusiness;
+    if (biz == null) return;
+    _businesses[_activeBusinessIndex] = change(biz);
     notifyListeners();
   }
 
-  int _loanInr = DemoData.loan;
+  /// Money in for the running month: the active business's own ledger total
+  /// once it has entries this month, and the figure typed on setup until then.
+  int get monthMoneyIn => _money().moneyIn;
 
-  /// Outstanding loan — editable on 1t.
-  int get loanInr => _loanInr;
+  /// Money out for the running month, on the same basis as [monthMoneyIn].
+  int get monthMoneyOut => _money().moneyOut;
 
-  set loanInr(int value) {
-    _loanInr = value;
-    notifyListeners();
+  /// True when the month's figures come from ledger entries rather than the
+  /// setup baseline. The money tiles use it to decide whether there is a
+  /// "moved from" figure worth showing.
+  bool get moneyIsFromLedger => _money().fromLedger;
+
+  /// The setup baseline this business started from, whatever the tiles are
+  /// currently showing.
+  MonthlyMoney? get baseline {
+    final MonthlyMoney? snap = activeBusiness?.monthly;
+    if (snap == null || !snap.hasBaseline) return null;
+    return snap;
   }
 
-  int _monthMoneyIn = DemoData.monthMoneyIn;
+  ({int moneyIn, int moneyOut, bool fromLedger}) _money() {
+    final List<LedgerEntry> rows = _activeState()?.entries ?? const [];
+    final DateTime now = DateTime.now();
+    int liveIn = 0;
+    int liveOut = 0;
+    bool sawCurrentMonth = false;
 
-  /// Money IN so far this month.
-  int get monthMoneyIn => _monthMoneyIn;
+    for (final LedgerEntry e in rows) {
+      if (e.recordedAt.year != now.year || e.recordedAt.month != now.month) {
+        continue;
+      }
+      sawCurrentMonth = true;
+      if (e.kind == EntryKind.moneyIn) {
+        liveIn += e.amountInr;
+      } else {
+        liveOut += e.amountInr;
+      }
+    }
 
-  int _monthMoneyOut = DemoData.monthMoneyOut;
+    if (sawCurrentMonth) {
+      return (moneyIn: liveIn, moneyOut: liveOut, fromLedger: true);
+    }
 
-  /// Money OUT so far this month.
-  int get monthMoneyOut => _monthMoneyOut;
-
-  /// Loan repaid so far this month.
-  int get monthLoanPaid => DemoData.monthLoanPaid;
+    final MonthlyMoney? snap = activeBusiness?.monthly;
+    return (
+      moneyIn: snap?.moneyIn ?? 0,
+      moneyOut: snap?.moneyOut ?? 0,
+      fromLedger: false,
+    );
+  }
 
   // ── Ledger ─────────────────────────────────────────────────────────────
 
-  final List<LedgerEntry> _entries;
+  /// The active business's entries, newest first.
+  List<LedgerEntry> get entries =>
+      List<LedgerEntry>.unmodifiable(_activeState()?.entries ?? const []);
 
-  /// All entries, newest first.
-  List<LedgerEntry> get entries => List<LedgerEntry>.unmodifiable(_entries);
-
-  /// Entries saved on the phone but not on the server yet.
-  int get pendingEntryCount => _entries
+  /// Entries saved on this phone but not on the server yet, across every
+  /// business — the offline banner is about the device, not one business.
+  int get pendingEntryCount => _byBusiness.values
+      .expand((_BusinessState s) => s.entries)
       .where((LedgerEntry e) => e.syncState != EntrySyncState.synced)
       .length;
 
-  /// Saves an entry from design 1p and rolls it into the month's totals.
+  /// Replaces one business's entries from its Drift history stream.
+  void applyLiveEntries(int businessId, List<LedgerEntry> entries) {
+    _stateFor(businessId).entries = List<LedgerEntry>.of(entries);
+    notifyListeners();
+  }
+
+  /// Saves an entry from design 1p against the business it belongs to.
   ///
-  /// Offline entries queue as pending — saving never fails.
-  void addEntry(LedgerEntry entry) {
-    final LedgerEntry stored = _connectivity == ConnectivityStatus.offline
-        ? entry.withSyncState(EntrySyncState.pending)
-        : entry;
-
-    _entries.insert(0, stored);
-
-    if (stored.kind == EntryKind.moneyIn) {
-      _monthMoneyIn += stored.amountInr;
-    } else {
-      _monthMoneyOut += stored.amountInr;
-    }
-
+  /// Always pending on arrival. Every entry goes to SQLite first and reaches
+  /// the server only through a sync cycle, so "am I online?" has no bearing on
+  /// the state of a just-written row — the outbox decides when it flips to
+  /// synced, and the Drift stream reports it.
+  void addEntry(int businessId, LedgerEntry entry) {
+    final _BusinessState state = _stateFor(businessId);
+    state.entries = <LedgerEntry>[
+      entry.withSyncState(EntrySyncState.pending),
+      ...state.entries,
+    ];
     notifyListeners();
   }
 
   // ── Score, forecast, alerts ────────────────────────────────────────────
+  //
+  // All three are stamped per business on the backend, so all three are held
+  // per business here.
 
-  HealthSnapshot _current;
-
-  /// The stamped score the month runs on.
-  HealthSnapshot get health => _current;
-
-  HealthSnapshot? _pending;
+  /// The stamped score the month runs on — null until the ML pipeline
+  /// stamps one for the active business.
+  HealthSnapshot? get health => _activeState()?.health;
 
   /// The fresh month-end score, until the user opens it (1o2 → 1q2).
-  HealthSnapshot? get pendingHealth => _pending;
+  HealthSnapshot? get pendingHealth => _activeState()?.pendingHealth;
 
   /// True while the "month closed" banner should show (1o2).
-  bool get updateReady => _pending != null;
+  bool get updateReady => pendingHealth != null;
 
   /// Promotes the pending score once its reveal (1q2) has been seen.
   void acceptMonthlyUpdate() {
-    final HealthSnapshot? pending = _pending;
+    final _BusinessState? state = _activeState();
+    final HealthSnapshot? pending = state?.pendingHealth;
 
-    if (pending != null) {
-      _current = pending;
-      _pending = null;
+    if (state != null && pending != null) {
+      state.health = pending;
+      state.pendingHealth = null;
       notifyListeners();
     }
   }
 
-  /// The six-month forecast.
-  List<ForecastMonth> get forecast => DemoData.forecast;
+  /// The six-month forecast — empty until the backend delivers one.
+  List<ForecastMonth> get forecast =>
+      _activeState()?.forecast ?? const <ForecastMonth>[];
 
-  final List<RiskAlert> _alerts;
-
-  /// Active alerts, urgent first.
-  List<RiskAlert> get alerts => List<RiskAlert>.unmodifiable(_alerts);
-
-  final List<PlanAction> _actions;
-
-  /// The current plan's actions (1s).
-  List<PlanAction> get planActions => List<PlanAction>.unmodifiable(_actions);
-
-  /// Marks a plan action done or not done.
-  void setActionDone(PlanActionKind kind, bool done) {
-    final int index = _actions.indexWhere((PlanAction a) => a.kind == kind);
-
-    if (index >= 0 && _actions[index].done != done) {
-      _actions[index] = _actions[index].withDone(done);
-      notifyListeners();
-    }
+  /// Called by the insights loader whenever a fresh forecast arrives from
+  /// `GET /api/v1/businesses/{id}/forecast`.
+  void applyLiveForecast(int businessId, List<ForecastMonth>? months) {
+    _stateFor(businessId).forecast = months ?? const <ForecastMonth>[];
+    notifyListeners();
   }
+
+  /// Replaces one business's stamped health snapshot with a live one.
+  void applyLiveHealth(int businessId, HealthSnapshot? snapshot) {
+    _stateFor(businessId).health = snapshot;
+    notifyListeners();
+  }
+
+  /// Replaces one business's alerts with the live ones from the backend.
+  void applyLiveAlerts(int businessId, List<RiskAlert>? alerts) {
+    _stateFor(businessId).alerts = alerts ?? const <RiskAlert>[];
+    notifyListeners();
+  }
+
+  /// Active alerts for the active business, urgent first.
+  List<RiskAlert> get alerts =>
+      List<RiskAlert>.unmodifiable(_activeState()?.alerts ?? const []);
 
   // ── Connectivity ───────────────────────────────────────────────────────
 
   ConnectivityStatus _connectivity = ConnectivityStatus.synced;
+  SyncStatusController? _syncStatus;
 
-  /// Current network state.
+  /// Current network state, projected from the real sync layer.
   ConnectivityStatus get connectivity => _connectivity;
 
+  /// Overrides the state directly. Only used by demo mode and widget tests;
+  /// when [bindSync] is active the next real update wins.
   set connectivity(ConnectivityStatus value) {
     if (_connectivity != value) {
       _connectivity = value;
@@ -225,17 +400,65 @@ class AppSession extends ChangeNotifier {
     }
   }
 
-  /// Pushes every queued entry to the server (1w's "Sync now").
-  void syncNow() {
-    for (int i = 0; i < _entries.length; i++) {
-      if (_entries[i].syncState != EntrySyncState.synced) {
-        _entries[i] = _entries[i].withSyncState(EntrySyncState.synced);
-      }
-    }
+  /// The live sync status, once bound. Null in demo mode and bare tests.
+  SyncStatus? get syncStatus => _syncStatus?.value;
 
-    _connectivity = ConnectivityStatus.synced;
-    notifyListeners();
+  /// How many writes have not reached the server.
+  int get pendingSyncCount => _syncStatus?.value.pendingCount ?? 0;
+
+  /// Mirrors the sync layer's status onto this session.
+  ///
+  /// The session predates the sync layer and a dozen screens read
+  /// `session.connectivity`, so rather than rewrite them all it becomes a
+  /// projection of the real thing. [SyncState] is the finer-grained truth;
+  /// this collapses it onto the three states the existing chips understand.
+  void bindSync(SyncStatusController controller) {
+    _syncStatus?.removeListener(_onSyncStatus);
+    _syncStatus = controller;
+    controller.addListener(_onSyncStatus);
+    _onSyncStatus();
   }
+
+  void _onSyncStatus() {
+    final SyncStatus? status = _syncStatus?.value;
+    if (status == null) return;
+
+    final ConnectivityStatus next = switch (status.state) {
+      SyncState.offline => ConnectivityStatus.offline,
+      SyncState.syncing => ConnectivityStatus.syncing,
+      // Online with a queue is not "offline", but it is not settled either.
+      // The chip reads this as work-in-progress, which is what it is: the
+      // engine will drain it on the next cycle without the user doing
+      // anything.
+      SyncState.pendingChanges => ConnectivityStatus.syncing,
+      SyncState.synced => ConnectivityStatus.synced,
+    };
+
+    if (_connectivity != next) {
+      _connectivity = next;
+      notifyListeners();
+    } else {
+      // Counts changed even though the coarse state did not; the chip shows
+      // them, so it still needs to rebuild.
+      notifyListeners();
+    }
+  }
+
+  @override
+  void dispose() {
+    _syncStatus?.removeListener(_onSyncStatus);
+    _syncStatus = null;
+    super.dispose();
+  }
+}
+
+/// Everything Home, History and Forecast show for one business.
+class _BusinessState {
+  List<LedgerEntry> entries = const <LedgerEntry>[];
+  HealthSnapshot? health;
+  HealthSnapshot? pendingHealth;
+  List<ForecastMonth> forecast = const <ForecastMonth>[];
+  List<RiskAlert> alerts = const <RiskAlert>[];
 }
 
 /// Hosts the [AppSession] for the widget tree.

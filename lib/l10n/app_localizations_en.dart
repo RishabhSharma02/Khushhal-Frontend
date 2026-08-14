@@ -191,6 +191,9 @@ class AppLocalizationsEn extends AppLocalizations {
       'You can finish with 1 done and add the rest later';
 
   @override
+  String get hubAddAnother => 'Add new business';
+
+  @override
   String get kindHeading => 'What kind of business?';
 
   @override
@@ -229,6 +232,26 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get kindDairyHint =>
       'Dairy picked: winter flush season and Sitapur fodder prices load automatically.';
+
+  @override
+  String get kindPoultryHint =>
+      'Poultry picked: feed price swings and summer heat-stress alerts kick in for your area.';
+
+  @override
+  String get kindFoodProcessingHint =>
+      'Food processing picked: input-cost tracking and monsoon demand shifts are factored into your forecast.';
+
+  @override
+  String get kindCraftsHint =>
+      'Handicrafts picked: raw-material seasonality and festival demand windows shape your outlook.';
+
+  @override
+  String get kindShopHint =>
+      'Shop picked: local footfall trends, mandi holidays and fortnightly stock cycles feed your forecast.';
+
+  @override
+  String get kindOtherHint =>
+      'We\'ll use only your entries for now — the score gets sharper as you record more months.';
 
   @override
   String get detailsHeading => 'About your business';
@@ -311,13 +334,33 @@ class AppLocalizationsEn extends AppLocalizations {
   String get scoreNew => 'New';
 
   @override
-  String healthHeadline(String name) {
-    return '$name: HEALTHY 🙂';
+  String healthHeadlineLow(String name) {
+    return '$name: HEALTHY';
   }
 
   @override
-  String healthSummary(int score) {
+  String healthHeadlineMedium(String name) {
+    return '$name: NEEDS CARE';
+  }
+
+  @override
+  String healthHeadlineHigh(String name) {
+    return '$name: AT RISK';
+  }
+
+  @override
+  String healthSummaryLow(int score) {
     return 'Business is doing well · Score $score/100';
+  }
+
+  @override
+  String healthSummaryMedium(int score) {
+    return 'Business needs some care · Score $score/100';
+  }
+
+  @override
+  String healthSummaryHigh(int score) {
+    return 'Business is under strain · Score $score/100';
   }
 
   @override
@@ -327,6 +370,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get riskLowBadge => 'Low risk';
+
+  @override
+  String get riskMediumBadge => 'Medium risk';
+
+  @override
+  String get riskHighBadge => 'High risk';
 
   @override
   String homeNextUpdate(String date) {
@@ -339,13 +388,23 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String homeDayOf30(int day) {
+    return 'Day $day of 30';
+  }
+
+  @override
+  String homeScoreAsOf(String date) {
+    return 'Score as of $date';
+  }
+
+  @override
   String homeMonthJustStarted(String month) {
     return '$month just started';
   }
 
   @override
   String get homeScoreNote =>
-      'Score changes once a month. Daily entries build the next one.';
+      'Score refreshes every 30 days. Keep writing entries — they build the next one.';
 
   @override
   String get tileMoneyIn => 'Money IN';
@@ -366,6 +425,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get tileTapToEdit => 'tap to edit';
 
   @override
+  String tileMovedFrom(String amount, String month) {
+    return 'was $amount · $month';
+  }
+
+  @override
+  String tileMovedFromPlain(String amount) {
+    return 'was $amount';
+  }
+
+  @override
   String get homeWatch => 'Watch';
 
   @override
@@ -374,13 +443,22 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get watchTitleNoMonth => 'Money may get tight soon';
+
+  @override
   String get watchReasonMandi => 'fodder price rising in Sitapur.';
+
+  @override
+  String get watchReasonScore => 'from your latest score.';
 
   @override
   String get watchReasonForecast => 'from the new forecast.';
 
   @override
   String get watchAction => 'Do this: buy fodder early with your group';
+
+  @override
+  String get watchSeePlan => 'Do this: see what to do';
 
   @override
   String get homeWriteEntryCta => 'Write today\'s entry';
@@ -409,6 +487,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get offlineHealthHeadline => 'Business is HEALTHY';
+
+  @override
+  String get offlineHealthHeadlineMedium => 'Business is ON WATCH';
+
+  @override
+  String get offlineHealthHeadlineHigh => 'Business is AT RISK';
 
   @override
   String offlineScoreLine(int score, String date) {
@@ -476,8 +560,15 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String forecastInsightWhy(String amount) {
-    return 'Why? Fodder prices rising + festival costs. Savings would drop to $amount.';
+    return 'Money OUT is forecast above money IN that month. You have $amount saved today — that is the buffer it would draw on.';
   }
+
+  @override
+  String get forecastNoRiskTitle => 'No tight month in the next 6 months.';
+
+  @override
+  String get forecastNoRiskWhy =>
+      'Money IN stays ahead of money OUT right across the window. Keep writing entries — next month\'s forecast can change this.';
 
   @override
   String get whatIfNormal => 'Normal';
@@ -557,9 +648,15 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String alertSavingsDetail(String amount, String date) {
-    return 'Forecast shows $amount left · $date';
+  String get alertSavingsTitleNoMonth => 'Savings may run low';
+
+  @override
+  String alertSavingsDetail(String date) {
+    return 'From your latest forecast · raised $date';
   }
+
+  @override
+  String get alertSavingsDetailUndated => 'From your latest forecast';
 
   @override
   String get alertSavingsAction => 'See 3 things to do';
@@ -743,6 +840,20 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsNotificationsValue => 'SMS + in-app alerts on';
 
   @override
+  String get settingsNotificationsNone => 'No alerts right now';
+
+  @override
+  String settingsNotificationsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count alerts to see',
+      one: '1 alert to see',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get settingsSupport => 'Support';
 
   @override
@@ -758,5 +869,114 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsLogOut => 'Log out';
 
   @override
-  String get settingsPlaceValue => 'Sitapur UP';
+  String get aboutIntro => 'Khushhal is a money diary for your small business.';
+
+  @override
+  String get aboutHowItWorks =>
+      'Write down the money that comes in and the money that goes out. It takes one minute a day.';
+
+  @override
+  String get aboutScore =>
+      'Every month Khushhal gives your business a health score and tells you what to do next.';
+
+  @override
+  String get aboutOffline =>
+      'It works without network. Your entries stay safe on this phone and go online later.';
+
+  @override
+  String get aboutHelpTitle => 'Helpline';
+
+  @override
+  String get aboutHelpBody => 'Tap the number to call us.';
+
+  @override
+  String get authWelcomeTitle => 'Hurray! Welcome to Khushhal';
+
+  @override
+  String get authWhatToCallYou => 'What should we call you?';
+
+  @override
+  String get authFirstName => 'First name';
+
+  @override
+  String get authLastNameOptional => 'Last name (optional)';
+
+  @override
+  String get authSaving => 'Saving…';
+
+  @override
+  String authSaveFailed(String reason) {
+    return 'Save failed: $reason';
+  }
+
+  @override
+  String get authContinue => 'Continue';
+
+  @override
+  String authWelcomeBack(String name) {
+    return 'Welcome back, $name';
+  }
+
+  @override
+  String get authEnterPin => 'Enter your 4-digit PIN';
+
+  @override
+  String get authForgotPin => 'Forgot PIN?';
+
+  @override
+  String get authLoginWithMobile => 'Login with mobile number';
+
+  @override
+  String get authEnterCode => 'Enter the code';
+
+  @override
+  String authSentTo(String phone) {
+    return 'Sent to $phone · ';
+  }
+
+  @override
+  String authResendIn(String secs) {
+    return 'Resend in 0:$secs';
+  }
+
+  @override
+  String get authResendCode => 'Resend code';
+
+  @override
+  String get authPhoneTitle => 'Enter your mobile number';
+
+  @override
+  String get authPhoneSubtitle =>
+      'We will send a 6-digit code by SMS. No password needed.';
+
+  @override
+  String get authGetOtp => 'Get OTP';
+
+  @override
+  String get authSending => 'Sending…';
+
+  @override
+  String get authTooManyTries => 'Too many wrong tries — please sign in again.';
+
+  @override
+  String authWrongPin(int left) {
+    return 'Wrong mPIN. $left attempts left.';
+  }
+
+  @override
+  String get authCreatePinTitle => 'Create your PIN';
+
+  @override
+  String get authCreatePinSubtitle =>
+      'Pick 4 digits you will remember.\nNext time you open the app, just enter this.';
+
+  @override
+  String get authConfirmPinTitle => 'Type it again';
+
+  @override
+  String get authConfirmPinSubtitle =>
+      'Enter the same 4 digits once more to confirm.';
+
+  @override
+  String get authPinMismatch => 'The PINs do not match. Try again.';
 }

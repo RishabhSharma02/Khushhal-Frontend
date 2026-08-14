@@ -35,7 +35,10 @@ class AppShell extends StatefulWidget {
 }
 
 class _AppShellState extends State<AppShell> {
-  int _tab = 0;
+  /// Index of the Home tab in the [IndexedStack] and the nav row.
+  static const int _homeTab = 0;
+
+  int _tab = _homeTab;
 
   @override
   Widget build(BuildContext context) {
@@ -54,6 +57,7 @@ class _AppShellState extends State<AppShell> {
                   SettingsScreen(
                     onLanguageSelected: widget.onLanguageSelected,
                     onLogout: widget.onLogout,
+                    onShowHome: () => setState(() => _tab = _homeTab),
                   ),
                 ],
               ),

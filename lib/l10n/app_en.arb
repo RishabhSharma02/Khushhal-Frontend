@@ -166,6 +166,7 @@
   "hubStartCta": "Start setup",
   "hubFinishCta": "Finish",
   "hubFinishHint": "You can finish with 1 done and add the rest later",
+  "hubAddAnother": "Add new business",
 
   "kindHeading": "What kind of business?",
   "segmentPrompt": "I am a…",
@@ -180,6 +181,11 @@
   "sectorShop": "Shop",
   "sectorOther": "Other",
   "kindDairyHint": "Dairy picked: winter flush season and Sitapur fodder prices load automatically.",
+  "kindPoultryHint": "Poultry picked: feed price swings and summer heat-stress alerts kick in for your area.",
+  "kindFoodProcessingHint": "Food processing picked: input-cost tracking and monsoon demand shifts are factored into your forecast.",
+  "kindCraftsHint": "Handicrafts picked: raw-material seasonality and festival demand windows shape your outlook.",
+  "kindShopHint": "Shop picked: local footfall trends, mandi holidays and fortnightly stock cycles feed your forecast.",
+  "kindOtherHint": "We'll use only your entries for now — the score gets sharper as you record more months.",
 
   "detailsHeading": "About your business",
   "detailsNameLabel": "Business name",
@@ -219,17 +225,46 @@
     }
   },
   "scoreNew": "New",
-  "healthHeadline": "{name}: HEALTHY 🙂",
-  "@healthHeadline": {
-    "description": "Health card headline for a healthy score (1o).",
+  "healthHeadlineLow": "{name}: HEALTHY",
+  "@healthHeadlineLow": {
+    "description": "Health card headline on a green band (1o). The emoji is appended by HealthCard so it can follow the score, not just the band.",
     "placeholders": {
       "name": { "type": "String", "example": "Shanti Dairy" }
     }
   },
-  "healthSummary": "Business is doing well · Score {score}/100",
-  "@healthSummary": {
+  "healthHeadlineMedium": "{name}: NEEDS CARE",
+  "@healthHeadlineMedium": {
+    "description": "Health card headline on an amber band (1o).",
+    "placeholders": {
+      "name": { "type": "String", "example": "Shanti Dairy" }
+    }
+  },
+  "healthHeadlineHigh": "{name}: AT RISK",
+  "@healthHeadlineHigh": {
+    "description": "Health card headline on a red band (1o).",
+    "placeholders": {
+      "name": { "type": "String", "example": "Shanti Dairy" }
+    }
+  },
+  "healthSummaryLow": "Business is doing well · Score {score}/100",
+  "@healthSummaryLow": {
+    "description": "Health card summary line on a green band (1o).",
     "placeholders": {
       "score": { "type": "int", "example": "72" }
+    }
+  },
+  "healthSummaryMedium": "Business needs some care · Score {score}/100",
+  "@healthSummaryMedium": {
+    "description": "Health card summary line on an amber band (1o).",
+    "placeholders": {
+      "score": { "type": "int", "example": "54" }
+    }
+  },
+  "healthSummaryHigh": "Business is under strain · Score {score}/100",
+  "@healthSummaryHigh": {
+    "description": "Health card summary line on a red band (1o).",
+    "placeholders": {
+      "score": { "type": "int", "example": "36" }
     }
   },
   "scoreOutOf": "Score {score}/100",
@@ -239,6 +274,8 @@
     }
   },
   "riskLowBadge": "Low risk",
+  "riskMediumBadge": "Medium risk",
+  "riskHighBadge": "High risk",
   "homeNextUpdate": "Next update {date}",
   "@homeNextUpdate": {
     "placeholders": {
@@ -252,19 +289,44 @@
       "days": { "type": "int", "example": "31" }
     }
   },
+  "homeDayOf30": "Day {day} of 30",
+  "@homeDayOf30": {
+    "placeholders": {
+      "day": { "type": "int", "example": "12" }
+    }
+  },
+  "homeScoreAsOf": "Score as of {date}",
+  "@homeScoreAsOf": {
+    "placeholders": {
+      "date": { "type": "String", "example": "1 Nov" }
+    }
+  },
   "homeMonthJustStarted": "{month} just started",
   "@homeMonthJustStarted": {
     "placeholders": {
       "month": { "type": "String", "example": "November" }
     }
   },
-  "homeScoreNote": "Score changes once a month. Daily entries build the next one.",
+  "homeScoreNote": "Score refreshes every 30 days. Keep writing entries — they build the next one.",
   "tileMoneyIn": "Money IN",
   "tileMoneyOut": "Money OUT",
   "tileThisMonth": "this month",
   "tileSavings": "Savings",
   "tileLoan": "Loan",
   "tileTapToEdit": "tap to edit",
+  "tileMovedFrom": "was {amount} · {month}",
+  "@tileMovedFrom": {
+    "placeholders": {
+      "amount": { "type": "String", "example": "₹32,000" },
+      "month": { "type": "String", "example": "Aug" }
+    }
+  },
+  "tileMovedFromPlain": "was {amount}",
+  "@tileMovedFromPlain": {
+    "placeholders": {
+      "amount": { "type": "String", "example": "₹32,000" }
+    }
+  },
   "homeWatch": "Watch",
   "watchTitle": "{month} may be tight",
   "@watchTitle": {
@@ -272,9 +334,12 @@
       "month": { "type": "String", "example": "Nov" }
     }
   },
+  "watchTitleNoMonth": "Money may get tight soon",
   "watchReasonMandi": "fodder price rising in Sitapur.",
+  "watchReasonScore": "from your latest score.",
   "watchReasonForecast": "from the new forecast.",
   "watchAction": "Do this: buy fodder early with your group",
+  "watchSeePlan": "Do this: see what to do",
   "homeWriteEntryCta": "Write today's entry",
   "homeMonthClosedBanner": "{month} is closed — new score ready",
   "@homeMonthClosedBanner": {
@@ -294,6 +359,8 @@
     }
   },
   "offlineHealthHeadline": "Business is HEALTHY",
+  "offlineHealthHeadlineMedium": "Business is ON WATCH",
+  "offlineHealthHeadlineHigh": "Business is AT RISK",
   "offlineScoreLine": "Score {score}/100 · as on {date}",
   "@offlineScoreLine": {
     "placeholders": {
@@ -342,11 +409,20 @@
       "month": { "type": "String", "example": "November" }
     }
   },
-  "forecastInsightWhy": "Why? Fodder prices rising + festival costs. Savings would drop to {amount}.",
+  "forecastInsightWhy": "Money OUT is forecast above money IN that month. You have {amount} saved today — that is the buffer it would draw on.",
   "@forecastInsightWhy": {
+    "description": "Why the flagged month is tight. The amount is savings on hand today, not a forecast figure.",
     "placeholders": {
-      "amount": { "type": "String", "example": "₹9,000" }
+      "amount": { "type": "String", "example": "₹41,200" }
     }
+  },
+  "forecastNoRiskTitle": "No tight month in the next 6 months.",
+  "@forecastNoRiskTitle": {
+    "description": "Forecast insight title when the model flagged no month at all — shown instead of naming a month."
+  },
+  "forecastNoRiskWhy": "Money IN stays ahead of money OUT right across the window. Keep writing entries — next month's forecast can change this.",
+  "@forecastNoRiskWhy": {
+    "description": "Forecast insight body when the model flagged no month at all."
   },
   "whatIfNormal": "Normal",
   "whatIfSpike": "Price spike?",
@@ -423,12 +499,20 @@
       "month": { "type": "String", "example": "November" }
     }
   },
-  "alertSavingsDetail": "Forecast shows {amount} left · {date}",
+  "alertSavingsTitleNoMonth": "Savings may run low",
+  "@alertSavingsTitleNoMonth": {
+    "description": "Savings alert title when the forecast flags no particular month."
+  },
+  "alertSavingsDetail": "From your latest forecast · raised {date}",
   "@alertSavingsDetail": {
+    "description": "Savings alert detail. Only the raised date is a real figure, so no rupee amount is quoted.",
     "placeholders": {
-      "amount": { "type": "String", "example": "₹9,000" },
       "date": { "type": "String", "example": "12 Oct" }
     }
+  },
+  "alertSavingsDetailUndated": "From your latest forecast",
+  "@alertSavingsDetailUndated": {
+    "description": "Savings alert detail for a feed that carries no raised date."
   },
   "alertSavingsAction": "See 3 things to do",
   "alertFodderTitle": "Fodder price up 14% in Sitapur mandi",
@@ -545,10 +629,65 @@
   "settingsLanguage": "Language",
   "settingsNotifications": "Notifications",
   "settingsNotificationsValue": "SMS + in-app alerts on",
+  "settingsNotificationsNone": "No alerts right now",
+  "settingsNotificationsCount": "{count, plural, =1{1 alert to see} other{{count} alerts to see}}",
+  "@settingsNotificationsCount": {
+    "placeholders": {
+      "count": { "type": "int", "example": "2" }
+    }
+  },
   "settingsSupport": "Support",
   "settingsContact": "Contact us",
   "settingsAbout": "About Khushhal",
   "settingsVersion": "v1.0.0",
   "settingsLogOut": "Log out",
-  "settingsPlaceValue": "Sitapur UP"
+
+  "aboutIntro": "Khushhal is a money diary for your small business.",
+  "aboutHowItWorks": "Write down the money that comes in and the money that goes out. It takes one minute a day.",
+  "aboutScore": "Every month Khushhal gives your business a health score and tells you what to do next.",
+  "aboutOffline": "It works without network. Your entries stay safe on this phone and go online later.",
+  "aboutHelpTitle": "Helpline",
+  "aboutHelpBody": "Tap the number to call us.",
+
+  "authWelcomeTitle": "Hurray! Welcome to Khushhal",
+  "authWhatToCallYou": "What should we call you?",
+  "authFirstName": "First name",
+  "authLastNameOptional": "Last name (optional)",
+  "authSaving": "Saving…",
+  "authSaveFailed": "Save failed: {reason}",
+  "@authSaveFailed": {
+    "placeholders": { "reason": { "type": "String" } }
+  },
+  "authContinue": "Continue",
+  "authWelcomeBack": "Welcome back, {name}",
+  "@authWelcomeBack": {
+    "placeholders": { "name": { "type": "String" } }
+  },
+  "authEnterPin": "Enter your 4-digit PIN",
+  "authForgotPin": "Forgot PIN?",
+  "authLoginWithMobile": "Login with mobile number",
+  "authEnterCode": "Enter the code",
+  "authSentTo": "Sent to {phone} · ",
+  "@authSentTo": {
+    "placeholders": { "phone": { "type": "String" } }
+  },
+  "authResendIn": "Resend in 0:{secs}",
+  "@authResendIn": {
+    "placeholders": { "secs": { "type": "String" } }
+  },
+  "authResendCode": "Resend code",
+  "authPhoneTitle": "Enter your mobile number",
+  "authPhoneSubtitle": "We will send a 6-digit code by SMS. No password needed.",
+  "authGetOtp": "Get OTP",
+  "authSending": "Sending…",
+  "authTooManyTries": "Too many wrong tries — please sign in again.",
+  "authWrongPin": "Wrong mPIN. {left} attempts left.",
+  "@authWrongPin": {
+    "placeholders": { "left": { "type": "int" } }
+  },
+  "authCreatePinTitle": "Create your PIN",
+  "authCreatePinSubtitle": "Pick 4 digits you will remember.\nNext time you open the app, just enter this.",
+  "authConfirmPinTitle": "Type it again",
+  "authConfirmPinSubtitle": "Enter the same 4 digits once more to confirm.",
+  "authPinMismatch": "The PINs do not match. Try again."
 }

@@ -1,191 +1,580 @@
 /// Setup 1 · Location (design 1h).
 library;
 
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:latlong2/latlong.dart';
 
 import '../../../core/theme/theme.dart';
 import '../../../core/widgets/gradient_cta_button.dart';
 import '../../../core/widgets/info_note.dart';
 import '../../../core/widgets/khushhal_card.dart';
+import '../../../core/widgets/searchable_picker.dart';
 import '../../../core/widgets/section_label.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../locations/data/geocoder.dart';
+import '../../locations/data/location_repository.dart';
 import 'widgets/setup_progress_header.dart';
 import 'widgets/step_page.dart';
 
-/// GPS one-tap first, dropdown fallback for shared phones, and the reason
-/// for asking stated in plain words.
-class LocationStep extends StatelessWidget {
-  /// Creates the location step.
+/// Guided setup step 1 — pick state → district → village, with a live map
+/// centred on the picked district for confirmation.
+///
+/// Reads states / districts from the backend when a [LocationRepository]
+/// is provided; village is a free-typed searchable field since we don't
+/// ship a curated village dataset.
+class LocationStep extends StatefulWidget {
   const LocationStep({super.key, required this.onConfirm});
 
-  /// Called when the location is confirmed.
   final VoidCallback onConfirm;
+
+  @override
+  State<LocationStep> createState() => _LocationStepState();
+}
+
+class _LocationStepState extends State<LocationStep> {
+  final _geocoder = Geocoder();
+  final MapController _mapController = MapController();
+
+  bool _locating = false;
+  String? _locateError;
+  List<RemoteState> _states = const [];
+  List<String> _districts = const [];
+
+  RemoteState? _state;
+  String? _district;
+  String? _village;
+  LatLng? _pin;
+
+  bool _loading = false;
+  bool _saving = false;
+  // Turns on after the first tap on Confirm — before then we don't want to
+  // shout red at a user who hasn't tried to submit yet.
+  bool _submitted = false;
+
+  static const _indiaCentre = LatLng(22.9734, 78.6569);
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchStates();
+  }
+
+  Future<void> _fetchStates() async {
+    final repo = _repo();
+    if (repo == null) return;
+    setState(() => _loading = true);
+    try {
+      final rows = await repo.listStates();
+      if (!mounted) return;
+      setState(() => _states = rows);
+    } catch (_) {/* silent */} finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  Future<void> _onStatePicked(RemoteState s) async {
+    setState(() {
+      _state = s;
+      _district = null;
+      _districts = const [];
+      _village = null;
+      _pin = null;
+    });
+    final repo = _repo();
+    if (repo == null) return;
+    try {
+      final ds = await repo.listDistricts(s.code);
+      if (!mounted) return;
+      setState(() => _districts = ds);
+    } catch (_) {}
+  }
+
+  Future<void> _onDistrictPicked(String d) async {
+    setState(() => _district = d);
+    final pin = await _geocoder.forDistrict(state: _state!.nameEn, district: d);
+    if (!mounted) return;
+    if (pin != null) {
+      setState(() => _pin = pin);
+      _moveMap(pin, 9.5);
+    }
+  }
+
+  /// FlutterMap only mounts once we have a pin, so the very first
+  /// `_mapController.move` after setState would run before the map exists
+  /// and throw. Defer to a post-frame callback so the widget has time to
+  /// build the map before we drive the controller.
+  void _moveMap(LatLng at, double zoom) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      try {
+        _mapController.move(at, zoom);
+      } catch (_) {
+        // Map may still be attaching; the pin is set so the next tap will
+        // render at the right centre via MapOptions.initialCenter anyway.
+      }
+    });
+  }
+
+  LocationRepository? _repo() {
+    try {
+      return context.read<LocationRepository>();
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<void> _useMyLocation() async {
+    if (_locating) return;
+    setState(() {
+      _locating = true;
+      _locateError = null;
+    });
+    try {
+      final serviceOn = await Geolocator.isLocationServiceEnabled();
+      if (!serviceOn) {
+        setState(() {
+          _locating = false;
+          _locateError = 'Turn on device location and try again.';
+        });
+        return;
+      }
+      var perm = await Geolocator.checkPermission();
+      if (perm == LocationPermission.denied) {
+        perm = await Geolocator.requestPermission();
+      }
+      if (perm == LocationPermission.denied
+          || perm == LocationPermission.deniedForever) {
+        setState(() {
+          _locating = false;
+          _locateError = perm == LocationPermission.deniedForever
+              ? 'Location permission is blocked — enable it from system settings.'
+              : 'Location permission denied.';
+        });
+        return;
+      }
+
+      // The states list drives the dropdown; if it hasn't loaded yet we
+      // won't be able to match the reverse-geocode result — kick it off
+      // now and wait alongside the GPS request.
+      if (_states.isEmpty) {
+        await _fetchStates();
+      }
+
+      // Try the fast, no-fix-needed path first — a cached last-known
+      // position lands instantly on any device that's used GPS before,
+      // and on an emulator with `adb emu geo fix` it's the only source
+      // that reliably returns.
+      Position? pos;
+      try {
+        pos = await Geolocator.getLastKnownPosition()
+            .timeout(const Duration(seconds: 3));
+      } catch (_) {/* ignore */}
+      // `LocationSettings.timeLimit` is not honoured on every platform +
+      // geolocator combo — wrap the call ourselves so an emulator without
+      // a fix throws a real TimeoutException instead of hanging forever
+      // (the source of the "future not completed" report).
+      pos ??= await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.medium,
+          timeLimit: Duration(seconds: 15),
+        ),
+      ).timeout(const Duration(seconds: 15));
+      final at = LatLng(pos.latitude, pos.longitude);
+      // Reverse-geocode via Nominatim (Mappls would slot in here). Cap it
+      // so a stalled Nominatim response doesn't leave the button spinning.
+      final res = await _geocoder
+          .reverse(at)
+          .timeout(const Duration(seconds: 8), onTimeout: () => null);
+      if (!mounted) return;
+
+      // Match the returned state name to one we ship dropdowns for —
+      // Nominatim returns things like "Uttar Pradesh" that must map to our
+      // catalogue row. Tolerate case + trim, and fall back to a substring
+      // match for edge cases like "NCT of Delhi" → "Delhi".
+      RemoteState? matched;
+      final rawState = res?.state?.toLowerCase().trim();
+      if (rawState != null && rawState.isNotEmpty) {
+        for (final s in _states) {
+          if (s.nameEn.toLowerCase() == rawState) { matched = s; break; }
+        }
+        matched ??= _states.firstWhere(
+          (s) => rawState.contains(s.nameEn.toLowerCase())
+              || s.nameEn.toLowerCase().contains(rawState),
+          orElse: () => _states.first, // no perfect match — leave to user
+        );
+        // firstWhere with orElse never returns null but we want null when
+        // it truly didn't match, so re-check.
+        if (!(matched.nameEn.toLowerCase() == rawState
+              || rawState.contains(matched.nameEn.toLowerCase())
+              || matched.nameEn.toLowerCase().contains(rawState))) {
+          matched = null;
+        }
+      }
+      setState(() {
+        _pin = at;
+        if (matched != null) _state = matched;
+        if (res?.district != null) _district = res!.district;
+        if (res?.village != null) _village = res!.village;
+        _locating = false;
+      });
+      // Refresh district list for the matched state so the picker below
+      // reflects the auto-filled district.
+      if (matched != null) {
+        try {
+          final repo = _repo();
+          if (repo != null) {
+            final ds = await repo.listDistricts(matched.code);
+            if (mounted) setState(() => _districts = ds);
+          }
+        } catch (_) {}
+      }
+      _moveMap(at, 13);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _locating = false;
+        _locateError = 'Could not get a location fix: $e';
+      });
+    }
+  }
+
+  Future<void> _confirm() async {
+    setState(() => _submitted = true);
+    if (_state == null || _district == null) return;
+    final repo = _repo();
+    if (repo == null) {
+      widget.onConfirm();
+      return;
+    }
+    setState(() => _saving = true);
+    try {
+      await repo.saveOnUser(
+        state: _state?.nameEn,
+        district: _district,
+        village: _village,
+      );
+    } catch (_) {/* best-effort */}
+    if (!mounted) return;
+    setState(() => _saving = false);
+    widget.onConfirm();
+  }
+
+  Future<void> _pickState() async {
+    final s = await SearchablePicker.show<RemoteState>(
+      context,
+      title: 'Select state',
+      items: _states,
+      labelBuilder: (s) => s.nameEn,
+      searchHint: 'Search state',
+    );
+    if (s != null) await _onStatePicked(s);
+  }
+
+  Future<void> _pickDistrict() async {
+    if (_districts.isEmpty) return;
+    final d = await SearchablePicker.show<String>(
+      context,
+      title: 'Select district',
+      items: _districts,
+      labelBuilder: (d) => d,
+      searchHint: 'Search district',
+    );
+    if (d != null) await _onDistrictPicked(d);
+  }
+
+  Future<void> _pickVillage() async {
+    final v = await SearchablePicker.show<String>(
+      context,
+      title: 'Select village',
+      // No curated village dataset yet — allow freetext entry.
+      items: const <String>[],
+      labelBuilder: (v) => v,
+      searchHint: 'Type village name',
+      emptyText: 'Type a village name and tap "Use" to add it.',
+      allowFreetext: true,
+      freetextBuilder: (q) => q,
+    );
+    if (v != null) setState(() => _village = v);
+  }
 
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = AppLocalizations.of(context)!;
 
     return StepPage(
-      header: SetupProgressHeader(label: l10n.setupStepOf(1, 5), filled: 1),
+      header: SetupProgressHeader(label: l10n.setupStepOf(1, 5), filled: 1, showBack: false),
       cta: GradientCtaButton(
-        label: l10n.locationConfirmCta,
-        onPressed: onConfirm,
+        label: _saving ? '${l10n.locationConfirmCta}…' : l10n.locationConfirmCta,
+        onPressed: _saving ? () {} : _confirm,
       ),
       children: <Widget>[
         Text(
           l10n.locationHeading,
-          style: const TextStyle(
-            fontSize: 22,
-            fontWeight: FontWeight.w600,
-            color: AppPalette.ink,
-            height: 1.25,
-          ),
+          style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w600, color: AppPalette.ink, height: 1.25),
         ),
         const SizedBox(height: 14),
-        KhushhalCard(
-          highlighted: true,
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-          child: Row(
-            children: <Widget>[
-              const Icon(Icons.my_location, size: 20, color: AppPalette.forest),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text.rich(
-                  TextSpan(
-                    children: <InlineSpan>[
-                      TextSpan(
-                        text: l10n.locationUseMine,
-                        style: const TextStyle(fontWeight: FontWeight.w700),
-                      ),
-                      TextSpan(text: ' · ${l10n.locationOneTap}'),
-                    ],
-                  ),
-                  style: const TextStyle(fontSize: 15, color: AppPalette.ink),
-                ),
-              ),
-            ],
-          ),
-        ),
+        _MapCard(controller: _mapController, pin: _pin, fallback: _indiaCentre),
         const SizedBox(height: 10),
-        Container(
-          height: 100,
-          decoration: BoxDecoration(
-            color: AppPalette.mintNote,
-            border: Border.all(color: const Color(0xFFA9C9B2), width: 1.5),
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: <Widget>[
-              const Icon(Icons.place, size: 22, color: Color(0xFF5C8468)),
-              const SizedBox(height: 5),
-              Text(
-                l10n.locationMapHint,
-                style: const TextStyle(fontSize: 12, color: Color(0xFF5C8468)),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 10),
-        KhushhalCard(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              SectionLabel(l10n.locationDetectedLabel),
-              const SizedBox(height: 3),
-              Text(
-                l10n.locationDetectedValue,
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: AppPalette.cardInk,
-                ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                l10n.locationDetectedMandi,
-                style: const TextStyle(fontSize: 12.5, color: AppPalette.muted),
-              ),
-            ],
-          ),
+        _UseMyLocationCard(
+          busy: _locating,
+          error: _locateError,
+          onTap: _useMyLocation,
         ),
         const SizedBox(height: 12),
-        Text(
-          l10n.locationPickByHand,
-          style: const TextStyle(fontSize: 13, color: AppPalette.muted),
+        SectionLabel(l10n.locationDetectedLabel),
+        const SizedBox(height: 8),
+        if (_loading) const Padding(
+          padding: EdgeInsets.only(bottom: 8),
+          child: LinearProgressIndicator(minHeight: 2),
+        ),
+        _FieldRow(
+          label: l10n.locationState,
+          value: _state?.nameEn,
+          enabled: _states.isNotEmpty,
+          required: true,
+          errorText: (_submitted && _state == null) ? 'Please select a state.' : null,
+          onTap: _pickState,
         ),
         const SizedBox(height: 8),
-        Row(
-          children: <Widget>[
-            _PickerStub(
-              label: l10n.locationState,
-              value: l10n.locationDetectedValue,
-            ),
-            const SizedBox(width: 8),
-            _PickerStub(
-              label: l10n.locationDistrict,
-              value: l10n.locationDetectedValue,
-            ),
-            const SizedBox(width: 8),
-            _PickerStub(
-              label: l10n.locationVillage,
-              value: l10n.locationDetectedValue,
-            ),
-          ],
+        _FieldRow(
+          label: l10n.locationDistrict,
+          value: _district,
+          enabled: _districts.isNotEmpty,
+          required: true,
+          errorText: (_submitted && _district == null) ? 'Please select a district.' : null,
+          onTap: _pickDistrict,
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 8),
+        _FieldRow(
+          label: l10n.locationVillage,
+          value: _village,
+          enabled: true,
+          onTap: _pickVillage,
+        ),
+        const SizedBox(height: 14),
         InfoNote(text: l10n.locationWhy),
       ],
     );
   }
 }
 
-/// One of the State / District / Village fallback pickers.
-///
-/// The demo has a single detected place, so the menu offers just that — the
-/// affordance is real, the data is not yet.
-class _PickerStub extends StatelessWidget {
-  const _PickerStub({required this.label, required this.value});
-
-  final String label;
-
-  final String value;
+class _MapCard extends StatelessWidget {
+  const _MapCard({required this.controller, required this.pin, required this.fallback});
+  final MapController controller;
+  final LatLng? pin;
+  final LatLng fallback;
 
   @override
   Widget build(BuildContext context) {
-    return Expanded(
-      child: PopupMenuButton<String>(
-        itemBuilder: (BuildContext context) {
-          return <PopupMenuEntry<String>>[
-            PopupMenuItem<String>(value: value, child: Text(value)),
-          ];
-        },
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
-          decoration: BoxDecoration(
-            color: AppPalette.onPrimary,
-            border: Border.all(color: AppPalette.line, width: 1.5),
-            borderRadius: BorderRadius.circular(14),
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: <Widget>[
-              Flexible(
-                child: Text(
-                  label,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontSize: 13.5,
-                    color: AppPalette.body,
-                  ),
-                ),
+    // Defer the actual OSM map render until we have a real pin — otherwise
+    // the emulator spends multi-second frames rasterising tiles at zoom 4
+    // just to show an outline of India before the user has picked anything.
+    if (pin == null) return const _MapPlaceholder();
+    return KhushhalCard(
+      padding: EdgeInsets.zero,
+      radius: 16,
+      child: SizedBox(
+        height: 180,
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(16),
+          child: FlutterMap(
+            mapController: controller,
+            options: MapOptions(
+              initialCenter: pin!,
+              initialZoom: 9.5,
+              interactionOptions: const InteractionOptions(
+                flags: InteractiveFlag.pinchZoom | InteractiveFlag.drag,
               ),
-              const Icon(Icons.expand_more, size: 16, color: AppPalette.body),
+            ),
+            children: [
+              TileLayer(
+                urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                userAgentPackageName: 'com.khushhal.app',
+              ),
+              MarkerLayer(
+                markers: [
+                  Marker(
+                    point: pin!,
+                    width: 32, height: 32,
+                    child: const Icon(Icons.place, color: AppPalette.forest, size: 32),
+                  ),
+                ],
+              ),
             ],
           ),
         ),
       ),
+    );
+  }
+}
+
+/// Highlighted "Use my location" tile — taps kick off the GPS permission
+/// prompt + reverse-geocode. Renders inline error copy under the row when
+/// the request fails so the user knows why nothing filled in.
+class _UseMyLocationCard extends StatelessWidget {
+  const _UseMyLocationCard({required this.busy, required this.error, required this.onTap});
+  final bool busy;
+  final String? error;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        KhushhalCard(
+          highlighted: true,
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          onTap: busy ? null : onTap,
+          child: Row(
+            children: [
+              busy
+                  ? const SizedBox(
+                      width: 20, height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2.5),
+                    )
+                  : const Icon(Icons.my_location, size: 20, color: AppPalette.forest),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text.rich(
+                  TextSpan(children: [
+                    TextSpan(
+                      text: l10n.locationUseMine,
+                      style: const TextStyle(fontWeight: FontWeight.w700),
+                    ),
+                    TextSpan(text: '  ·  ${l10n.locationOneTap}'),
+                  ]),
+                  style: const TextStyle(fontSize: 15, color: AppPalette.ink),
+                ),
+              ),
+              const Icon(Icons.chevron_right_rounded, color: AppPalette.forest),
+            ],
+          ),
+        ),
+        if (error != null) Padding(
+          padding: const EdgeInsets.only(top: 6, left: 4),
+          child: Text(error!,
+              style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.error)),
+        ),
+      ],
+    );
+  }
+}
+
+class _MapPlaceholder extends StatelessWidget {
+  const _MapPlaceholder();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 100,
+      decoration: BoxDecoration(
+        color: AppPalette.mintNote,
+        border: Border.all(color: const Color(0xFFA9C9B2), width: 1.5),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      alignment: Alignment.center,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Icon(Icons.place_outlined, size: 22, color: Color(0xFF5C8468)),
+          const SizedBox(height: 5),
+          Text(
+            AppLocalizations.of(context)!.locationMapHint,
+            style: const TextStyle(fontSize: 12, color: Color(0xFF5C8468)),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _FieldRow extends StatelessWidget {
+  const _FieldRow({
+    required this.label,
+    required this.value,
+    required this.enabled,
+    required this.onTap,
+    this.required = false,
+    this.errorText,
+  });
+
+  final String label;
+  final String? value;
+  final bool enabled;
+  final VoidCallback onTap;
+  final bool required;
+  final String? errorText;
+
+  @override
+  Widget build(BuildContext context) {
+    final display = value ?? label;
+    final borderColor = errorText != null
+        ? Theme.of(context).colorScheme.error
+        : AppPalette.line;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        InkWell(
+          borderRadius: BorderRadius.circular(14),
+          onTap: enabled ? onTap : null,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+            decoration: BoxDecoration(
+              color: AppPalette.onPrimary,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: borderColor, width: 1.5),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Text(label,
+                              style: const TextStyle(
+                                  fontSize: 11.5, color: AppPalette.muted)),
+                          if (required)
+                            Text(' *',
+                                style: TextStyle(
+                                    fontSize: 11.5,
+                                    color: Theme.of(context).colorScheme.error,
+                                    fontWeight: FontWeight.w700)),
+                        ],
+                      ),
+                      const SizedBox(height: 3),
+                      Text(display,
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: value != null ? FontWeight.w600 : FontWeight.w400,
+                            color: value != null ? AppPalette.cardInk : AppPalette.muted,
+                          )),
+                    ],
+                  ),
+                ),
+                Icon(enabled ? Icons.arrow_drop_down_rounded : Icons.lock_outline,
+                    color: enabled ? AppPalette.body : AppPalette.muted, size: 22),
+              ],
+            ),
+          ),
+        ),
+        if (errorText != null)
+          Padding(
+            padding: const EdgeInsets.only(top: 4, left: 4),
+            child: Text(errorText!,
+                style: TextStyle(
+                    fontSize: 12,
+                    color: Theme.of(context).colorScheme.error)),
+          ),
+      ],
     );
   }
 }
