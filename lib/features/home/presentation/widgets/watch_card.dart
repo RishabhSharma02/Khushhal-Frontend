@@ -21,10 +21,11 @@ class WatchCard extends StatelessWidget {
     this.onOpenPlan,
   });
 
-  /// Short label of the flagged month ("Nov").
-  final String riskMonthLabel;
+  /// Short label of the flagged month ("Nov"), or null when the forecast
+  /// flags no month — plenty of alerts arrive without one.
+  final String? riskMonthLabel;
 
-  /// True cites the fresh forecast (1o2) instead of the mandi feed (1o).
+  /// True cites the fresh forecast (1o2) instead of the stamped score (1o).
   final bool fromForecast;
 
   /// Opens the alerts list (1r).
@@ -36,9 +37,13 @@ class WatchCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = AppLocalizations.of(context)!;
+    final String? month = riskMonthLabel;
+    // Both reasons have to hold for any business with an alert, so neither
+    // names a commodity or a mandi — the card is no longer gated on the
+    // forecast having flagged a month.
     final String reason = fromForecast
         ? l10n.watchReasonForecast
-        : l10n.watchReasonMandi;
+        : l10n.watchReasonScore;
 
     return KhushhalCard(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
@@ -56,7 +61,9 @@ class WatchCard extends StatelessWidget {
                   TextSpan(
                     children: <InlineSpan>[
                       TextSpan(
-                        text: l10n.watchTitle(riskMonthLabel),
+                        text: month == null
+                            ? l10n.watchTitleNoMonth
+                            : l10n.watchTitle(month),
                         style: const TextStyle(fontWeight: FontWeight.w700),
                       ),
                       TextSpan(text: ' — $reason'),
@@ -78,7 +85,7 @@ class WatchCard extends StatelessWidget {
               onTap: onOpenPlan,
               borderRadius: BorderRadius.circular(6),
               child: Text(
-                l10n.watchAction,
+                l10n.watchSeePlan,
                 style: const TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w600,

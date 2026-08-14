@@ -34,7 +34,7 @@ class UspCarousel extends StatefulWidget {
   const UspCarousel({
     super.key,
     required this.slides,
-    this.slideDuration = const Duration(seconds: 4),
+    this.slideDuration = const Duration(milliseconds: 2500),
   });
 
   /// Cards to show, in order, repeated as the strip loops.
@@ -48,9 +48,9 @@ class UspCarousel extends StatefulWidget {
 }
 
 class _UspCarouselState extends State<UspCarousel> {
-  /// How long a card takes to glide into place — unhurried, so the cascade
-  /// inside it has room to play out.
-  static const Duration _glide = Duration(milliseconds: 700);
+  /// How long a card takes to glide into place. Kept snappy so the auto-
+  /// advance feels lively without the eye losing the card mid-transition.
+  static const Duration _glide = Duration(milliseconds: 450);
 
   /// Breathing room between two cards, seen only mid-glide as one screen
   /// hands over to the next.

@@ -249,7 +249,10 @@ class _MonthlyUpdateScreenState extends State<MonthlyUpdateScreen> {
             GradientCtaButton(
               label: l10n.updateSeeForecastCta,
               onPressed: () {
-                Navigator.of(context).pushReplacement(
+                // Pop this reveal then push Forecast on top so back returns
+                // to Home instead of trapping the user on Forecast.
+                Navigator.of(context).pop();
+                Navigator.of(context).push(
                   MaterialPageRoute<void>(
                     builder: (BuildContext _) => const ForecastScreen(),
                   ),

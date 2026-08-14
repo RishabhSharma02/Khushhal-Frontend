@@ -14,9 +14,10 @@ import 'widgets/onboarding_backdrop.dart';
 
 /// First-run screen: brand mark, then a choice between the launch languages.
 ///
-/// Tapping a card switches the app locale immediately, so the whole screen
-/// re-renders in that language — no side-by-side translations. Only the card
-/// titles stay in their own script, so either reader can find their row.
+/// Tapping a card applies the language live — the whole screen re-renders in
+/// that language on the spot, so the user sees exactly what the app will
+/// look like before they hit Continue. Card titles stay in their own script
+/// so either reader can find their own row.
 class LanguageSelectScreen extends StatelessWidget {
   /// Creates the language select screen.
   const LanguageSelectScreen({
@@ -29,7 +30,7 @@ class LanguageSelectScreen extends StatelessWidget {
   /// The language currently on screen.
   final AppLanguage selected;
 
-  /// Called when a language card is tapped.
+  /// Called on every tap so the app locale swaps immediately.
   final ValueChanged<AppLanguage> onLanguageSelected;
 
   /// Called when the user confirms the choice.
@@ -76,7 +77,11 @@ class LanguageSelectScreen extends StatelessWidget {
                       LanguageOptionCard(
                         language: language,
                         selected: language == selected,
-                        onTap: () => onLanguageSelected(language),
+                        onTap: () {
+                          if (language != selected) {
+                            onLanguageSelected(language);
+                          }
+                        },
                       ),
                     ],
                     const SizedBox(height: 6),
@@ -97,7 +102,15 @@ class LanguageSelectScreen extends StatelessWidget {
             const SizedBox(height: 16),
             GradientCtaButton(
               label: l10n.languageContinue,
-              onPressed: onContinue,
+              onPressed: () {
+                // Always persist the current choice on Continue, even if
+                // the user never tapped a card (they accepted the default
+                // detected from the platform locale). Without this the
+                // language pref stays "unselected" and the onboarding
+                // stack shows again on the next launch.
+                onLanguageSelected(selected);
+                onContinue();
+              },
             ),
             const SizedBox(height: 12),
             Text(

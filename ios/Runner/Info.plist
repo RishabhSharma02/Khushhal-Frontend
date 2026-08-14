@@ -6,6 +6,8 @@
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
 	<string>Khushhal</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Khushhal uses your location to pick your state and district on the setup screen so your business score reflects local rainfall and market conditions.</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>

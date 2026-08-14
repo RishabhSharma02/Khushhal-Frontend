@@ -2,6 +2,7 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../../app/labels.dart';
 import '../../../app/model/business.dart';
@@ -22,6 +23,7 @@ class DetailsStep extends StatefulWidget {
     required this.draft,
     required this.businessNumber,
     required this.onNext,
+    this.standalone = false,
   });
 
   /// The draft being filled in.
@@ -33,6 +35,9 @@ class DetailsStep extends StatefulWidget {
   /// Advances to monthly money (1m).
   final VoidCallback onNext;
 
+  /// True when opened as Settings → Add business (see [KindStep.standalone]).
+  final bool standalone;
+
   @override
   State<DetailsStep> createState() => _DetailsStepState();
 }
@@ -41,11 +46,27 @@ class _DetailsStepState extends State<DetailsStep> {
   late final TextEditingController _name = TextEditingController(
     text: widget.draft.name,
   );
+  late final TextEditingController _staff = TextEditingController(
+    text: widget.draft.staffCount.toString(),
+  );
 
   @override
   void dispose() {
     _name.dispose();
+    _staff.dispose();
     super.dispose();
+  }
+
+  void _setStaffCount(int value) {
+    final clamped = value < 1 ? 1 : value;
+    setState(() => widget.draft.staffCount = clamped);
+    final asText = clamped.toString();
+    if (_staff.text != asText) {
+      _staff.value = TextEditingValue(
+        text: asText,
+        selection: TextSelection.collapsed(offset: asText.length),
+      );
+    }
   }
 
   @override
@@ -56,11 +77,12 @@ class _DetailsStepState extends State<DetailsStep> {
     return StepPage(
       header: SetupProgressHeader(
         label: l10n.setupStepOfBusiness(
-          4,
-          5,
+          widget.standalone ? 2 : 4,
+          widget.standalone ? 3 : 5,
           l10n.businessN(widget.businessNumber),
         ),
-        filled: 4,
+        filled: widget.standalone ? 2 : 4,
+        total: widget.standalone ? 3 : 5,
       ),
       cta: GradientCtaButton(
         label: l10n.setupNextCta,
@@ -150,23 +172,47 @@ class _DetailsStepState extends State<DetailsStep> {
                   _StepperButton(
                     glyph: '−',
                     onTap: draft.staffCount > 1
-                        ? () => setState(() => draft.staffCount--)
+                        ? () => _setStaffCount(draft.staffCount - 1)
                         : null,
                   ),
                   Expanded(
-                    child: Text(
-                      '${draft.staffCount}',
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        fontSize: 26,
-                        fontWeight: FontWeight.w600,
-                        color: AppPalette.cardInk,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 10),
+                      child: TextField(
+                        controller: _staff,
+                        keyboardType: TextInputType.number,
+                        textAlign: TextAlign.center,
+                        inputFormatters: [
+                          FilteringTextInputFormatter.digitsOnly,
+                          LengthLimitingTextInputFormatter(4),
+                        ],
+                        style: const TextStyle(
+                          fontSize: 26,
+                          fontWeight: FontWeight.w600,
+                          color: AppPalette.cardInk,
+                        ),
+                        decoration: const InputDecoration(
+                          isCollapsed: true,
+                          filled: false,
+                          border: InputBorder.none,
+                          enabledBorder: InputBorder.none,
+                          focusedBorder: InputBorder.none,
+                          contentPadding: EdgeInsets.symmetric(vertical: 8),
+                        ),
+                        onChanged: (String text) {
+                          final parsed = int.tryParse(text);
+                          if (parsed == null) return;
+                          // Update state without rewriting the controller —
+                          // otherwise the caret jumps every keystroke.
+                          setState(() => draft.staffCount = parsed < 1 ? 1 : parsed);
+                        },
+                        onEditingComplete: () => _setStaffCount(draft.staffCount),
                       ),
                     ),
                   ),
                   _StepperButton(
                     glyph: '＋',
-                    onTap: () => setState(() => draft.staffCount++),
+                    onTap: () => _setStaffCount(draft.staffCount + 1),
                   ),
                 ],
               ),

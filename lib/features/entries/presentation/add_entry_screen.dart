@@ -4,7 +4,8 @@ library;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import '../../../app/demo_data.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+
 import '../../../app/labels.dart';
 import '../../../app/model/ledger.dart';
 import '../../../app/session.dart';
@@ -16,6 +17,8 @@ import '../../../core/widgets/gradient_cta_button.dart';
 import '../../../core/widgets/khushhal_card.dart';
 import '../../../core/widgets/page_backdrop.dart';
 import '../../../l10n/app_localizations.dart';
+import '../data/ledger_api.dart';
+import '../data/ledger_repository.dart';
 
 /// The IN/OUT, amount and category entry form.
 ///
@@ -24,7 +27,13 @@ import '../../../l10n/app_localizations.dart';
 /// in the corner promises up front.
 class AddEntryScreen extends StatefulWidget {
   /// Creates the screen.
-  const AddEntryScreen({super.key});
+  ///
+  /// [editing] pre-fills the form with an existing entry's amount / kind /
+  /// category — save issues `PATCH /entries/{id}` instead of `POST`. The
+  /// entry must carry a `backendId`; if it doesn't we fall back to POST.
+  const AddEntryScreen({super.key, this.editing});
+
+  final LedgerEntry? editing;
 
   @override
   State<AddEntryScreen> createState() => _AddEntryScreenState();
@@ -33,8 +42,16 @@ class AddEntryScreen extends StatefulWidget {
 class _AddEntryScreenState extends State<AddEntryScreen> {
   final TextEditingController _amount = TextEditingController();
 
-  EntryKind _kind = EntryKind.moneyIn;
-  EntryCategory _category = EntryCategory.milkSale;
+  late EntryKind _kind = widget.editing?.kind ?? EntryKind.moneyIn;
+  late EntryCategory _category = widget.editing?.category ?? EntryCategory.milkSale;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.editing != null) {
+      _amount.text = widget.editing!.amountInr.toString();
+    }
+  }
 
   @override
   void dispose() {
@@ -44,23 +61,59 @@ class _AddEntryScreenState extends State<AddEntryScreen> {
 
   int get _amountValue => int.tryParse(_amount.text.trim()) ?? 0;
 
+  /// An entry is editable once it exists in the local database, which is true
+  /// from the moment it is saved — it does not need a server id first.
+  bool get _isEditing => widget.editing?.clientId != null;
+
   void _save() {
     if (_amountValue <= 0) {
       return;
     }
 
-    final DateTime today = DemoData.today;
+    final session = SessionScope.of(context);
+    final businessId = session.activeBackendBusinessId;
 
-    SessionScope.of(context).addEntry(
-      LedgerEntry(
-        kind: _kind,
-        amountInr: _amountValue,
-        category: _category,
-        recordedAt: DateTime(today.year, today.month, today.day, 12),
-      ),
+    if (_isEditing) {
+      // Writes to SQLite and queues the PATCH; works with no connection.
+      try {
+        final repo = context.read<LedgerRepository>();
+        // ignore: discarded_futures
+        repo.updateEntry(
+          clientId: widget.editing!.clientId!,
+          amountInr: _amountValue,
+          categoryWire: LedgerApiMapper.category(_category),
+          recordedAt: widget.editing!.recordedAt,
+        );
+      } catch (_) {}
+      Navigator.of(context).pop(true);
+      return;
+    }
+
+    // Real wall clock — every entry must carry the actual date/time so the
+    // backend can group ledger rows by month and so /entries/sync doesn't
+    // deduplicate today's writes against demo dates from months ago.
+    final DateTime now = DateTime.now();
+    final LedgerEntry entry = LedgerEntry(
+      kind: _kind,
+      amountInr: _amountValue,
+      category: _category,
+      recordedAt: now,
     );
 
-    Navigator.of(context).pop();
+    // Fire-and-forget backend submit via outbox — safe offline, idempotent
+    // via client_entry_id. Nothing blocks the pop() below.
+    if (businessId != null) {
+      session.addEntry(businessId, entry);
+      try {
+        final repo = context.read<LedgerRepository>();
+        // ignore: discarded_futures
+        repo.submit(businessId: businessId, entry: entry);
+      } catch (_) {
+        // No repository provided (e.g. demo mode) — session addEntry is enough.
+      }
+    }
+
+    Navigator.of(context).pop(true);
   }
 
   @override
@@ -73,7 +126,7 @@ class _AddEntryScreenState extends State<AddEntryScreen> {
         child: Column(
           children: <Widget>[
             BackHeader(
-              title: l10n.addEntryTitle,
+              title: _isEditing ? 'Edit entry' : l10n.addEntryTitle,
               trailing: _SavesOfflineChip(label: l10n.addEntrySavesOffline),
             ),
             Expanded(
@@ -187,8 +240,10 @@ class _AddEntryScreenState extends State<AddEntryScreen> {
                     Center(
                       child: Text(
                         l10n.addEntryMonthNote(
-                          monthName(context, DemoData.today),
-                          dayMonth(context, session.health.nextUpdate),
+                          monthName(context, DateTime.now()),
+                          session.health != null
+                              ? dayMonth(context, session.health!.nextUpdate)
+                              : '—',
                         ),
                         textAlign: TextAlign.center,
                         style: const TextStyle(

@@ -49,6 +49,8 @@ class LedgerEntry {
     required this.recordedAt,
     this.source = EntrySource.manual,
     this.syncState = EntrySyncState.synced,
+    this.backendId,
+    this.clientId,
   });
 
   /// Direction.
@@ -69,6 +71,18 @@ class LedgerEntry {
   /// Sync status.
   final EntrySyncState syncState;
 
+  /// Server-side id if this entry has been persisted. Null for
+  /// offline-only rows that haven't reached `/entries` yet.
+  final int? backendId;
+
+  /// Client-generated UUID — the same value the backend stores as
+  /// `client_entry_id` and the local database uses as its primary key.
+  ///
+  /// This is the only stable handle an entry has while it is offline, so it is
+  /// what the edit path addresses a row by. [backendId] is null until the
+  /// entry has been through a sync cycle.
+  final String? clientId;
+
   /// A copy with a different sync status.
   LedgerEntry withSyncState(EntrySyncState state) {
     return LedgerEntry(
@@ -78,6 +92,8 @@ class LedgerEntry {
       recordedAt: recordedAt,
       source: source,
       syncState: state,
+      backendId: backendId,
+      clientId: clientId,
     );
   }
 }

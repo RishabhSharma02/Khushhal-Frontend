@@ -18,16 +18,70 @@ dependencies:
   intl: any
   pdf: ^3.12.0
 
-  # Officer Portal backend integration (phone OTP + REST API calls).
+  # Auth — also used by the Officer Portal (lib/officer_portal_main.dart)
+  # for its own, separate sign-in.
   firebase_core: ^3.8.0
   firebase_auth: ^5.3.3
+
+  # State management
+  flutter_bloc: ^8.1.6
+  equatable: ^2.0.5
+  provider: ^6.1.2   # transitive via flutter_bloc; declared for direct import of SingleChildWidget
+
+  # Networking — also used by the Officer Portal's REST API client.
   dio: ^5.7.0
+  connectivity_plus: ^6.0.5
+
+  # Offline-first local database: a real SQLite file on device, mirroring the
+  # backend tables. `drift` is the typed query layer, `drift_flutter` opens the
+  # file in the app documents dir, `sqlite3_flutter_libs` ships the native
+  # SQLite engine with the app rather than trusting the OS copy.
+  drift: ^2.34.3
+  drift_flutter: ^0.3.1
+  sqlite3_flutter_libs: ^0.6.0+eol
+
+  # Hive remains only to drain the legacy ledger outbox into Drift on first
+  # launch (see LegacyOutboxMigration); no new writes go here.
+  hive: ^2.2.3
+  hive_flutter: ^1.1.0
+  path_provider: ^2.1.4
+
+  uuid: ^4.5.1
+
+  # Secure key/value for the mPIN app-lock (Keychain on iOS, Keystore on Android)
+  flutter_secure_storage: ^9.2.2
+
+  # Non-sensitive preferences (chosen language, first-run flags)
+  shared_preferences: ^2.3.2
+
+  # Map on the location step — OSM tiles, no API key
+  flutter_map: ^7.0.2
+  latlong2: ^0.9.1
+
+  # Device GPS + permission for LocationStep's "Use my location" tap
+  geolocator: ^13.0.1
+
+  # tel:/mailto: launcher (used by AlertDetail "Talk to officer")
+  url_launcher: ^6.3.1
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
 
   flutter_lints: ^6.0.0
+  build_runner: 2.13.1
+  flutter_launcher_icons: ^0.14.1
+  drift_dev: ^2.34.0
+
+# App icon generation — run `dart run flutter_launcher_icons` after editing.
+flutter_launcher_icons:
+  image_path: "assets/images/khushhal_logo.jpg"
+  android: "launcher_icon"
+  ios: true
+  remove_alpha_ios: true
+  min_sdk_android: 21
+  adaptive_icon_background: "#1F7A45"
+  adaptive_icon_foreground: "assets/images/khushhal_logo.jpg"
 
 flutter:
   uses-material-design: true
@@ -40,3 +94,8 @@ flutter:
   # rather than breaking the build.
   assets:
     - assets/images/
+
+    # States and districts, seeded into SQLite on first launch so the location
+    # step works before the device has ever reached the backend. Kept in sync
+    # by hand with Khushhal-Backend/app/reference/india_locations.json.
+    - assets/reference/

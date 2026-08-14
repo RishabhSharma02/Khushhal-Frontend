@@ -43,6 +43,7 @@ class MonthlyMoney {
     required this.loanEmi,
     required this.savings,
     required this.basis,
+    this.month,
   });
 
   /// Sales in a typical month.
@@ -59,6 +60,15 @@ class MonthlyMoney {
 
   /// How these numbers were given.
   final MoneyBasis basis;
+
+  /// First day of the month these numbers describe. Null for a snapshot the
+  /// setup wizard has only just collected and the server has not echoed back
+  /// with a month yet.
+  final DateTime? month;
+
+  /// True when there is a figure worth showing as the baseline behind a live
+  /// month-to-date total.
+  bool get hasBaseline => moneyIn > 0 || moneyOut > 0;
 }
 
 /// One fully set-up business.
@@ -72,6 +82,8 @@ class Business {
     required this.tenure,
     required this.staffCount,
     required this.monthly,
+    this.savingsInr = 0,
+    this.loanInr = 0,
   });
 
   /// Name typed on design 1l — the only typing in the whole setup.
@@ -91,4 +103,37 @@ class Business {
 
   /// The monthly money picture from setup.
   final MonthlyMoney monthly;
+
+  /// Savings held for this business, in whole rupees. Editable on the savings
+  /// & loan screen; seeded from [monthly] at setup.
+  final int savingsInr;
+
+  /// Loan outstanding for this business, in whole rupees. Setup asks for a
+  /// monthly EMI rather than a balance, so this starts at zero and the owner
+  /// fills it in later.
+  final int loanInr;
+
+  /// A copy with the fields Settings' edit sheet can change replaced.
+  ///
+  /// Segment and sector are deliberately absent: changing either invalidates
+  /// every stamped health score, so they stay locked after setup.
+  Business copyWith({
+    String? name,
+    BusinessTenure? tenure,
+    int? staffCount,
+    MonthlyMoney? monthly,
+    int? savingsInr,
+    int? loanInr,
+  }) {
+    return Business(
+      name: name ?? this.name,
+      segment: segment,
+      sector: sector,
+      tenure: tenure ?? this.tenure,
+      staffCount: staffCount ?? this.staffCount,
+      monthly: monthly ?? this.monthly,
+      savingsInr: savingsInr ?? this.savingsInr,
+      loanInr: loanInr ?? this.loanInr,
+    );
+  }
 }

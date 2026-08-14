@@ -47,9 +47,6 @@ class HealthSnapshot {
 
   /// Change against the previous month, when this snapshot is fresh.
   final int? delta;
-
-  /// Healthy is 60 and up — drives the 🙂 headline.
-  bool get isHealthy => score >= 60;
 }
 
 /// One "why it moved" line on the monthly update (1q2).
@@ -83,6 +80,30 @@ class ForecastMonth {
 
   /// True for the month the model flags — outlined amber on the chart.
   final bool isRiskMonth;
+}
+
+/// Reads across the rolling six-month forecast window.
+extension ForecastWindow on List<ForecastMonth> {
+  /// The first month the model actually flagged, ignoring months that have
+  /// already passed; null when nothing in the window is flagged.
+  ///
+  /// The window is stamped on the 1st and then sits still for a month, so a
+  /// flagged month can drift into the past — surfacing it would tell the
+  /// owner to watch out for a month they have already lived through. There
+  /// is deliberately no "otherwise take the last month" fallback either:
+  /// every screen that shows a month name has to be able to say "nothing
+  /// flagged" instead of naming a month the model never picked.
+  ForecastMonth? get flaggedRiskMonth {
+    final DateTime now = DateTime.now();
+    final DateTime currentMonth = DateTime(now.year, now.month, 1);
+
+    for (final ForecastMonth month in this) {
+      if (month.isRiskMonth && !month.month.isBefore(currentMonth)) {
+        return month;
+      }
+    }
+    return null;
+  }
 }
 
 /// Severity of a risk alert (1r).
