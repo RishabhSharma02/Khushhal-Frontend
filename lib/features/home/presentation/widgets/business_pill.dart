@@ -13,13 +13,23 @@ import '../../../../core/theme/theme.dart';
 /// only affordance, so home spells it out in the hint line beneath.
 class BusinessPill extends StatelessWidget {
   /// Creates the pill for [label].
-  const BusinessPill({super.key, required this.label, this.onTap});
+  const BusinessPill({
+    super.key,
+    required this.label,
+    this.onTap,
+    this.showChevron = true,
+  });
 
   /// Active business name.
   final String label;
 
   /// Usually [showBusinessSwitcher].
   final VoidCallback? onTap;
+
+  /// When false, drops the chevron so the pill reads as a static badge —
+  /// used when the account has only one business and there is nothing to
+  /// switch between.
+  final bool showChevron;
 
   @override
   Widget build(BuildContext context) {
@@ -49,12 +59,14 @@ class BusinessPill extends StatelessWidget {
                   ),
                 ),
               ),
-              const SizedBox(width: 4),
-              const Icon(
-                Icons.expand_more_rounded,
-                size: 16,
-                color: AppPalette.forest,
-              ),
+              if (showChevron) ...<Widget>[
+                const SizedBox(width: 4),
+                const Icon(
+                  Icons.expand_more_rounded,
+                  size: 16,
+                  color: AppPalette.forest,
+                ),
+              ],
             ],
           ),
         ),

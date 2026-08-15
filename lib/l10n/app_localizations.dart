@@ -542,6 +542,12 @@ abstract class AppLocalizations {
   /// **'We\'ll use only your entries for now — the score gets sharper as you record more months.'**
   String get kindOtherHint;
 
+  /// No description provided for @kindOtherFieldHint.
+  ///
+  /// In en, this message translates to:
+  /// **'What kind of business?'**
+  String get kindOtherFieldHint;
+
   /// No description provided for @detailsHeading.
   ///
   /// In en, this message translates to:
@@ -611,19 +617,19 @@ abstract class AppLocalizations {
   /// No description provided for @moneyInLabel.
   ///
   /// In en, this message translates to:
-  /// **'Money IN (sales)'**
+  /// **'Income (sales)'**
   String get moneyInLabel;
 
   /// Records-mode label naming the month being typed in (1n).
   ///
   /// In en, this message translates to:
-  /// **'Money IN (sales) · {month}'**
+  /// **'Income (sales) · {month}'**
   String moneyInMonthLabel(String month);
 
   /// No description provided for @moneyOutLabel.
   ///
   /// In en, this message translates to:
-  /// **'Money OUT (costs)'**
+  /// **'Expenditure (costs)'**
   String get moneyOutLabel;
 
   /// No description provided for @moneyEmiLabel.
@@ -691,6 +697,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'New'**
   String get scoreNew;
+
+  /// No description provided for @healthTapForForecast.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap for forecast →'**
+  String get healthTapForForecast;
+
+  /// No description provided for @addEntryOtherHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Describe this expense…'**
+  String get addEntryOtherHint;
 
   /// Health card headline on a green band (1o). The emoji is appended by HealthCard so it can follow the score, not just the band.
   ///
@@ -791,13 +809,13 @@ abstract class AppLocalizations {
   /// No description provided for @tileMoneyIn.
   ///
   /// In en, this message translates to:
-  /// **'Money IN'**
+  /// **'Income'**
   String get tileMoneyIn;
 
   /// No description provided for @tileMoneyOut.
   ///
   /// In en, this message translates to:
-  /// **'Money OUT'**
+  /// **'Expenditure'**
   String get tileMoneyOut;
 
   /// No description provided for @tileThisMonth.
@@ -1310,6 +1328,84 @@ abstract class AppLocalizations {
   /// **'Done'**
   String get planDoneChip;
 
+  /// No description provided for @alertDriverLiquidityTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Cash buffer is tight'**
+  String get alertDriverLiquidityTitle;
+
+  /// No description provided for @alertDriverLiquiditySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Savings or debt cover is low. The steps below rebuild your buffer.'**
+  String get alertDriverLiquiditySubtitle;
+
+  /// No description provided for @alertDriverClimateDeficitTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Rainfall below normal'**
+  String get alertDriverClimateDeficitTitle;
+
+  /// No description provided for @alertDriverClimateDeficitSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Local rain is below normal — expect input prices to rise.'**
+  String get alertDriverClimateDeficitSubtitle;
+
+  /// No description provided for @alertDriverClimateExcessTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Rainfall higher than usual'**
+  String get alertDriverClimateExcessTitle;
+
+  /// No description provided for @alertDriverClimateExcessSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Heavier than usual rainfall — protect stored inputs.'**
+  String get alertDriverClimateExcessSubtitle;
+
+  /// No description provided for @alertDriverMarketTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Market prices moved against you'**
+  String get alertDriverMarketTitle;
+
+  /// No description provided for @alertDriverMarketSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Terms of trade have moved against your sector.'**
+  String get alertDriverMarketSubtitle;
+
+  /// No description provided for @alertDriverNewBusinessTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Fresh business — extra care needed'**
+  String get alertDriverNewBusinessTitle;
+
+  /// No description provided for @alertDriverNewBusinessSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'A newer business needs closer daily tracking.'**
+  String get alertDriverNewBusinessSubtitle;
+
+  /// No description provided for @alertDriverWatchTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Watch out for {month}'**
+  String alertDriverWatchTitle(String month);
+
+  /// No description provided for @alertDriverGenericSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Follow the steps below to stay on track.'**
+  String get alertDriverGenericSubtitle;
+
+  /// No description provided for @alertMarkingNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Marking actions done here helps the ML model re-score your business next month.'**
+  String get alertMarkingNote;
+
   /// No description provided for @planNote.
   ///
   /// In en, this message translates to:
@@ -1489,6 +1585,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Add new business'**
   String get settingsAddBusiness;
+
+  /// No description provided for @settingsSeeReport.
+  ///
+  /// In en, this message translates to:
+  /// **'See report'**
+  String get settingsSeeReport;
 
   /// No description provided for @settingsPreferences.
   ///

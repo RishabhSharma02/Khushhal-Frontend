@@ -7,12 +7,17 @@ library;
 
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/date_symbol_data_local.dart';
 
 import 'features/officer_portal/presentation/officer_portal_root.dart';
 import 'firebase_options.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  // Load Hindi date-time locale data so month names render in Devanagari
+  // when the portal is switched to Hindi.
+  await initializeDateFormatting('hi');
+  await initializeDateFormatting('en');
   // Web requires FirebaseOptions to be passed explicitly (unlike
   // Android/iOS, which read native config files automatically) — omitting
   // it throws immediately and leaves no default app for FirebaseAuth calls

@@ -43,12 +43,13 @@ class BusinessLocalDataSource {
 
   /// Live list of the user's businesses in server order.
   ///
-  /// [ownerUserId] scopes the result to one account's rows so a device that
-  /// has hosted multiple sign-ins (or a stale row left behind by an
-  /// in-progress user swap) never shows another user's businesses on Home.
-  /// Rows with a null `ownerUserId` are included as legacy fallbacks so a
-  /// row created before ownership was tracked is not silently hidden — the
-  /// next server pull will stamp the current user onto it.
+  /// [ownerUserId] scopes the result strictly to one account's rows so a
+  /// device that has hosted multiple sign-ins never shows another user's
+  /// businesses on Home. Rows with a null `ownerUserId` are treated as
+  /// ambiguous and hidden — they were either left over from a prior build
+  /// that didn't track ownership, or belong to a legacy account whose id
+  /// the caller hasn't declared here. The next server pull stamps ownership
+  /// onto them so they surface again for the correct account.
   Stream<List<LocalBusinessRecord>> watchAll({int? ownerUserId}) {
     final query = _db.select(_db.localBusinesses)
       ..orderBy([
@@ -56,9 +57,7 @@ class BusinessLocalDataSource {
         (t) => OrderingTerm.asc(t.clientId),
       ]);
     if (ownerUserId != null) {
-      query.where(
-        (t) => t.ownerUserId.equals(ownerUserId) | t.ownerUserId.isNull(),
-      );
+      query.where((t) => t.ownerUserId.equals(ownerUserId));
     }
     return query.watch().asyncMap(_withSnapshots);
   }

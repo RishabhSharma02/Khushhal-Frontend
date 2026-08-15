@@ -8,12 +8,11 @@ import '../../../app/session.dart';
 import '../../../core/formatting.dart';
 import '../../../core/theme/theme.dart';
 import '../../../core/widgets/back_header.dart';
-import '../../../core/widgets/choice_pill.dart';
 import '../../../core/widgets/gradient_cta_button.dart';
 import '../../../core/widgets/khushhal_card.dart';
 import '../../../core/widgets/page_backdrop.dart';
 import '../../../l10n/app_localizations.dart';
-import 'alert_detail_screen.dart';
+import 'alerts_screen.dart';
 
 /// The monthly forecast edition with what-if chips.
 ///
@@ -28,12 +27,7 @@ class ForecastScreen extends StatefulWidget {
   State<ForecastScreen> createState() => _ForecastScreenState();
 }
 
-/// Which scenario chip is lit; only [normal] has model output in the demo.
-enum _Scenario { normal, priceSpike, badWeather }
-
 class _ForecastScreenState extends State<ForecastScreen> {
-  _Scenario _scenario = _Scenario.normal;
-
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = AppLocalizations.of(context)!;
@@ -176,33 +170,6 @@ class _ForecastScreenState extends State<ForecastScreen> {
                         ],
                       ),
                     ),
-                    const SizedBox(height: 10),
-                    Wrap(
-                      spacing: 7,
-                      runSpacing: 7,
-                      children: <Widget>[
-                        ChoicePill(
-                          label: l10n.whatIfNormal,
-                          selected: _scenario == _Scenario.normal,
-                          onTap: () =>
-                              setState(() => _scenario = _Scenario.normal),
-                        ),
-                        ChoicePill(
-                          label: l10n.whatIfSpike,
-                          selected: _scenario == _Scenario.priceSpike,
-                          dashed: true,
-                          onTap: () =>
-                              setState(() => _scenario = _Scenario.priceSpike),
-                        ),
-                        ChoicePill(
-                          label: l10n.whatIfWeather,
-                          selected: _scenario == _Scenario.badWeather,
-                          dashed: true,
-                          onTap: () =>
-                              setState(() => _scenario = _Scenario.badWeather),
-                        ),
-                      ],
-                    ),
                   ],
                 ),
               ),
@@ -213,7 +180,7 @@ class _ForecastScreenState extends State<ForecastScreen> {
               onPressed: () {
                 Navigator.of(context).push(
                   MaterialPageRoute<void>(
-                    builder: (BuildContext _) => const AlertDetailScreen(),
+                    builder: (BuildContext _) => const AlertsScreen(),
                   ),
                 );
               },

@@ -374,8 +374,20 @@ class AppSession extends ChangeNotifier {
   }
 
   /// Replaces one business's alerts with the live ones from the backend.
+  ///
+  /// External-signal alerts (mandi price movement, weather) are dropped here
+  /// so neither Home's watch card nor the alerts list surfaces them — the
+  /// app currently has no way to act on them and their presence adds noise
+  /// to the ones that actually carry a plan.
   void applyLiveAlerts(int businessId, List<RiskAlert>? alerts) {
-    _stateFor(businessId).alerts = alerts ?? const <RiskAlert>[];
+    final List<RiskAlert> filtered = (alerts ?? const <RiskAlert>[])
+        .where(
+          (RiskAlert a) =>
+              a.kind != AlertKind.heavyRain
+              && a.kind != AlertKind.fodderPriceUp,
+        )
+        .toList(growable: false);
+    _stateFor(businessId).alerts = filtered;
     notifyListeners();
   }
 

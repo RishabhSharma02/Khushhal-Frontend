@@ -208,7 +208,12 @@ class _AlertDetailScreenState extends State<AlertDetailScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
           const SizedBox(height: 14),
-          _AlertBanner(month: month, driver: alert.driver, severity: alert.severity),
+          _AlertBanner(
+            l10n: l10n,
+            month: month,
+            driver: alert.driver,
+            severity: alert.severity,
+          ),
           const SizedBox(height: 14),
           Text(l10n.planDoThese,
               style: const TextStyle(fontSize: 13, color: AppPalette.muted)),
@@ -225,7 +230,7 @@ class _AlertDetailScreenState extends State<AlertDetailScreen> {
               ),
             ),
           const SizedBox(height: 8),
-          InfoNote(text: 'Marking actions done here helps the ML model re-score your business next month.'),
+          InfoNote(text: l10n.alertMarkingNote),
         ],
       ),
     );
@@ -238,7 +243,13 @@ class _AlertDetailScreenState extends State<AlertDetailScreen> {
 }
 
 class _AlertBanner extends StatelessWidget {
-  const _AlertBanner({required this.month, required this.driver, required this.severity});
+  const _AlertBanner({
+    required this.l10n,
+    required this.month,
+    required this.driver,
+    required this.severity,
+  });
+  final AppLocalizations l10n;
   final String month;
   final String driver;
   final String severity;
@@ -267,7 +278,7 @@ class _AlertBanner extends StatelessWidget {
               const SizedBox(width: 9),
               Expanded(
                 child: Text(
-                  _driverTitle(driver, month),
+                  _driverTitle(l10n, driver, month),
                   style: TextStyle(
                     fontSize: 17,
                     fontWeight: FontWeight.w700,
@@ -280,7 +291,7 @@ class _AlertBanner extends StatelessWidget {
           ),
           const SizedBox(height: 5),
           Text(
-            _driverSubtitle(driver),
+            _driverSubtitle(l10n, driver),
             style: TextStyle(
               fontSize: 13,
               color: urgent ? AppPalette.amberMuted : AppPalette.body,
@@ -292,22 +303,24 @@ class _AlertBanner extends StatelessWidget {
     );
   }
 
-  String _driverTitle(String driver, String month) => switch (driver) {
-        'liquidity_debt_stress' => 'Cash buffer is tight',
-        'climate_stress_deficit' => 'Rainfall below normal',
-        'climate_stress_excess' => 'Rainfall higher than usual',
-        'market_stress' => 'Market prices moved against you',
-        'new_business' => 'Fresh business — extra care needed',
-        _ => 'Watch out for $month',
+  String _driverTitle(AppLocalizations l10n, String driver, String month) =>
+      switch (driver) {
+        'liquidity_debt_stress' => l10n.alertDriverLiquidityTitle,
+        'climate_stress_deficit' => l10n.alertDriverClimateDeficitTitle,
+        'climate_stress_excess' => l10n.alertDriverClimateExcessTitle,
+        'market_stress' => l10n.alertDriverMarketTitle,
+        'new_business' => l10n.alertDriverNewBusinessTitle,
+        _ => l10n.alertDriverWatchTitle(month),
       };
 
-  String _driverSubtitle(String driver) => switch (driver) {
-        'liquidity_debt_stress' => 'Savings or debt cover is low. The steps below rebuild your buffer.',
-        'climate_stress_deficit' => 'Local rain is below normal — expect input prices to rise.',
-        'climate_stress_excess' => 'Heavier than usual rainfall — protect stored inputs.',
-        'market_stress' => 'Terms of trade have moved against your sector.',
-        'new_business' => 'A newer business needs closer daily tracking.',
-        _ => 'Follow the steps below to stay on track.',
+  String _driverSubtitle(AppLocalizations l10n, String driver) =>
+      switch (driver) {
+        'liquidity_debt_stress' => l10n.alertDriverLiquiditySubtitle,
+        'climate_stress_deficit' => l10n.alertDriverClimateDeficitSubtitle,
+        'climate_stress_excess' => l10n.alertDriverClimateExcessSubtitle,
+        'market_stress' => l10n.alertDriverMarketSubtitle,
+        'new_business' => l10n.alertDriverNewBusinessSubtitle,
+        _ => l10n.alertDriverGenericSubtitle,
       };
 }
 

@@ -24,6 +24,11 @@ class BusinessDraft {
   /// Business name — the only typed field in setup (1l).
   String name = '';
 
+  /// Free-text description shown under the sector grid when [sector] is
+  /// [BusinessSector.other]. UI-only for now — the backend still receives
+  /// `other` as the sector enum.
+  String sectorOtherLabel = '';
+
   /// Which money mode the user is on (1m vs 1n).
   MoneyBasis basis = MoneyBasis.roughEstimate;
 

@@ -207,5 +207,6 @@ class RemoteAlert {
         severity: toDomainSeverity(),
         raisedOn: raisedOn,
         hasPlan: hasPlan,
+        backendId: id,
       );
 }

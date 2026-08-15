@@ -12,7 +12,7 @@ class AppLocalizationsHi extends AppLocalizations {
   String get brandName => 'खुशहाल';
 
   @override
-  String get brandTagline => 'आपके बिज़नेस का हेल्थ कार्ड';
+  String get brandTagline => 'आपके व्यापार का हेल्थ कार्ड';
 
   @override
   String get languageHeading => 'अपनी भाषा चुनें';
@@ -58,7 +58,7 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get uspOnePlaceBody =>
-      'बिक्री, खर्चा, कर्ज़, स्टॉक — आपका पूरा बिज़नेस एक ही हेल्थ कार्ड पर।';
+      'बिक्री, खर्चा, कर्ज़, स्टॉक — आपका पूरा व्यापार एक ही हेल्थ कार्ड पर।';
 
   @override
   String get uspOnePlaceImage => 'हथेली पर कार्ड, चारों ओर छोटे आइकन';
@@ -95,11 +95,11 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String businessN(int n) {
-    return 'बिज़नेस $n';
+    return 'व्यापार $n';
   }
 
   @override
-  String get locationHeading => 'आपका बिज़नेस कहाँ है?';
+  String get locationHeading => 'आपका व्यापार कहाँ है?';
 
   @override
   String get locationUseMine => 'मेरी लोकेशन इस्तेमाल करें';
@@ -139,20 +139,20 @@ class AppLocalizationsHi extends AppLocalizations {
   String get locationConfirmCta => 'लोकेशन पक्की करें';
 
   @override
-  String get countHeading => 'आप कितने बिज़नेस चलाते हैं?';
+  String get countHeading => 'आप कितने व्यापार चलाते हैं?';
 
   @override
   String get countFourPlus => '4+';
 
   @override
   String get countNote =>
-      'बस गिनती बताएँ — अगली स्क्रीन पर हर बिज़नेस एक-एक करके सेट होगा।';
+      'बस गिनती बताएँ — अगली स्क्रीन पर हर व्यापार एक-एक करके सेट होगा।';
 
   @override
   String get setupNextCta => 'आगे';
 
   @override
-  String get hubTitle => 'बिज़नेस सेट करें';
+  String get hubTitle => 'व्यापार सेट करें';
 
   @override
   String hubDoneOf(int done, int total) {
@@ -160,7 +160,7 @@ class AppLocalizationsHi extends AppLocalizations {
   }
 
   @override
-  String get hubHeading => 'हर बिज़नेस सेट करें';
+  String get hubHeading => 'हर व्यापार सेट करें';
 
   @override
   String get hubStatusNotStarted => 'अभी शुरू नहीं';
@@ -191,10 +191,10 @@ class AppLocalizationsHi extends AppLocalizations {
       '1 पूरा होने पर भी आगे बढ़ सकते हैं, बाकी बाद में जोड़ लें';
 
   @override
-  String get hubAddAnother => 'नया बिज़नेस जोड़ें';
+  String get hubAddAnother => 'नया व्यापार जोड़ें';
 
   @override
-  String get kindHeading => 'कैसा बिज़नेस है?';
+  String get kindHeading => 'कैसा व्यापार है?';
 
   @override
   String get segmentPrompt => 'मैं हूँ…';
@@ -254,10 +254,13 @@ class AppLocalizationsHi extends AppLocalizations {
       'फ़िलहाल सिर्फ़ आपकी एंट्री से चलेगा — जितने महीने लिखेंगे, स्कोर उतना सटीक होगा।';
 
   @override
-  String get detailsHeading => 'अपने बिज़नेस के बारे में';
+  String get kindOtherFieldHint => 'किस तरह का व्यापार?';
 
   @override
-  String get detailsNameLabel => 'बिज़नेस का नाम';
+  String get detailsHeading => 'अपने व्यापार के बारे में';
+
+  @override
+  String get detailsNameLabel => 'व्यापार का नाम';
 
   @override
   String get detailsSinceLabel => 'कब से चल रहा है';
@@ -287,15 +290,15 @@ class AppLocalizationsHi extends AppLocalizations {
   String get moneyModeRecords => 'मेरे हिसाब से';
 
   @override
-  String get moneyInLabel => 'पैसा आया (बिक्री)';
+  String get moneyInLabel => 'आय (बिक्री)';
 
   @override
   String moneyInMonthLabel(String month) {
-    return 'पैसा आया (बिक्री) · $month';
+    return 'आय (बिक्री) · $month';
   }
 
   @override
-  String get moneyOutLabel => 'पैसा गया (खर्चा)';
+  String get moneyOutLabel => 'व्यय (खर्च)';
 
   @override
   String get moneyEmiLabel => 'कर्ज़ की EMI';
@@ -314,7 +317,7 @@ class AppLocalizationsHi extends AppLocalizations {
   String get moneySeeCardCta => 'मेरा हेल्थ कार्ड देखें';
 
   @override
-  String get homeSwitchHint => 'बिज़नेस बदलने के लिए नाम पर टैप करें';
+  String get homeSwitchHint => 'व्यापार बदलने के लिए नाम पर टैप करें';
 
   @override
   String get chipSynced => 'सिंक हो गया';
@@ -334,6 +337,12 @@ class AppLocalizationsHi extends AppLocalizations {
   String get scoreNew => 'नया';
 
   @override
+  String get healthTapForForecast => 'अनुमान देखें →';
+
+  @override
+  String get addEntryOtherHint => 'क्या था? यहाँ लिखें…';
+
+  @override
   String healthHeadlineLow(String name) {
     return '$name: सेहतमंद';
   }
@@ -350,17 +359,17 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String healthSummaryLow(int score) {
-    return 'बिज़नेस अच्छा चल रहा है · स्कोर $score/100';
+    return 'व्यापार अच्छा चल रहा है · स्कोर $score/100';
   }
 
   @override
   String healthSummaryMedium(int score) {
-    return 'बिज़नेस को थोड़ा ध्यान चाहिए · स्कोर $score/100';
+    return 'व्यापार को थोड़ा ध्यान चाहिए · स्कोर $score/100';
   }
 
   @override
   String healthSummaryHigh(int score) {
-    return 'बिज़नेस पर दबाव है · स्कोर $score/100';
+    return 'व्यापार पर दबाव है · स्कोर $score/100';
   }
 
   @override
@@ -407,10 +416,10 @@ class AppLocalizationsHi extends AppLocalizations {
       'स्कोर हर 30 दिन में बदलता है। रोज़ की एंट्री अगला स्कोर बनाती है।';
 
   @override
-  String get tileMoneyIn => 'पैसा आया';
+  String get tileMoneyIn => 'आय';
 
   @override
-  String get tileMoneyOut => 'पैसा गया';
+  String get tileMoneyOut => 'व्यय';
 
   @override
   String get tileThisMonth => 'इस महीने';
@@ -486,13 +495,13 @@ class AppLocalizationsHi extends AppLocalizations {
   }
 
   @override
-  String get offlineHealthHeadline => 'बिज़नेस सेहतमंद है';
+  String get offlineHealthHeadline => 'व्यापार सेहतमंद है';
 
   @override
-  String get offlineHealthHeadlineMedium => 'बिज़नेस पर नज़र रखें';
+  String get offlineHealthHeadlineMedium => 'व्यापार पर नज़र रखें';
 
   @override
-  String get offlineHealthHeadlineHigh => 'बिज़नेस पर जोखिम है';
+  String get offlineHealthHeadlineHigh => 'व्यापार पर जोखिम है';
 
   @override
   String offlineScoreLine(int score, String date) {
@@ -729,6 +738,54 @@ class AppLocalizationsHi extends AppLocalizations {
   String get planDoneChip => 'हो गया';
 
   @override
+  String get alertDriverLiquidityTitle => 'नक़दी की गुंजाइश तंग है';
+
+  @override
+  String get alertDriverLiquiditySubtitle =>
+      'बचत या कर्ज़ चुकाने की क्षमता कम है। नीचे दिए क़दम बचत दोबारा बनाते हैं।';
+
+  @override
+  String get alertDriverClimateDeficitTitle => 'बारिश सामान्य से कम';
+
+  @override
+  String get alertDriverClimateDeficitSubtitle =>
+      'आपके इलाक़े में बारिश सामान्य से कम है — इनपुट के दाम बढ़ सकते हैं।';
+
+  @override
+  String get alertDriverClimateExcessTitle => 'बारिश सामान्य से ज़्यादा';
+
+  @override
+  String get alertDriverClimateExcessSubtitle =>
+      'सामान्य से अधिक बारिश — भंडारित इनपुट सुरक्षित रखें।';
+
+  @override
+  String get alertDriverMarketTitle => 'बाज़ार के भाव आपके ख़िलाफ़ हुए';
+
+  @override
+  String get alertDriverMarketSubtitle =>
+      'आपके सेक्टर के व्यापार-शर्तें बदल गई हैं।';
+
+  @override
+  String get alertDriverNewBusinessTitle => 'नया व्यापार — ज़्यादा ध्यान चाहिए';
+
+  @override
+  String get alertDriverNewBusinessSubtitle =>
+      'नए व्यापार को रोज़ की क़रीबी निगरानी चाहिए।';
+
+  @override
+  String alertDriverWatchTitle(String month) {
+    return '$month में ध्यान रखें';
+  }
+
+  @override
+  String get alertDriverGenericSubtitle =>
+      'सही राह पर रहने के लिए नीचे दिए क़दम अपनाएँ।';
+
+  @override
+  String get alertMarkingNote =>
+      'यहाँ क़दम पूरे मार्क करने से अगले महीने आपके व्यापार का स्कोर बेहतर बनाने में ML मॉडल की मदद होती है।';
+
+  @override
   String planNote(String month, String amount) {
     return 'काम 1 और 2 करें तो $month की बचत $amount से ऊपर रहेगी। जैसे-जैसे काम पूरे करेंगे, अनुमान तुरंत बदलेगा।';
   }
@@ -822,10 +879,13 @@ class AppLocalizationsHi extends AppLocalizations {
   String get settingsEdit => 'बदलें';
 
   @override
-  String get settingsMyBusinesses => 'मेरे बिज़नेस';
+  String get settingsMyBusinesses => 'मेरे व्यापार';
 
   @override
-  String get settingsAddBusiness => 'नया बिज़नेस जोड़ें';
+  String get settingsAddBusiness => 'नया व्यापार जोड़ें';
+
+  @override
+  String get settingsSeeReport => 'रिपोर्ट देखें';
 
   @override
   String get settingsPreferences => 'पसंद';
@@ -870,7 +930,7 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get aboutIntro =>
-      'खुशहाल आपके छोटे बिज़नेस की हिसाब-किताब की डायरी है।';
+      'खुशहाल आपके छोटे व्यापार की हिसाब-किताब की डायरी है।';
 
   @override
   String get aboutHowItWorks =>
@@ -878,7 +938,7 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get aboutScore =>
-      'हर महीने खुशहाल आपके बिज़नेस को सेहत स्कोर देता है और बताता है कि आगे क्या करें।';
+      'हर महीने खुशहाल आपके व्यापार को सेहत स्कोर देता है और बताता है कि आगे क्या करें।';
 
   @override
   String get aboutOffline =>

@@ -72,50 +72,44 @@ class ConnectivityMonitor {
   }
 
   void _onRadioChanged(List<ConnectivityResult> results) {
-    final bool radioUp =
-        results.isNotEmpty &&
-        results.any((r) => r != ConnectivityResult.none);
-
-    if (!radioUp) {
-      _publish(false);
-      return;
-    }
-
-    // Android in particular emits several transitions while a network settles.
-    // Probing on each one would mean three or four requests for a single real
-    // reconnect, so collapse them.
+    // Trust *up* signals; ignore *down* signals entirely. `connectivity_plus`
+    // routinely reports `[none]` (or an empty list) on emulators, tethered
+    // hotspots, corporate VPNs and captive portals even when the phone can
+    // reach the network fine — turning that into a hard "offline" would
+    // block sign-in and every other online-required action for users who
+    // manifestly have internet. If the radio really is down, requests fail
+    // with a real network error via Dio and the chip still updates via
+    // successful `refresh()` probes.
     _debounce?.cancel();
     _debounce = Timer(const Duration(milliseconds: 600), refresh);
   }
 
   /// Probes the backend and republishes reachability. Returns the new value.
+  ///
+  /// Radio state is authoritative for "the phone has a network". A failed
+  /// backend probe on top of a live radio is not the same as being offline
+  /// — Railway / Cloud Run instances routinely take 15–30 s to cold-start,
+  /// and a 4 s probe timeout on the first hit would flip the chip to
+  /// "Offline" while the user actually has working connectivity. So we
+  /// only demote to offline when the radio itself is down; a probe that
+  /// fails while the radio is up is left alone (the chip stays online and
+  /// the request-level ApiException surfaces any real backend issue).
   Future<bool> refresh() async {
     if (_disposed) return _isOnline.value;
 
-    final List<ConnectivityResult> results = await _connectivity
-        .checkConnectivity();
-    final bool radioUp =
-        results.isNotEmpty &&
-        results.any((r) => r != ConnectivityResult.none);
-    if (!radioUp) {
-      _publish(false);
-      return false;
-    }
-
-    bool reachable;
+    // Deliberately optimistic: neither a "no radio" report nor a probe
+    // failure demote to offline anymore. The chip stays online, and any
+    // real network problem surfaces as a real error on the actual request
+    // (via Dio's own timeout) rather than as a preemptive "no internet"
+    // block on sign-in, business creation, etc. Emulators, corporate
+    // VPNs and captive portals were the recurring false-positive here.
     try {
-      final Response<dynamic> r = await _probe
-          .get<dynamic>('/health')
-          .timeout(probeTimeout);
-      reachable = r.statusCode != null;
+      await _probe.get<dynamic>('/health').timeout(probeTimeout);
     } on Object {
-      // DioException, TimeoutException, or a platform socket error — from here
-      // they all mean the same thing.
-      reachable = false;
+      // Probe failure is not evidence of offline — see comment above.
     }
-
-    _publish(reachable);
-    return reachable;
+    _publish(true);
+    return true;
   }
 
   void _publish(bool online) {

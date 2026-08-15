@@ -50,6 +50,7 @@ class HomeScreen extends StatelessWidget {
     final AppSession session = SessionScope.of(context);
     final bool offline = session.connectivity == ConnectivityStatus.offline;
     final bool updateReady = session.updateReady;
+    final bool hasMultipleBusinesses = session.businesses.length > 1;
 
     final ForecastMonth? riskMonth = session.forecast.flaggedRiskMonth;
 
@@ -69,7 +70,10 @@ class HomeScreen extends StatelessWidget {
             // and its savings all come from SQLite.
             BusinessPill(
               label: session.activeBusiness?.name ?? l10n.brandName,
-              onTap: () => showBusinessSwitcher(context),
+              onTap: hasMultipleBusinesses
+                  ? () => showBusinessSwitcher(context)
+                  : null,
+              showChevron: hasMultipleBusinesses,
             ),
             SyncChip(
               status: session.connectivity,
@@ -135,7 +139,10 @@ class HomeScreen extends StatelessWidget {
           children: <Widget>[
             BusinessPill(
               label: session.activeBusiness?.name ?? l10n.brandName,
-              onTap: () => showBusinessSwitcher(context),
+              onTap: hasMultipleBusinesses
+                  ? () => showBusinessSwitcher(context)
+                  : null,
+              showChevron: hasMultipleBusinesses,
             ),
             SyncChip(
               status: session.connectivity,
@@ -143,15 +150,17 @@ class HomeScreen extends StatelessWidget {
             ),
           ],
         ),
-        const SizedBox(height: 6),
-        Text(
-          l10n.homeSwitchHint,
-          style: const TextStyle(
-            fontSize: 11.5,
-            color: AppPalette.faint,
-            height: 1.3,
+        if (hasMultipleBusinesses) ...<Widget>[
+          const SizedBox(height: 6),
+          Text(
+            l10n.homeSwitchHint,
+            style: const TextStyle(
+              fontSize: 11.5,
+              color: AppPalette.faint,
+              height: 1.3,
+            ),
           ),
-        ),
+        ],
         const SizedBox(height: 10),
         if (updateReady) ...<Widget>[
           _MonthClosedBanner(

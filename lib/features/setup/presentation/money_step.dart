@@ -117,7 +117,7 @@ class _MoneyStepState extends State<MoneyStep> {
         filled: widget.standalone ? 3 : 5,
         total: widget.standalone ? 3 : 5,
       ),
-      cta: GradientCtaButton(label: l10n.moneySeeCardCta, onPressed: _submit),
+      cta: GradientCtaButton(label: l10n.setupNextCta, onPressed: _submit),
       children: <Widget>[
         Text(
           l10n.moneyHeading,

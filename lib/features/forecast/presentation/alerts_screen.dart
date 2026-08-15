@@ -41,10 +41,10 @@ class _AlertsScreenState extends State<AlertsScreen> {
     };
   }
 
-  void _openPlan() {
+  void _openPlan([int? alertId]) {
     Navigator.of(context).push(
       MaterialPageRoute<void>(
-        builder: (BuildContext _) => const AlertDetailScreen(),
+        builder: (BuildContext _) => AlertDetailScreen(alertId: alertId),
       ),
     );
   }
@@ -98,7 +98,7 @@ class _AlertsScreenState extends State<AlertsScreen> {
                       _AlertCard(
                         alert: alert,
                         riskMonth: riskMonth,
-                        onOpenPlan: _openPlan,
+                        onOpenPlan: () => _openPlan(alert.backendId),
                       ),
                       const SizedBox(height: 9),
                     ],
@@ -257,21 +257,23 @@ class _AlertCard extends StatelessWidget {
       );
     }
 
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 13),
-      decoration: BoxDecoration(
-        color: AppPalette.onPrimary,
-        border: Border.all(color: AppPalette.line, width: 1.5),
+    // Non-urgent alerts also open the plan when the backend attached one —
+    // green- and amber-risk businesses now carry sector×band actionables
+    // via `savings_low`, and the tap was silently a no-op before.
+    return Material(
+      color: AppPalette.onPrimary,
+      shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        boxShadow: const <BoxShadow>[
-          BoxShadow(
-            color: Color(0x0A143C23),
-            offset: Offset(0, 1),
-            blurRadius: 2,
-          ),
-        ],
+        side: const BorderSide(color: AppPalette.line, width: 1.5),
       ),
-      child: body,
+      child: InkWell(
+        onTap: alert.hasPlan ? onOpenPlan : null,
+        borderRadius: BorderRadius.circular(16),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 13),
+          child: body,
+        ),
+      ),
     );
   }
 }

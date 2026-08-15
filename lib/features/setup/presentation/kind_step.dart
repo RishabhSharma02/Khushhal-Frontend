@@ -43,6 +43,16 @@ class KindStep extends StatefulWidget {
 }
 
 class _KindStepState extends State<KindStep> {
+  late final TextEditingController _otherLabel = TextEditingController(
+    text: widget.draft.sectorOtherLabel,
+  );
+
+  @override
+  void dispose() {
+    _otherLabel.dispose();
+    super.dispose();
+  }
+
   static const Map<BusinessSegment, IconData> _segmentIcons =
       <BusinessSegment, IconData>{
         BusinessSegment.shg: Icons.groups,
@@ -130,6 +140,38 @@ class _KindStepState extends State<KindStep> {
               const SizedBox(width: 8),
               Expanded(child: _sectorCell(BusinessSector.values[row + 1])),
             ],
+          ),
+        ],
+        if (draft.sector == BusinessSector.other) ...<Widget>[
+          const SizedBox(height: 10),
+          TextField(
+            controller: _otherLabel,
+            maxLength: 40,
+            onChanged: (String value) => draft.sectorOtherLabel = value.trim(),
+            decoration: InputDecoration(
+              hintText: l10n.kindOtherFieldHint,
+              counterText: '',
+              isDense: true,
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 12,
+                vertical: 12,
+              ),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(color: AppPalette.line),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(color: AppPalette.line),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(
+                  color: AppPalette.leaf,
+                  width: 1.5,
+                ),
+              ),
+            ),
           ),
         ],
         const SizedBox(height: 12),
