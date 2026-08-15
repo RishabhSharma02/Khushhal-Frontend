@@ -5,7 +5,6 @@ library;
 import 'package:firebase_auth/firebase_auth.dart';
 
 import '../data/officer_api_client.dart';
-import '../data/officer_demo_data.dart';
 import '../domain/officer_profile.dart';
 
 /// Abstract so widget tests can inject a fake instead of talking to real
@@ -110,10 +109,6 @@ class FirebaseOfficerAuthRepository implements OfficerAuthRepository {
 /// Maps the backend's `OfficerRead` shape onto the domain [OfficerProfile].
 /// Shared with `profile_repository.dart` so a profile edit's response maps
 /// the same way a fresh sign-in's does.
-///
-/// `coverage` isn't part of the auth/profile API (it's derived from
-/// enterprises/visits data), so it's filled in from [OfficerDemoData] as a
-/// placeholder until a real endpoint exists for it.
 OfficerProfile officerProfileFromJson(Map<String, dynamic> json) {
   return OfficerProfile(
     fullName: json['full_name'] as String,
@@ -124,7 +119,6 @@ OfficerProfile officerProfileFromJson(Map<String, dynamic> json) {
     state: json['state'] as String? ?? '',
     email: json['email'] as String? ?? '',
     mobile: json['mobile_e164'] as String?,
-    coverage: OfficerDemoData.officer.coverage,
     deviceLabel: json['device_label'] as String? ?? 'this device',
   );
 }

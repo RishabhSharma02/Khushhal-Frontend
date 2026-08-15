@@ -65,7 +65,15 @@ class KpiSummaryRow extends StatelessWidget {
         ];
 
         if (wide) {
-          return IntrinsicHeight(
+          // A fixed height rather than IntrinsicHeight+stretch: the latter
+          // sizes every tile to match the tallest one's *dry-run* measured
+          // height, which on web can come in a couple of pixels short of
+          // that same tile's real painted height (font-metric rounding
+          // differences between the two passes) — a fixed height with
+          // headroom sidesteps that class of bug entirely instead of
+          // chasing pixel-exact intrinsic sizing.
+          return SizedBox(
+            height: 132,
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: <Widget>[
@@ -141,14 +149,22 @@ class _KpiTile extends StatelessWidget {
                     color: valueColor,
                   ),
                 ),
-                if (caption != null)
-                  Text(
-                    caption!,
-                    style: const TextStyle(
-                      fontSize: 10,
-                      color: OfficerPalette.muted,
-                    ),
+                // Always reserved (blank when unused) rather than
+                // conditional — on the wide layout, IntrinsicHeight stretches
+                // every tile to match the tallest one (the "At risk" tile,
+                // the only one with a caption). Making the caption line's
+                // height unconditional keeps that dry-run measurement pass
+                // and the real layout pass consistent; leaving it
+                // conditional left the At-risk tile a hair (2px) short of
+                // its own content on web due to font-metric rounding.
+                Text(
+                  caption ?? '',
+                  style: const TextStyle(
+                    fontSize: 10,
+                    height: 1.3,
+                    color: OfficerPalette.muted,
                   ),
+                ),
               ],
             ),
           ),

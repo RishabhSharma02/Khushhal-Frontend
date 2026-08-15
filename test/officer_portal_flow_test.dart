@@ -54,11 +54,19 @@ class _FakeProfileRepository implements ProfileRepository {
       state: OfficerDemoData.officer.state,
       email: OfficerDemoData.officer.email,
       mobile: mobile,
-      coverage: OfficerDemoData.officer.coverage,
       signedInSince: OfficerDemoData.officer.signedInSince,
       deviceLabel: OfficerDemoData.officer.deviceLabel,
     );
   }
+
+  @override
+  Future<OfficerCoverage> fetchCoverage() async => OfficerDemoData.coverage;
+
+  @override
+  Future<void> changePassword({
+    required String currentPassword,
+    required String newPassword,
+  }) async {}
 }
 
 /// Stands in for [ApiEnterprisesRepository] so widget tests never hit the
@@ -279,6 +287,16 @@ void main() {
 
       expect(find.text('Hello, Ramesh!'), findsOneWidget);
       expect(tester.takeException(), isNull);
+
+      await tester.ensureVisible(find.text('Plan route 🗺'));
+      await tester.tap(find.text('Plan route 🗺'));
+      await tester.pumpAndSettle();
+      expect(find.text('Route planning — coming soon 🗺'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+
+      await tester.tap(find.byIcon(Icons.close_rounded));
+      await tester.pumpAndSettle();
+      expect(find.text('Route planning — coming soon 🗺'), findsNothing);
     });
 
     testWidgets('$sizeLabel: enterprises list opens a detail screen', (
@@ -330,6 +348,33 @@ void main() {
       await tester.tap(find.byIcon(Icons.settings_rounded));
       await tester.pumpAndSettle();
       expect(find.text('My profile'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+
+      await tester.tap(find.text('✎ Edit'));
+      await tester.pumpAndSettle();
+      expect(find.text('Edit profile'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+
+      await tester.tap(find.text('Save changes ✓'));
+      await tester.pumpAndSettle();
+      expect(find.text('Edit profile'), findsNothing);
+      expect(tester.takeException(), isNull);
+
+      await tester.ensureVisible(find.text('change').first);
+      await tester.tap(find.text('change').first);
+      await tester.pumpAndSettle();
+      expect(find.text('Edit profile'), findsOneWidget);
+      await tester.tap(find.byIcon(Icons.close_rounded).first);
+      await tester.pumpAndSettle();
+      expect(find.text('Edit profile'), findsNothing);
+
+      await tester.ensureVisible(find.text('change').last);
+      await tester.tap(find.text('change').last);
+      await tester.pumpAndSettle();
+      expect(find.text('Change password'), findsOneWidget);
+      await tester.tap(find.byIcon(Icons.close_rounded).first);
+      await tester.pumpAndSettle();
+      expect(find.text('Change password'), findsNothing);
       expect(tester.takeException(), isNull);
 
       await tester.ensureVisible(find.text('Log out ▸').first);

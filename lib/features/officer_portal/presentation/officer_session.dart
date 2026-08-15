@@ -113,6 +113,10 @@ class OfficerSession extends ChangeNotifier {
 
   final ProfileRepository? _profileRepository;
 
+  /// Exposed so the profile screen can fetch "My coverage" directly — it's
+  /// only ever needed there, not preloaded like enterprises/visits.
+  ProfileRepository? get profileRepository => _profileRepository;
+
   List<Enterprise> _enterprises;
   bool _enterprisesLoading = false;
   String? _enterprisesError;

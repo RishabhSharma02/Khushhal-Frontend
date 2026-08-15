@@ -6,9 +6,11 @@ import 'package:flutter/material.dart';
 import '../../../domain/officer_profile.dart';
 import '../../theme/officer_palette.dart';
 import '../../widgets/officer_card.dart';
+import 'change_password_dialog.dart';
+import 'edit_profile_dialog.dart';
 
-/// A read-only rundown of the officer's account, each row with a "change"
-/// link (no-op in this demo).
+/// A read-only rundown of the officer's account, with a "change" link on
+/// the rows that can actually be edited.
 class AccountDetailsCard extends StatelessWidget {
   /// Creates the account details card.
   const AccountDetailsCard({super.key, required this.officer});
@@ -48,9 +50,13 @@ class AccountDetailsCard extends StatelessWidget {
           _Row(
             label: 'Mobile',
             value: officer.mobile ?? 'Not provided',
-            changeable: true,
+            onChange: () => showEditProfileDialog(context: context),
           ),
-          _Row(label: 'Password', value: '••••••••', changeable: true),
+          _Row(
+            label: 'Password',
+            value: '••••••••',
+            onChange: () => showChangePasswordDialog(context: context),
+          ),
           _Row(label: 'Language', value: 'English · हिंदी ▾', divider: false),
         ],
       ),
@@ -62,13 +68,16 @@ class _Row extends StatelessWidget {
   const _Row({
     required this.label,
     required this.value,
-    this.changeable = false,
+    this.onChange,
     this.divider = true,
   });
 
   final String label;
   final String value;
-  final bool changeable;
+
+  /// Shown as a "change" link when non-null; omitted entirely otherwise
+  /// (Email/Language have nothing wired up to change yet).
+  final VoidCallback? onChange;
   final bool divider;
 
   @override
@@ -102,14 +111,10 @@ class _Row extends StatelessWidget {
               ),
             ),
           ),
-          if (changeable) ...<Widget>[
+          if (onChange != null) ...<Widget>[
             const SizedBox(width: 6),
             GestureDetector(
-              onTap: () => ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Editing isn’t wired up in this demo yet.'),
-                ),
-              ),
+              onTap: onChange,
               child: const Text(
                 'change',
                 style: TextStyle(fontSize: 12.5, color: OfficerPalette.forest),

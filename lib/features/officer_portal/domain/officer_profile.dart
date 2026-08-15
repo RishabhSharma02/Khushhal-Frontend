@@ -40,7 +40,6 @@ class OfficerProfile {
     required this.state,
     required this.email,
     required this.mobile,
-    required this.coverage,
     this.signedInSince,
     this.deviceLabel = 'this device',
   });
@@ -69,9 +68,6 @@ class OfficerProfile {
   /// Contact mobile number — not used for sign-in (that's email/password),
   /// so it's optional; an officer can add it later via profile edit.
   final String? mobile;
-
-  /// Coverage stats for the Profile screen.
-  final OfficerCoverage coverage;
 
   /// When the current session started; `null` before login.
   final DateTime? signedInSince;
@@ -103,7 +99,6 @@ class OfficerProfile {
       state: state,
       email: email,
       mobile: mobile,
-      coverage: coverage,
       signedInSince: time,
       deviceLabel: deviceLabel,
     );

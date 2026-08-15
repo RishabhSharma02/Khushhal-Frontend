@@ -26,15 +26,21 @@ class _EditProfileDialog extends StatefulWidget {
 }
 
 class _EditProfileDialogState extends State<_EditProfileDialog> {
-  late final TextEditingController _fullName;
-  late final TextEditingController _mobile;
+  final TextEditingController _fullName = TextEditingController();
+  final TextEditingController _mobile = TextEditingController();
+  bool _controllersSeeded = false;
 
   @override
-  void initState() {
-    super.initState();
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // OfficerSessionScope.of(context) depends on an InheritedWidget, which
+    // isn't available yet in initState() — seed the controllers here
+    // instead, once, the first time dependencies resolve.
+    if (_controllersSeeded) return;
+    _controllersSeeded = true;
     final OfficerSession session = OfficerSessionScope.of(context);
-    _fullName = TextEditingController(text: session.profile.fullName);
-    _mobile = TextEditingController(text: session.profile.mobile);
+    _fullName.text = session.profile.fullName;
+    _mobile.text = session.profile.mobile ?? '';
   }
 
   @override

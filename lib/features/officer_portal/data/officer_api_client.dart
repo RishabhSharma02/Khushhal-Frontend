@@ -61,6 +61,10 @@ class OfficerApiClient {
     return _patch('/api/officer/v1/profile', idToken, changes);
   }
 
+  Future<Map<String, dynamic>> fetchCoverage(String idToken) {
+    return _get('/api/officer/v1/profile/coverage', idToken);
+  }
+
   Future<List<Map<String, dynamic>>> fetchEnterprises(String idToken) {
     return _getList('/api/officer/v1/enterprises', idToken);
   }

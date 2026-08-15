@@ -176,7 +176,9 @@ class _ReportsBody extends StatelessWidget {
             ),
           ],
         ),
+        const SizedBox(height: 14),
         ReportKpiRow(summary: summary),
+        const SizedBox(height: 14),
         LayoutBuilder(
           builder: (BuildContext context, BoxConstraints constraints) {
             final Widget sectors = SectorScoreBars(

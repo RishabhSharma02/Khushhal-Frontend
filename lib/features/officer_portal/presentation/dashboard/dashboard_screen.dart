@@ -15,6 +15,7 @@ import '../widgets/officer_nav_rail.dart';
 import '../widgets/officer_shell_scaffold.dart';
 import 'widgets/health_score_card.dart';
 import 'widgets/kpi_summary_row.dart';
+import 'widgets/plan_route_coming_soon_dialog.dart';
 import 'widgets/risk_queue_card.dart';
 import 'widgets/visits_progress_card.dart';
 
@@ -116,7 +117,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   nextVisit: session.nextVisit,
                   visitsDoneThisWeek: trends.visitsDoneThisWeek,
                   visitsPlannedThisWeek: trends.visitsPlannedThisWeek,
-                  onPlanRoute: () => widget.onSectionSelected(OfficerSection.visits),
+                  onPlanRoute: () => showPlanRouteComingSoonDialog(context: context),
                 );
                 final HealthScoreCard healthScoreCard = HealthScoreCard(
                   enterpriseCount: enterprises.length,

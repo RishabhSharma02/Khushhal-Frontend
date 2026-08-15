@@ -9,18 +9,18 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 
 import 'features/officer_portal/presentation/officer_portal_root.dart';
+import 'firebase_options.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  // Requires platform Firebase config (google-services.json /
-  // GoogleService-Info.plist / web FirebaseOptions, wired via
-  // `flutterfire configure`) that isn't in this repo yet — see
-  // Khushhal-Backend's officer portal plan. Without it this throws; caught
-  // here so the UI still renders (phone/OTP screens show a clear error only
-  // once an officer actually tries to sign in) instead of a blank app.
-  // Widget tests never call main() so they're unaffected either way.
+  // Web requires FirebaseOptions to be passed explicitly (unlike
+  // Android/iOS, which read native config files automatically) — omitting
+  // it throws immediately and leaves no default app for FirebaseAuth calls
+  // to attach to. Caught here so the UI still renders even before a real
+  // Firebase project is wired in via `flutterfire configure`; widget tests
+  // never call main() so they're unaffected either way.
   try {
-    await Firebase.initializeApp();
+    await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   } catch (e) {
     debugPrint('Firebase.initializeApp failed (no project configured yet?): $e');
   }

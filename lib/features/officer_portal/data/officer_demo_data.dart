@@ -32,12 +32,16 @@ abstract final class OfficerDemoData {
     state: 'UP',
     email: 'r.verma@khush-hal.in',
     mobile: '+91 94150 22331',
-    coverage: const OfficerCoverage(
-      enterpriseCount: 48,
-      villageCount: 17,
-      visitsThisMonth: 17,
-      flagsResolvedLast30Days: 11,
-    ),
+  );
+
+  /// Demo "My coverage" stats — fetched from a real endpoint once signed
+  /// in (see ProfileRepository.fetchCoverage), kept here only as fixture
+  /// data for widget tests / the fake repository.
+  static const OfficerCoverage coverage = OfficerCoverage(
+    enterpriseCount: 48,
+    villageCount: 17,
+    visitsThisMonth: 17,
+    flagsResolvedLast30Days: 11,
   );
 
   // ── Enterprises ────────────────────────────────────────────────────────
