@@ -15,8 +15,6 @@ class HealthScoreCard extends StatelessWidget {
     required this.enterpriseCount,
     required this.averageScoreHistory,
     required this.averageScoreDelta,
-    required this.emisOnTimePercent,
-    required this.emisOnTimeDelta,
     required this.openFlagCount,
     required this.openFlagDelta,
   });
@@ -29,12 +27,6 @@ class HealthScoreCard extends StatelessWidget {
 
   /// Change in average score vs. the previous period.
   final int averageScoreDelta;
-
-  /// Percent of EMIs on time across all enterprises.
-  final int emisOnTimePercent;
-
-  /// Change in EMIs-on-time percent vs. the previous period.
-  final int emisOnTimeDelta;
 
   /// Currently open flags.
   final int openFlagCount;
@@ -113,15 +105,6 @@ class HealthScoreCard extends StatelessWidget {
               const SizedBox(width: 10),
               Expanded(
                 child: _MiniStat(
-                  label: 'EMIs on time',
-                  value: '$emisOnTimePercent%',
-                  deltaLabel: '${emisOnTimeDelta >= 0 ? '+' : ''}$emisOnTimeDelta%',
-                  positive: emisOnTimeDelta >= 0,
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: _MiniStat(
                   label: 'Flags open',
                   value: '$openFlagCount',
                   deltaLabel: '$openFlagDelta',
@@ -187,7 +170,7 @@ class _MiniStat extends StatelessWidget {
 
   final String label;
   final String value;
-  final String deltaLabel;
+  final String? deltaLabel;
   final bool positive;
 
   @override
@@ -219,11 +202,12 @@ class _MiniStat extends StatelessWidget {
                   color: OfficerPalette.ink,
                 ),
               ),
-              StatusChip(
-                label: deltaLabel,
-                tone: positive ? OfficerTone.green : OfficerTone.red,
-                dense: true,
-              ),
+              if (deltaLabel != null)
+                StatusChip(
+                  label: deltaLabel!,
+                  tone: positive ? OfficerTone.green : OfficerTone.red,
+                  dense: true,
+                ),
             ],
           ),
         ],

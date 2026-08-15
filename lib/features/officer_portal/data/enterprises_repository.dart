@@ -97,7 +97,6 @@ Enterprise _enterpriseFromJson(Map<String, dynamic> json) {
       savingsInr: financials['savings_inr'] as int,
       loanLeftInr: financials['loan_left_inr'] as int,
       emiInr: financials['emi_inr'] as int,
-      emiOnTime: financials['emi_on_time'] as bool,
     ),
     lastSyncHoursAgo: json['last_sync_hours_ago'] as int?,
     staleDays: json['stale_days'] as int?,
@@ -109,6 +108,7 @@ CashFlowMonth _cashFlowMonthFromJson(Map<String, dynamic> json) {
     label: json['label'] as String,
     moneyInInr: json['money_in_inr'] as int,
     moneyOutInr: json['money_out_inr'] as int,
+    netInr: json['net_inr'] as int?,
     isForecast: json['is_forecast'] as bool,
     isFlagged: json['is_flagged'] as bool,
   );

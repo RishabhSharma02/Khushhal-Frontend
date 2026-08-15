@@ -49,12 +49,10 @@ class OfficerNavRail extends StatelessWidget {
         child: Column(
           children: <Widget>[
             const SizedBox(height: 20),
-            const OfficerAvatar(
-              text: '☘',
+            const OfficerAvatar.logo(
+              imageAsset: 'assets/images/khushhal_logo.jpg',
               size: 38,
-              fontSize: 17,
               background: OfficerPalette.onForest,
-              foreground: OfficerPalette.forest,
             ),
             const SizedBox(height: 24),
             for (final (OfficerSection section, IconData icon) in _items)

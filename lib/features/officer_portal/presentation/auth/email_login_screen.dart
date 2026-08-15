@@ -10,6 +10,7 @@ import '../theme/officer_palette.dart';
 import '../widgets/labeled_field.dart';
 import '../widgets/officer_avatar.dart';
 import '../widgets/officer_buttons.dart';
+import 'forgot_password_dialog.dart';
 import 'widgets/auth_scaffold.dart';
 
 /// The sign-in form: email + password against Firebase Auth.
@@ -79,7 +80,10 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> {
   @override
   Widget build(BuildContext context) {
     return AuthScaffold(
-      logo: const OfficerAvatar(text: '☘', size: 56, fontSize: 26),
+      logo: const OfficerAvatar.logo(
+        imageAsset: 'assets/images/khushhal_logo.jpg',
+        size: 56,
+      ),
       title: "KHUSH-HAL Officers' Portal",
       subtitle: 'Sign in to your account',
       child: Column(
@@ -104,6 +108,24 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> {
                 _obscure ? Icons.visibility_rounded : Icons.visibility_off_rounded,
               ),
               onPressed: () => setState(() => _obscure = !_obscure),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Align(
+            alignment: Alignment.centerRight,
+            child: GestureDetector(
+              onTap: () => showForgotPasswordDialog(
+                context: context,
+                authRepository: widget.authRepository,
+              ),
+              child: const Text(
+                'Forgot password?',
+                style: TextStyle(
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w700,
+                  color: OfficerPalette.forest,
+                ),
+              ),
             ),
           ),
           if (_error != null) ...<Widget>[

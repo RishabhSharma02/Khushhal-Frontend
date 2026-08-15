@@ -50,8 +50,6 @@ ReportSummary _reportSummaryFromJson(Map<String, dynamic> json) {
     flagsResolved: json['flags_resolved'] as int,
     flagsOpened: json['flags_opened'] as int,
     averageResolutionDays: json['average_resolution_days'] as int,
-    emisOnTimePercent: json['emis_on_time_percent'] as int,
-    emisOnTimeDelta: json['emis_on_time_delta'] as int,
     visitsDone: json['visits_done'] as int,
     riskLedVisits: json['risk_led_visits'] as int,
     sectorScores: sectorRows

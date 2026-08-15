@@ -38,6 +38,15 @@ class _FakeOfficerAuthRepository implements OfficerAuthRepository {
     String? block,
     String? state,
   }) async => OfficerDemoData.officer;
+
+  @override
+  Future<OfficerProfile?> currentSession() async => null;
+
+  @override
+  Future<void> signOut() async {}
+
+  @override
+  Future<void> sendPasswordResetEmail(String email) async {}
 }
 
 /// Stands in for [ApiProfileRepository] so widget tests never hit the real
@@ -160,6 +169,9 @@ class _FakeActionPlanRepository implements ActionPlanRepository {
   }
 
   @override
+  Future<int> sendActionPlan(String enterpriseId) async => _stepsFor(enterpriseId).length;
+
+  @override
   Future<List<ContactLogEntry>> fetchContactLog(String enterpriseId) async {
     final List<ContactLogEntry> entries = List<ContactLogEntry>.of(_historyFor(enterpriseId))
       ..sort((ContactLogEntry a, ContactLogEntry b) => b.date.compareTo(a.date));
@@ -232,8 +244,6 @@ class _FakeDashboardRepository implements DashboardRepository {
   Future<DashboardTrends> fetchDashboard() async => (
     averageScoreHistory: OfficerDemoData.averageScoreHistory,
     averageScoreDelta: OfficerDemoData.averageScoreDelta,
-    emisOnTimePercent: OfficerDemoData.emisOnTimePercent,
-    emisOnTimeDelta: OfficerDemoData.emisOnTimeDelta,
     openFlagCount: OfficerDemoData.openFlagCount,
     openFlagDelta: OfficerDemoData.openFlagDelta,
     visitsDoneThisWeek: OfficerDemoData.visitsDoneThisWeek,
@@ -269,6 +279,9 @@ void main() {
         profileRepository: _FakeProfileRepository(),
       ),
     );
+    // Lets the checking-session phase's currentSession() future resolve
+    // (the fake returns null immediately) before the login form appears.
+    await tester.pumpAndSettle();
 
     await tester.enterText(find.byType(TextFormField).at(0), 'ramesh@khush-hal.in');
     await tester.enterText(find.byType(TextFormField).at(1), 'password123');

@@ -31,6 +31,13 @@ abstract class ActionPlanRepository {
 
   Future<void> deleteActionStep(String enterpriseId, int stepId);
 
+  /// Publishes the current action-plan steps to the enterprise's latest
+  /// open flag so they show up on the owner's app (as `field_officer`-role
+  /// plan actions) — each send replaces the previous one. Returns the
+  /// number of steps sent. Throws [OfficerApiException] if the enterprise
+  /// has no open flag to attach the plan to.
+  Future<int> sendActionPlan(String enterpriseId);
+
   Future<List<ContactLogEntry>> fetchContactLog(String enterpriseId);
 
   Future<ContactLogEntry> addContactNote(
@@ -102,6 +109,13 @@ class ApiActionPlanRepository implements ActionPlanRepository {
   Future<void> deleteActionStep(String enterpriseId, int stepId) async {
     final String token = await _idToken();
     await _apiClient.deleteActionStep(token, enterpriseId, stepId);
+  }
+
+  @override
+  Future<int> sendActionPlan(String enterpriseId) async {
+    final String token = await _idToken();
+    final Map<String, dynamic> json = await _apiClient.sendActionPlan(token, enterpriseId);
+    return json['steps_sent'] as int;
   }
 
   @override

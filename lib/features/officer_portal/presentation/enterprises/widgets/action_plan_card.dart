@@ -20,6 +20,7 @@ class ActionPlanCard extends StatefulWidget {
     required this.onAddStepManually,
     required this.onEditStep,
     required this.onDeleteStep,
+    required this.onSendPlan,
   });
 
   /// The plan's ordered steps.
@@ -37,6 +38,11 @@ class ActionPlanCard extends StatefulWidget {
   /// Called with a step when its delete control is tapped.
   final ValueChanged<ActionStep> onDeleteStep;
 
+  /// Called when "Send plan" is tapped — publishes the steps to the
+  /// enterprise's open flag so the owner's app shows them. Throws if there's
+  /// no open flag to attach to.
+  final Future<void> Function() onSendPlan;
+
   /// How many steps show before "View all" is needed.
   static const int previewCount = 3;
 
@@ -46,6 +52,23 @@ class ActionPlanCard extends StatefulWidget {
 
 class _ActionPlanCardState extends State<ActionPlanCard> {
   bool _expanded = false;
+  bool _sending = false;
+
+  Future<void> _handleSendPlan() async {
+    setState(() => _sending = true);
+    try {
+      await widget.onSendPlan();
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Plan sent to the owner’s app.')));
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Could not send: $e')));
+    } finally {
+      if (mounted) setState(() => _sending = false);
+    }
+  }
 
   static const Map<ActionStepImpact, OfficerTone> _impactTone =
       <ActionStepImpact, OfficerTone>{
@@ -221,14 +244,8 @@ class _ActionPlanCardState extends State<ActionPlanCard> {
                 Expanded(
                   flex: 2,
                   child: OfficerPrimaryButton(
-                    label: 'Send plan 📲',
-                    onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text(
-                          'Plan sent to the owner’s app (demo only).',
-                        ),
-                      ),
-                    ),
+                    label: _sending ? 'Sending…' : 'Send plan 📲',
+                    onPressed: _sending ? null : _handleSendPlan,
                   ),
                 ),
               ],

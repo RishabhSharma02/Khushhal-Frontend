@@ -87,8 +87,6 @@ class ReportSummary {
     required this.flagsResolved,
     required this.flagsOpened,
     required this.averageResolutionDays,
-    required this.emisOnTimePercent,
-    required this.emisOnTimeDelta,
     required this.visitsDone,
     required this.riskLedVisits,
     required this.sectorScores,
@@ -117,12 +115,6 @@ class ReportSummary {
 
   /// Average days to resolve a flag.
   final int averageResolutionDays;
-
-  /// Percent of EMIs paid on time.
-  final int emisOnTimePercent;
-
-  /// Change in on-time percent vs. the previous period.
-  final int emisOnTimeDelta;
 
   /// Visits completed this month.
   final int visitsDone;

@@ -54,7 +54,6 @@ class _ReportsScreenState extends State<ReportsScreen> {
       ..writeln(
         'Flags resolved,${summary.flagsResolved}/${summary.flagsOpened}',
       )
-      ..writeln('EMIs on time,${summary.emisOnTimePercent}%')
       ..writeln('Visits done,${summary.visitsDone}')
       ..writeln()
       ..writeln('Sector,Enterprises,Avg score');

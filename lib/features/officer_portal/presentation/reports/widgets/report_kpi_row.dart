@@ -1,4 +1,4 @@
-/// The four month-in-review KPI tiles (Officer Portal 5e).
+/// The month-in-review KPI tiles (Officer Portal 5e).
 library;
 
 import 'package:flutter/material.dart';
@@ -8,7 +8,7 @@ import '../../theme/officer_palette.dart';
 import '../../widgets/officer_card.dart';
 import '../../widgets/status_chip.dart';
 
-/// Avg score, flags resolved, EMIs on time, visits done.
+/// Avg score, flags resolved, visits done.
 class ReportKpiRow extends StatelessWidget {
   /// Creates the report KPI row.
   const ReportKpiRow({super.key, required this.summary});
@@ -21,7 +21,7 @@ class ReportKpiRow extends StatelessWidget {
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) {
         final double tileWidth = constraints.maxWidth > 620
-            ? (constraints.maxWidth - 3 * 12) / 4
+            ? (constraints.maxWidth - 2 * 12) / 3
             : (constraints.maxWidth - 12) / 2;
 
         final List<Widget> tiles = <Widget>[
@@ -35,12 +35,6 @@ class ReportKpiRow extends StatelessWidget {
             label: 'FLAGS RESOLVED',
             value: '${summary.flagsResolved}/${summary.flagsOpened}',
             trailingLabel: '${summary.averageResolutionDays}d avg',
-          ),
-          _Tile(
-            label: 'EMIs ON TIME',
-            value: '${summary.emisOnTimePercent}%',
-            deltaLabel:
-                '${summary.emisOnTimeDelta >= 0 ? '+' : ''}${summary.emisOnTimeDelta}%',
           ),
           _Tile(
             label: 'VISITS DONE',

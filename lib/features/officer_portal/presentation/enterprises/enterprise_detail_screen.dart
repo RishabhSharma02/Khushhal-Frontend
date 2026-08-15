@@ -216,6 +216,9 @@ class _EnterpriseDetailScreenState extends State<EnterpriseDetailScreen> {
                       await session.actionPlanRepository?.deleteActionStep(enterprise.id, step.id!);
                       _reloadActionSteps();
                     },
+                    onSendPlan: () async {
+                      await session.actionPlanRepository?.sendActionPlan(enterprise.id);
+                    },
                   );
                 },
               ),
@@ -312,9 +315,7 @@ class _StatRow extends StatelessWidget {
       _StatTile(
         label: 'LOAN LEFT',
         value: '₹${_money(enterprise.financials.loanLeftInr)}',
-        caption:
-            'EMI ₹${_money(enterprise.financials.emiInr)} · '
-            '${enterprise.financials.emiOnTime ? 'on time ✓' : 'behind ⚠'}',
+        caption: 'EMI ₹${_money(enterprise.financials.emiInr)}',
       ),
     ];
 
