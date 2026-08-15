@@ -3,7 +3,7 @@ library;
 
 import 'package:flutter/material.dart';
 
-import '../../data/officer_demo_data.dart';
+import '../../data/sync_status_repository.dart';
 import '../../domain/enterprise.dart';
 import '../../domain/sync_status.dart';
 import '../officer_session.dart';
@@ -21,12 +21,29 @@ import 'widgets/sync_table.dart';
 ///
 /// Has no rail icon of its own in the mocks — Dashboard stays highlighted,
 /// since this screen is only ever reached from its stale-sync banner.
-class DataSyncScreen extends StatelessWidget {
+class DataSyncScreen extends StatefulWidget {
   /// Creates the data sync screen.
   const DataSyncScreen({super.key, required this.onSectionSelected});
 
   /// Called when a rail section is tapped — also pops this pushed screen.
   final ValueChanged<OfficerSection> onSectionSelected;
+
+  @override
+  State<DataSyncScreen> createState() => _DataSyncScreenState();
+}
+
+class _DataSyncScreenState extends State<DataSyncScreen> {
+  Future<SyncStatusSummary>? _summaryFuture;
+  bool _loaded = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_loaded) {
+      _loaded = true;
+      _summaryFuture = OfficerSessionScope.of(context).syncStatusRepository?.fetchSyncStatus();
+    }
+  }
 
   void _handleAction(BuildContext context, DeviceSyncStatus row) {
     switch (row.actionKind) {
@@ -121,17 +138,19 @@ class DataSyncScreen extends StatelessWidget {
           ),
         );
       case SyncActionKind.addToRoute:
-        onSectionSelected(OfficerSection.visits);
+        widget.onSectionSelected(OfficerSection.visits);
         Navigator.of(context).pop();
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final int deviceCount = OfficerSessionScope.of(context).enterprises.length;
+
     return OfficerShellScaffold(
       section: OfficerSection.dashboard,
       onSectionSelected: (OfficerSection section) {
-        onSectionSelected(section);
+        widget.onSectionSelected(section);
         Navigator.of(context).pop();
       },
       children: <Widget>[
@@ -154,9 +173,9 @@ class DataSyncScreen extends StatelessWidget {
           ),
         ),
         ResponsiveHeader(
-          title: const Text(
-            'Data sync — 48 devices',
-            style: TextStyle(
+          title: Text(
+            'Data sync — $deviceCount device${deviceCount == 1 ? '' : 's'}',
+            style: const TextStyle(
               fontSize: 22,
               fontWeight: FontWeight.w800,
               color: OfficerPalette.ink,
@@ -179,15 +198,35 @@ class DataSyncScreen extends StatelessWidget {
             ),
           ],
         ),
-        SyncKpiRow(
-          syncedUnder24h: OfficerDemoData.syncedUnder24hCount,
-          synced1To7Days: OfficerDemoData.synced1To7DaysCount,
-          stale7Plus: OfficerDemoData.syncedStale7PlusCount,
-          entryGap5Plus: OfficerDemoData.entryGap5PlusCount,
-        ),
-        SyncTable(
-          rows: OfficerDemoData.syncStatuses,
-          onAction: (DeviceSyncStatus row) => _handleAction(context, row),
+        FutureBuilder<SyncStatusSummary>(
+          future: _summaryFuture,
+          builder: (BuildContext context, AsyncSnapshot<SyncStatusSummary> snapshot) {
+            final SyncStatusSummary summary =
+                snapshot.data ??
+                (
+                  syncedUnder24h: 0,
+                  synced1To7Days: 0,
+                  stale7Plus: 0,
+                  entryGap5Plus: 0,
+                  rows: const <DeviceSyncStatus>[],
+                );
+
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: <Widget>[
+                SyncKpiRow(
+                  syncedUnder24h: summary.syncedUnder24h,
+                  synced1To7Days: summary.synced1To7Days,
+                  stale7Plus: summary.stale7Plus,
+                  entryGap5Plus: summary.entryGap5Plus,
+                ),
+                SyncTable(
+                  rows: summary.rows,
+                  onAction: (DeviceSyncStatus row) => _handleAction(context, row),
+                ),
+              ],
+            );
+          },
         ),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),

@@ -27,11 +27,16 @@ enum ActionStepImpact {
 class ActionStep {
   /// Creates a step.
   const ActionStep({
+    this.id,
     required this.order,
     required this.title,
     required this.detail,
     required this.impact,
   });
+
+  /// Backend row id, once persisted — `null` for demo-only steps that have
+  /// no backend counterpart to PATCH/DELETE against.
+  final int? id;
 
   /// 1-based position — the order it must happen in.
   final int order;

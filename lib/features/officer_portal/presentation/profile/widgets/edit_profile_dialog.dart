@@ -26,15 +26,21 @@ class _EditProfileDialog extends StatefulWidget {
 }
 
 class _EditProfileDialogState extends State<_EditProfileDialog> {
-  late final TextEditingController _fullName;
-  late final TextEditingController _mobile;
+  final TextEditingController _fullName = TextEditingController();
+  final TextEditingController _mobile = TextEditingController();
+  bool _controllersSeeded = false;
 
   @override
-  void initState() {
-    super.initState();
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // OfficerSessionScope.of(context) depends on an InheritedWidget, which
+    // isn't available yet in initState() — seed the controllers here
+    // instead, once, the first time dependencies resolve.
+    if (_controllersSeeded) return;
+    _controllersSeeded = true;
     final OfficerSession session = OfficerSessionScope.of(context);
-    _fullName = TextEditingController(text: session.profile.fullName);
-    _mobile = TextEditingController(text: session.profile.mobile);
+    _fullName.text = session.profile.fullName;
+    _mobile.text = session.profile.mobile ?? '';
   }
 
   @override
@@ -44,20 +50,31 @@ class _EditProfileDialogState extends State<_EditProfileDialog> {
     super.dispose();
   }
 
-  void _submit() {
-    if (_fullName.text.trim().isEmpty || _mobile.text.trim().isEmpty) {
+  bool _submitting = false;
+
+  Future<void> _submit() async {
+    if (_fullName.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Name and mobile can’t be empty.')),
+        const SnackBar(content: Text('Name can’t be empty.')),
       );
       return;
     }
 
-    OfficerSessionScope.of(context).updateProfile(
-      fullName: _fullName.text.trim(),
-      mobile: _mobile.text.trim(),
-    );
-
-    Navigator.of(context).pop();
+    setState(() => _submitting = true);
+    try {
+      await OfficerSessionScope.of(context).updateProfile(
+        fullName: _fullName.text.trim(),
+        mobile: _mobile.text.trim().isEmpty ? null : _mobile.text.trim(),
+      );
+      if (!mounted) return;
+      Navigator.of(context).pop();
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _submitting = false);
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Could not save: $e')));
+    }
   }
 
   @override
@@ -93,12 +110,15 @@ class _EditProfileDialogState extends State<_EditProfileDialog> {
               LabeledField(label: 'FULL NAME', controller: _fullName),
               const SizedBox(height: 12),
               LabeledField(
-                label: 'MOBILE',
+                label: 'MOBILE (OPTIONAL)',
                 controller: _mobile,
                 keyboardType: TextInputType.phone,
               ),
               const SizedBox(height: 16),
-              OfficerPrimaryButton(label: 'Save changes ✓', onPressed: _submit),
+              OfficerPrimaryButton(
+                label: _submitting ? 'Saving…' : 'Save changes ✓',
+                onPressed: _submitting ? null : _submit,
+              ),
             ],
           ),
         ),

@@ -3,7 +3,7 @@ library;
 
 import 'package:flutter/material.dart';
 
-import '../../data/officer_demo_data.dart';
+import '../officer_session.dart';
 import '../theme/officer_palette.dart';
 import 'officer_avatar.dart';
 
@@ -39,6 +39,8 @@ class OfficerNavRail extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final String initials = OfficerSessionScope.of(context).profile.initials;
+
     return Container(
       width: 72,
       color: OfficerPalette.forest,
@@ -69,7 +71,7 @@ class OfficerNavRail extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             OfficerAvatar(
-              text: OfficerDemoData.officer.initials,
+              text: initials,
               size: 34,
               fontSize: 12,
               background: OfficerPalette.onForest,
