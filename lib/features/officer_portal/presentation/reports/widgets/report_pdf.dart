@@ -39,7 +39,6 @@ Future<Uint8List> buildReportPdf(ReportSummary summary) async {
                   'Flags resolved',
                   '${summary.flagsResolved} of ${summary.flagsOpened} (avg ${summary.averageResolutionDays}d)',
                 ],
-                <String>['EMIs on time', '${summary.emisOnTimePercent}%'],
                 <String>[
                   'Visits done',
                   '${summary.visitsDone} (${summary.riskLedVisits} risk-led)',

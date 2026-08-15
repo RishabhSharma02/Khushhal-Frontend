@@ -4,6 +4,7 @@ library;
 
 import 'package:flutter/material.dart';
 
+import '../../../domain/mobile_number.dart';
 import '../../officer_session.dart';
 import '../../theme/officer_palette.dart';
 import '../../widgets/labeled_field.dart';
@@ -57,6 +58,11 @@ class _EditProfileDialogState extends State<_EditProfileDialog> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Name can’t be empty.')),
       );
+      return;
+    }
+    final String? mobileError = mobileValidationError(_mobile.text);
+    if (mobileError != null) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(mobileError)));
       return;
     }
 

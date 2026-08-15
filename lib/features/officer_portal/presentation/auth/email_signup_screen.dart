@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 
 import '../../data/officer_api_client.dart';
 import '../../data/officer_auth_repository.dart';
+import '../../domain/mobile_number.dart';
 import '../../domain/officer_profile.dart';
 import '../theme/officer_palette.dart';
 import '../widgets/labeled_field.dart';
@@ -87,6 +88,11 @@ class _EmailSignupScreenState extends State<EmailSignupScreen> {
       setState(() => _error = 'Fill in your name, employee ID and email first');
       return;
     }
+    final String? mobileError = mobileValidationError(_mobile.text);
+    if (mobileError != null) {
+      setState(() => _error = mobileError);
+      return;
+    }
     if (!_passwordOk) {
       setState(() => _error = 'Check the password requirements below');
       return;
@@ -124,25 +130,32 @@ class _EmailSignupScreenState extends State<EmailSignupScreen> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
-          LabeledField(label: 'FULL NAME', controller: _fullName),
+          const Padding(
+            padding: EdgeInsets.only(bottom: 10),
+            child: Text(
+              '* required — everything else is optional',
+              style: TextStyle(fontSize: 11, color: OfficerPalette.muted),
+            ),
+          ),
+          LabeledField(label: 'FULL NAME *', controller: _fullName),
           const SizedBox(height: 14),
-          LabeledField(label: 'EMPLOYEE ID', controller: _employeeId),
+          LabeledField(label: 'EMPLOYEE ID *', controller: _employeeId),
           const SizedBox(height: 14),
           LabeledField(
-            label: 'MOBILE (OPTIONAL)',
+            label: 'MOBILE',
             controller: _mobile,
             keyboardType: TextInputType.phone,
             hintText: '+91XXXXXXXXXX — can add later',
           ),
           const SizedBox(height: 14),
           LabeledField(
-            label: 'EMAIL',
+            label: 'EMAIL *',
             controller: _email,
             keyboardType: TextInputType.emailAddress,
           ),
           const SizedBox(height: 14),
           LabeledField(
-            label: 'PASSWORD',
+            label: 'PASSWORD *',
             controller: _password,
             obscureText: _obscure,
             trailing: IconButton(
@@ -175,7 +188,7 @@ class _EmailSignupScreenState extends State<EmailSignupScreen> {
           ),
           const SizedBox(height: 14),
           LabeledField(
-            label: 'CONFIRM PASSWORD',
+            label: 'CONFIRM PASSWORD *',
             controller: _confirm,
             obscureText: _obscure,
             trailing: _confirm.text.isEmpty

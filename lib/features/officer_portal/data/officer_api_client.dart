@@ -106,6 +106,10 @@ class OfficerApiClient {
     return _delete('/api/officer/v1/enterprises/$enterpriseId/action-steps/$stepId', idToken);
   }
 
+  Future<Map<String, dynamic>> sendActionPlan(String idToken, String enterpriseId) {
+    return _post('/api/officer/v1/enterprises/$enterpriseId/action-steps/send', idToken);
+  }
+
   Future<List<Map<String, dynamic>>> fetchContactLog(String idToken, String enterpriseId) {
     return _getList('/api/officer/v1/enterprises/$enterpriseId/contact-log', idToken);
   }

@@ -28,6 +28,22 @@ abstract class OfficerAuthRepository {
     String? block,
     String? state,
   });
+
+  /// Resumes an already-signed-in officer's session (Firebase persists auth
+  /// across page reloads by default) — returns `null` if there's no
+  /// current Firebase user, or if the backend no longer recognizes them
+  /// (e.g. the token expired), so the caller falls back to the login screen
+  /// either way instead of erroring.
+  Future<OfficerProfile?> currentSession();
+
+  /// Signs out of Firebase — without this, [currentSession] would just sign
+  /// the officer straight back in on their next page load.
+  Future<void> signOut();
+
+  /// Sends a password-reset email via Firebase. No backend call — Firebase
+  /// owns the officer's password entirely (see `change_password_dialog`'s
+  /// docstring), so it emails and validates the reset link itself.
+  Future<void> sendPasswordResetEmail(String email);
 }
 
 class FirebaseOfficerAuthRepository implements OfficerAuthRepository {
@@ -95,6 +111,34 @@ class FirebaseOfficerAuthRepository implements OfficerAuthRepository {
       'state': ?state,
     });
     return officerProfileFromJson(json);
+  }
+
+  @override
+  Future<OfficerProfile?> currentSession() async {
+    final String? idToken = await _firebaseAuth.currentUser?.getIdToken();
+    if (idToken == null) return null;
+
+    try {
+      final Map<String, dynamic> json = await _apiClient.fetchProfile(idToken);
+      return officerProfileFromJson(json);
+    } on Exception {
+      // Expired/revoked token, or the officer row is gone — either way,
+      // there's no session to resume, so fall back to the login screen
+      // rather than surfacing an error the officer can't act on here.
+      return null;
+    }
+  }
+
+  @override
+  Future<void> signOut() => _firebaseAuth.signOut();
+
+  @override
+  Future<void> sendPasswordResetEmail(String email) async {
+    try {
+      await _firebaseAuth.sendPasswordResetEmail(email: email);
+    } on FirebaseAuthException catch (e) {
+      throw OfficerApiException(e.message ?? 'Could not send the reset email');
+    }
   }
 
   Future<String> _requireIdToken(UserCredential credential) async {

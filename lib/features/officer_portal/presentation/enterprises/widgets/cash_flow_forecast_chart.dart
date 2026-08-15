@@ -1,4 +1,5 @@
-/// The 12-month IN/OUT chart with forecast half and flagged month (5c).
+/// The 12-month net-cash-flow chart with forecast half and flagged month
+/// (5c).
 library;
 
 import 'package:flutter/material.dart';
@@ -6,8 +7,9 @@ import 'package:flutter/material.dart';
 import '../../../domain/forecast_month.dart';
 import '../../theme/officer_palette.dart';
 
-/// Grouped bar chart: recorded months solid, forecast months lighter, the
-/// flagged month outlined in risk red.
+/// One bar per month — net cash flow (money in minus out for recorded
+/// months, the forecast model's `cf_pred` for forecast months) — colored by
+/// sign, with the flagged month outlined in risk red.
 class CashFlowForecastChart extends StatelessWidget {
   /// Creates the chart.
   const CashFlowForecastChart({super.key, required this.months});
@@ -17,15 +19,17 @@ class CashFlowForecastChart extends StatelessWidget {
 
   static const double _height = 130;
 
+  /// Net cash flow for [month]: real (money in − out) when recorded, the
+  /// forecast model's `cf_pred` when forecast.
+  static int _net(CashFlowMonth month) {
+    return month.isForecast ? (month.netInr ?? 0) : (month.moneyInInr - month.moneyOutInr);
+  }
+
   @override
   Widget build(BuildContext context) {
     final int maxValue = months.fold<int>(
       1,
-      (int max, CashFlowMonth m) => <int>[
-        max,
-        m.moneyInInr,
-        m.moneyOutInr,
-      ].reduce((int a, int b) => a > b ? a : b),
+      (int max, CashFlowMonth m) => _net(m).abs() > max ? _net(m).abs() : max,
     );
 
     return Column(
@@ -41,7 +45,7 @@ class CashFlowForecastChart extends StatelessWidget {
             const SizedBox(width: 6),
             const Expanded(
               child: Text(
-                'Monthly cash flow (₹) — last 6 months & next 6 forecast',
+                'Monthly net cash flow (₹) — last 6 months & next 6 forecast',
                 style: TextStyle(
                   fontSize: 13.5,
                   fontWeight: FontWeight.w800,
@@ -52,13 +56,9 @@ class CashFlowForecastChart extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 6),
-        Wrap(
-          spacing: 12,
-          children: <Widget>[
-            _Legend(color: OfficerPalette.statusGreen, label: 'money IN'),
-            _Legend(color: OfficerPalette.recordedOut, label: 'money OUT'),
-            _Legend(color: OfficerPalette.forecastIn, label: 'forecast'),
-          ],
+        const Text(
+          'Net cash flow — green is positive, red is negative',
+          style: TextStyle(fontSize: 11, color: OfficerPalette.muted),
         ),
         const SizedBox(height: 10),
         SizedBox(
@@ -85,28 +85,11 @@ class CashFlowForecastChart extends StatelessWidget {
                               ),
                             )
                           : null,
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: <Widget>[
-                          Expanded(
-                            child: _Bar(
-                              height: month.moneyInInr / maxValue * _height,
-                              color: month.isForecast
-                                  ? OfficerPalette.forecastIn
-                                  : OfficerPalette.statusGreen,
-                            ),
-                          ),
-                          const SizedBox(width: 3),
-                          Expanded(
-                            child: _Bar(
-                              height: month.moneyOutInr / maxValue * _height,
-                              color: month.isForecast
-                                  ? OfficerPalette.forecastOut
-                                  : OfficerPalette.recordedOut,
-                            ),
-                          ),
-                        ],
+                      child: _Bar(
+                        height: _net(month).abs() / maxValue * _height,
+                        color: _net(month) >= 0
+                            ? OfficerPalette.statusGreen
+                            : OfficerPalette.statusRed,
                       ),
                     ),
                   ),
@@ -159,35 +142,6 @@ class _Bar extends StatelessWidget {
         color: color,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(3)),
       ),
-    );
-  }
-}
-
-class _Legend extends StatelessWidget {
-  const _Legend({required this.color, required this.label});
-
-  final Color color;
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: <Widget>[
-        Container(
-          width: 9,
-          height: 9,
-          decoration: BoxDecoration(
-            color: color,
-            borderRadius: BorderRadius.circular(2),
-          ),
-        ),
-        const SizedBox(width: 5),
-        Text(
-          label,
-          style: const TextStyle(fontSize: 11, color: OfficerPalette.muted),
-        ),
-      ],
     );
   }
 }

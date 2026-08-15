@@ -70,7 +70,6 @@ class EnterpriseFinancials {
     required this.savingsInr,
     required this.loanLeftInr,
     required this.emiInr,
-    required this.emiOnTime,
   });
 
   /// Cash on hand today.
@@ -87,9 +86,6 @@ class EnterpriseFinancials {
 
   /// Monthly EMI.
   final int emiInr;
-
-  /// Whether EMIs are currently on time.
-  final bool emiOnTime;
 }
 
 /// One enterprise on the officer's beat.

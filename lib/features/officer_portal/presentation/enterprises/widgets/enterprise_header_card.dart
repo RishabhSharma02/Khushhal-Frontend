@@ -181,17 +181,12 @@ class _ContactCard extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
-        OfficerSecondaryButton(
-          label: '💬 Send SMS advice',
-          onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('SMS advice queued (demo only).')),
-          ),
-        ),
+        OfficerSecondaryButton(label: '💬 Send SMS advice', onPressed: null),
         const SizedBox(height: 6),
         OfficerPrimaryButton(
           label: '🗓 Schedule visit',
           expand: false,
-          onPressed: onScheduleVisit,
+          onPressed: null,
         ),
       ],
     );

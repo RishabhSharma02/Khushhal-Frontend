@@ -78,7 +78,6 @@ abstract final class OfficerDemoData {
         savingsInr: 31000,
         loanLeftInr: 86000,
         emiInr: 8000,
-        emiOnTime: true,
       ),
       lastSyncHoursAgo: 2,
     ),
@@ -109,7 +108,6 @@ abstract final class OfficerDemoData {
         savingsInr: 9000,
         loanLeftInr: 64000,
         emiInr: 6200,
-        emiOnTime: false,
       ),
       lastSyncHoursAgo: 24,
     ),
@@ -140,7 +138,6 @@ abstract final class OfficerDemoData {
         savingsInr: 14000,
         loanLeftInr: 22000,
         emiInr: 2500,
-        emiOnTime: true,
       ),
       lastSyncHoursAgo: 4,
     ),
@@ -171,7 +168,6 @@ abstract final class OfficerDemoData {
         savingsInr: 8000,
         loanLeftInr: 12000,
         emiInr: 1800,
-        emiOnTime: true,
       ),
       lastSyncHoursAgo: null,
       staleDays: 12,
@@ -203,7 +199,6 @@ abstract final class OfficerDemoData {
         savingsInr: 61000,
         loanLeftInr: 40000,
         emiInr: 7000,
-        emiOnTime: true,
       ),
       lastSyncHoursAgo: 1,
     ),
@@ -234,7 +229,6 @@ abstract final class OfficerDemoData {
         savingsInr: 132000,
         loanLeftInr: 28000,
         emiInr: 9000,
-        emiOnTime: true,
       ),
       lastSyncHoursAgo: 0,
     ),
@@ -265,7 +259,6 @@ abstract final class OfficerDemoData {
         savingsInr: 7000,
         loanLeftInr: 9000,
         emiInr: 1200,
-        emiOnTime: true,
       ),
       lastSyncHoursAgo: null,
       staleDays: 9,
@@ -297,7 +290,6 @@ abstract final class OfficerDemoData {
         savingsInr: 4000,
         loanLeftInr: 15000,
         emiInr: 1900,
-        emiOnTime: true,
       ),
       lastSyncHoursAgo: null,
       staleDays: 8,
@@ -329,7 +321,6 @@ abstract final class OfficerDemoData {
         savingsInr: 6000,
         loanLeftInr: 5000,
         emiInr: 800,
-        emiOnTime: true,
       ),
       lastSyncHoursAgo: 24,
     ),
@@ -364,12 +355,6 @@ abstract final class OfficerDemoData {
 
   /// Change in average score vs. the previous period.
   static const int averageScoreDelta = 4;
-
-  /// Percent of EMIs on time across all enterprises.
-  static const int emisOnTimePercent = 91;
-
-  /// Change in EMIs-on-time percent vs. the previous period.
-  static const int emisOnTimeDelta = 7;
 
   /// Currently open flags.
   static const int openFlagCount = 7;
@@ -534,6 +519,7 @@ abstract final class OfficerDemoData {
         label: labels[i],
         moneyInInr: moneyIn[i],
         moneyOutInr: moneyOut[i],
+        netInr: i >= 6 ? moneyIn[i] - moneyOut[i] : null,
         isForecast: i >= 6,
         isFlagged: i == flaggedIndex,
       );
@@ -679,8 +665,6 @@ abstract final class OfficerDemoData {
     flagsResolved: 11,
     flagsOpened: 14,
     averageResolutionDays: 6,
-    emisOnTimePercent: 91,
-    emisOnTimeDelta: 7,
     visitsDone: 17,
     riskLedVisits: 12,
     sectorScores: <SectorScore>[

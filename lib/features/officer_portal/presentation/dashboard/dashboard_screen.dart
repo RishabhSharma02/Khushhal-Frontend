@@ -96,8 +96,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 (
                   averageScoreHistory: const <int>[],
                   averageScoreDelta: 0,
-                  emisOnTimePercent: 0,
-                  emisOnTimeDelta: 0,
                   openFlagCount: 0,
                   openFlagDelta: 0,
                   visitsDoneThisWeek: 0,
@@ -123,8 +121,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   enterpriseCount: enterprises.length,
                   averageScoreHistory: trends.averageScoreHistory,
                   averageScoreDelta: trends.averageScoreDelta,
-                  emisOnTimePercent: trends.emisOnTimePercent,
-                  emisOnTimeDelta: trends.emisOnTimeDelta,
                   openFlagCount: trends.openFlagCount,
                   openFlagDelta: trends.openFlagDelta,
                 );
@@ -194,7 +190,10 @@ class _Header extends StatelessWidget {
 
         final Widget greeting = Row(
           children: <Widget>[
-            const OfficerAvatar(text: '☘', size: 44, fontSize: 20),
+            const OfficerAvatar.logo(
+              imageAsset: 'assets/images/khushhal_logo.jpg',
+              size: 44,
+            ),
             const SizedBox(width: 14),
             Expanded(
               child: Column(

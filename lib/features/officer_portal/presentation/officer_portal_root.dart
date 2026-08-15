@@ -20,6 +20,11 @@ import 'theme/officer_theme.dart';
 
 /// The top-level stretches of the officer's journey.
 enum _OfficerPhase {
+  /// Checking whether Firebase already has a signed-in officer (it persists
+  /// across page reloads by default) before deciding whether to show the
+  /// login screen at all.
+  checkingSession,
+
   /// Sign in, or create a new account (5h–5k).
   auth,
 
@@ -82,7 +87,7 @@ class OfficerPortalRoot extends StatefulWidget {
 }
 
 class _OfficerPortalRootState extends State<OfficerPortalRoot> {
-  _OfficerPhase _phase = _OfficerPhase.auth;
+  _OfficerPhase _phase = _OfficerPhase.checkingSession;
   OfficerSession _session = OfficerSession();
   late final OfficerAuthRepository _authRepository =
       widget.authRepository ?? FirebaseOfficerAuthRepository();
@@ -100,6 +105,22 @@ class _OfficerPortalRootState extends State<OfficerPortalRoot> {
       widget.reportsRepository ?? ApiReportsRepository();
   late final ProfileRepository _profileRepository =
       widget.profileRepository ?? ApiProfileRepository();
+
+  @override
+  void initState() {
+    super.initState();
+    _resumeSessionIfAny();
+  }
+
+  Future<void> _resumeSessionIfAny() async {
+    final OfficerProfile? profile = await _authRepository.currentSession();
+    if (!mounted) return;
+    if (profile == null) {
+      setState(() => _phase = _OfficerPhase.auth);
+      return;
+    }
+    _handleAuthenticated(profile);
+  }
 
   void _handleAuthenticated(OfficerProfile profile) {
     final OfficerSession session = OfficerSession.authenticated(
@@ -132,7 +153,9 @@ class _OfficerPortalRootState extends State<OfficerPortalRoot> {
     });
   }
 
-  void _handleLoggedOut() {
+  Future<void> _handleLoggedOut() async {
+    await _authRepository.signOut();
+    if (!mounted) return;
     setState(() {
       _phase = _OfficerPhase.auth;
       _session = OfficerSession();
@@ -151,6 +174,9 @@ class _OfficerPortalRootState extends State<OfficerPortalRoot> {
       home: AnimatedSwitcher(
         duration: const Duration(milliseconds: 220),
         child: switch (_phase) {
+          _OfficerPhase.checkingSession => const _CheckingSessionScreen(
+            key: ValueKey<_OfficerPhase>(_OfficerPhase.checkingSession),
+          ),
           _OfficerPhase.auth => OfficerAuthFlow(
             key: const ValueKey<_OfficerPhase>(_OfficerPhase.auth),
             authRepository: _authRepository,
@@ -166,6 +192,20 @@ class _OfficerPortalRootState extends State<OfficerPortalRoot> {
           ),
         },
       ),
+    );
+  }
+}
+
+/// Shown briefly on first load while checking whether Firebase already has
+/// a signed-in officer, before deciding whether to show the login screen.
+class _CheckingSessionScreen extends StatelessWidget {
+  const _CheckingSessionScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const Scaffold(
+      backgroundColor: OfficerPalette.background,
+      body: Center(child: CircularProgressIndicator()),
     );
   }
 }

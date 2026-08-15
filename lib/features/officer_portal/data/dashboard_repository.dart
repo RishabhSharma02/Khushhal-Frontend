@@ -13,8 +13,6 @@ import 'officer_api_client.dart';
 typedef DashboardTrends = ({
   List<int> averageScoreHistory,
   int averageScoreDelta,
-  int emisOnTimePercent,
-  int emisOnTimeDelta,
   int openFlagCount,
   int openFlagDelta,
   int visitsDoneThisWeek,
@@ -49,8 +47,6 @@ class ApiDashboardRepository implements DashboardRepository {
     return (
       averageScoreHistory: (json['average_score_history'] as List<dynamic>).cast<int>(),
       averageScoreDelta: json['average_score_delta'] as int,
-      emisOnTimePercent: json['emis_on_time_percent'] as int,
-      emisOnTimeDelta: json['emis_on_time_delta'] as int,
       openFlagCount: json['open_flag_count'] as int,
       openFlagDelta: json['open_flag_delta'] as int,
       visitsDoneThisWeek: json['visits_done_this_week'] as int,
