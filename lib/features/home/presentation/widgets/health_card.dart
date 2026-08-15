@@ -183,6 +183,19 @@ class HealthCard extends StatelessWidget {
               ),
             ),
           ),
+          if (onTap != null) ...<Widget>[
+            const SizedBox(height: 8),
+            Text(
+              l10n.healthTapForForecast,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: 11.5,
+                fontWeight: FontWeight.w600,
+                color: AppPalette.leaf,
+                height: 1.3,
+              ),
+            ),
+          ],
           const SizedBox(height: 13),
           const _DashedLine(),
           const SizedBox(height: 11),

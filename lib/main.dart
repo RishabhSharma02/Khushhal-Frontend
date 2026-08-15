@@ -5,6 +5,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+import 'package:intl/date_symbol_data_local.dart';
 import 'package:provider/single_child_widget.dart';
 
 import 'app/bootstrap.dart';
@@ -40,6 +41,14 @@ import 'l10n/app_localizations.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Load Hindi (and English) date-time locale data so `DateFormat('MMMM',
+  // 'hi')` returns Devanagari month names in the health-card, forecast and
+  // watch-card headings. Without this, `intl` silently falls back to the
+  // C-locale ASCII names and every month reads as English even after the
+  // user has picked Hindi.
+  await initializeDateFormatting('hi');
+  await initializeDateFormatting('en');
 
   // Firebase — placeholder options will throw until `flutterfire configure`
   // has been run. In that case we still boot the app and use the backend
@@ -414,6 +423,18 @@ class _AuthGate extends StatelessWidget {
           a.status != b.status || a.me?.id != b.me?.id,
       listener: (context, state) {
         final _MyAppState? root = context.findAncestorStateOfType<_MyAppState>();
+        // Any transition into `authenticated` clears the cached business
+        // list on the session. If it is the same user coming back, the
+        // Drift stream refills it within a frame; if it is a *different*
+        // account, this stops the setup wizard, Settings and the switcher
+        // from briefly rendering the previous user's businesses before
+        // the fresh pull lands. The strict owner filter on `watchAll`
+        // blocks the leak at the DB layer; this closes the in-memory hole.
+        if (state.status == AuthStatus.authenticated
+            && state.me?.id != null
+            && root != null) {
+          root._session.resetBusinessList();
+        }
         if (state.status == AuthStatus.authenticated
             && (root?._forcePhoneLogin ?? false)) {
           // Fire-and-forget: don't block the rebuild on Keystore IO.

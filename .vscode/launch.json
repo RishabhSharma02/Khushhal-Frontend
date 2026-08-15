@@ -4,23 +4,60 @@
     // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
     "version": "0.2.0",
     "configurations": [
-    
+        // ── Consumer app (main.dart) ─────────────────────────────────────
         {
-            "name": "Khushhal-Frontend",
-            "request": "launch",
-            "type": "dart"
-        },
-        {
-            "name": "Khushhal-Frontend (profile mode)",
+            "name": "Consumer (debug)",
+            "cwd": "Khushhal-Frontend",
             "request": "launch",
             "type": "dart",
-            "flutterMode": "profile"
+            "program": "lib/main.dart",
+            "args": ["--flavor", "consumer"]
         },
         {
-            "name": "Khushhal-Frontend (release mode)",
+            "name": "Consumer (profile)",
+            "cwd": "Khushhal-Frontend",
             "request": "launch",
             "type": "dart",
-            "flutterMode": "release"
+            "flutterMode": "profile",
+            "program": "lib/main.dart",
+            "args": ["--flavor", "consumer"]
+        },
+        {
+            "name": "Consumer (release)",
+            "cwd": "Khushhal-Frontend",
+            "request": "launch",
+            "type": "dart",
+            "flutterMode": "release",
+            "program": "lib/main.dart",
+            "args": ["--flavor", "consumer"]
+        },
+
+        // ── Officer portal (officer_portal_main.dart) ────────────────────
+        {
+            "name": "Officer (debug)",
+            "cwd": "Khushhal-Frontend",
+            "request": "launch",
+            "type": "dart",
+            "program": "lib/officer_portal_main.dart",
+            "args": ["--flavor", "officer"]
+        },
+        {
+            "name": "Officer (profile)",
+            "cwd": "Khushhal-Frontend",
+            "request": "launch",
+            "type": "dart",
+            "flutterMode": "profile",
+            "program": "lib/officer_portal_main.dart",
+            "args": ["--flavor", "officer"]
+        },
+        {
+            "name": "Officer (release)",
+            "cwd": "Khushhal-Frontend",
+            "request": "launch",
+            "type": "dart",
+            "flutterMode": "release",
+            "program": "lib/officer_portal_main.dart",
+            "args": ["--flavor", "officer"]
         }
     ]
 }

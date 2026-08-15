@@ -127,6 +127,7 @@ class RiskAlert {
     required this.severity,
     this.raisedOn,
     this.hasPlan = false,
+    this.backendId,
   });
 
   /// Which alert this is; the screens map it to copy.
@@ -140,6 +141,11 @@ class RiskAlert {
 
   /// True when tapping it opens the three-action plan (1s).
   final bool hasPlan;
+
+  /// Server id for this alert. Null for demo data and legacy alerts that
+  /// never hit `/alerts` — the detail screen falls back to the first live
+  /// alert when this is missing.
+  final int? backendId;
 }
 
 /// The three plan actions on the alert detail (1s).

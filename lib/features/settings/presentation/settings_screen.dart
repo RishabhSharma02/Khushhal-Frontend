@@ -17,6 +17,7 @@ import '../../auth/bloc/lock_cubit.dart';
 import '../../auth/data/profile_repository.dart';
 import '../../businesses/presentation/edit_business_sheet.dart';
 import '../../forecast/presentation/alerts_screen.dart';
+import '../../forecast/presentation/forecast_screen.dart';
 import '../../onboarding/domain/app_language.dart';
 import '../../setup/presentation/setup_flow.dart';
 import '../../sync/presentation/sync_screen.dart';
@@ -334,7 +335,46 @@ class _BusinessesCard extends StatelessWidget {
                   ? business.sector.label(l10n)
                   : '${business.sector.label(l10n)} · $place',
               divider: true,
-              onTap: () => onEditBusiness(idx, business),
+              onTap: () {
+                // Tap opens the business's report / forecast. Editing moves
+                // to the trailing pencil icon so the primary action reads
+                // as "See report" and not "Edit".
+                session.selectBusiness(idx);
+                Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (BuildContext _) => const ForecastScreen(),
+                  ),
+                );
+              },
+              trailing: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: <Widget>[
+                  Text(
+                    l10n.settingsSeeReport,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: AppPalette.leaf,
+                      height: 1.3,
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  IconButton(
+                    tooltip: 'Edit',
+                    icon: const Icon(
+                      Icons.edit_outlined,
+                      size: 18,
+                      color: AppPalette.idle,
+                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 6),
+                    constraints: const BoxConstraints(
+                      minWidth: 32,
+                      minHeight: 32,
+                    ),
+                    onPressed: () => onEditBusiness(idx, business),
+                  ),
+                ],
+              ),
             ),
           _SettingsRow(
             well: const _IconWell(icon: Icons.add_rounded, dashed: true),

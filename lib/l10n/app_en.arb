@@ -186,6 +186,7 @@
   "kindCraftsHint": "Handicrafts picked: raw-material seasonality and festival demand windows shape your outlook.",
   "kindShopHint": "Shop picked: local footfall trends, mandi holidays and fortnightly stock cycles feed your forecast.",
   "kindOtherHint": "We'll use only your entries for now — the score gets sharper as you record more months.",
+  "kindOtherFieldHint": "What kind of business?",
 
   "detailsHeading": "About your business",
   "detailsNameLabel": "Business name",
@@ -199,15 +200,15 @@
   "moneyHeading": "Your money each month",
   "moneyModeRough": "Rough estimate",
   "moneyModeRecords": "From my records",
-  "moneyInLabel": "Money IN (sales)",
-  "moneyInMonthLabel": "Money IN (sales) · {month}",
+  "moneyInLabel": "Income (sales)",
+  "moneyInMonthLabel": "Income (sales) · {month}",
   "@moneyInMonthLabel": {
     "description": "Records-mode label naming the month being typed in (1n).",
     "placeholders": {
       "month": { "type": "String", "example": "July" }
     }
   },
-  "moneyOutLabel": "Money OUT (costs)",
+  "moneyOutLabel": "Expenditure (costs)",
   "moneyEmiLabel": "Loan EMI",
   "moneySavingsLabel": "Savings today",
   "moneyRecordsNote": "Type last month's totals from your diary.",
@@ -225,6 +226,8 @@
     }
   },
   "scoreNew": "New",
+  "healthTapForForecast": "Tap for forecast →",
+  "addEntryOtherHint": "Describe this expense…",
   "healthHeadlineLow": "{name}: HEALTHY",
   "@healthHeadlineLow": {
     "description": "Health card headline on a green band (1o). The emoji is appended by HealthCard so it can follow the score, not just the band.",
@@ -308,8 +311,8 @@
     }
   },
   "homeScoreNote": "Score refreshes every 30 days. Keep writing entries — they build the next one.",
-  "tileMoneyIn": "Money IN",
-  "tileMoneyOut": "Money OUT",
+  "tileMoneyIn": "Income",
+  "tileMoneyOut": "Expenditure",
   "tileThisMonth": "this month",
   "tileSavings": "Savings",
   "tileLoan": "Loan",
@@ -570,6 +573,22 @@
   "planEmiTitle": "Ask the bank to move your EMI date to milk-payment week",
   "planEmiNote": "Show this screen at the branch",
   "planDoneChip": "Done",
+  "alertDriverLiquidityTitle": "Cash buffer is tight",
+  "alertDriverLiquiditySubtitle": "Savings or debt cover is low. The steps below rebuild your buffer.",
+  "alertDriverClimateDeficitTitle": "Rainfall below normal",
+  "alertDriverClimateDeficitSubtitle": "Local rain is below normal — expect input prices to rise.",
+  "alertDriverClimateExcessTitle": "Rainfall higher than usual",
+  "alertDriverClimateExcessSubtitle": "Heavier than usual rainfall — protect stored inputs.",
+  "alertDriverMarketTitle": "Market prices moved against you",
+  "alertDriverMarketSubtitle": "Terms of trade have moved against your sector.",
+  "alertDriverNewBusinessTitle": "Fresh business — extra care needed",
+  "alertDriverNewBusinessSubtitle": "A newer business needs closer daily tracking.",
+  "alertDriverWatchTitle": "Watch out for {month}",
+  "@alertDriverWatchTitle": {
+    "placeholders": { "month": { "type": "String", "example": "November" } }
+  },
+  "alertDriverGenericSubtitle": "Follow the steps below to stay on track.",
+  "alertMarkingNote": "Marking actions done here helps the ML model re-score your business next month.",
   "planNote": "Do 1 & 2 and {month} savings stay above {amount}. The forecast updates live as you mark things done.",
   "@planNote": {
     "placeholders": {
@@ -625,6 +644,7 @@
   "settingsEdit": "Edit",
   "settingsMyBusinesses": "My businesses",
   "settingsAddBusiness": "Add new business",
+  "settingsSeeReport": "See report",
   "settingsPreferences": "Preferences",
   "settingsLanguage": "Language",
   "settingsNotifications": "Notifications",

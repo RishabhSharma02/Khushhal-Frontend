@@ -254,6 +254,9 @@ class AppLocalizationsEn extends AppLocalizations {
       'We\'ll use only your entries for now — the score gets sharper as you record more months.';
 
   @override
+  String get kindOtherFieldHint => 'What kind of business?';
+
+  @override
   String get detailsHeading => 'About your business';
 
   @override
@@ -287,15 +290,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get moneyModeRecords => 'From my records';
 
   @override
-  String get moneyInLabel => 'Money IN (sales)';
+  String get moneyInLabel => 'Income (sales)';
 
   @override
   String moneyInMonthLabel(String month) {
-    return 'Money IN (sales) · $month';
+    return 'Income (sales) · $month';
   }
 
   @override
-  String get moneyOutLabel => 'Money OUT (costs)';
+  String get moneyOutLabel => 'Expenditure (costs)';
 
   @override
   String get moneyEmiLabel => 'Loan EMI';
@@ -332,6 +335,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get scoreNew => 'New';
+
+  @override
+  String get healthTapForForecast => 'Tap for forecast →';
+
+  @override
+  String get addEntryOtherHint => 'Describe this expense…';
 
   @override
   String healthHeadlineLow(String name) {
@@ -407,10 +416,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'Score refreshes every 30 days. Keep writing entries — they build the next one.';
 
   @override
-  String get tileMoneyIn => 'Money IN';
+  String get tileMoneyIn => 'Income';
 
   @override
-  String get tileMoneyOut => 'Money OUT';
+  String get tileMoneyOut => 'Expenditure';
 
   @override
   String get tileThisMonth => 'this month';
@@ -729,6 +738,55 @@ class AppLocalizationsEn extends AppLocalizations {
   String get planDoneChip => 'Done';
 
   @override
+  String get alertDriverLiquidityTitle => 'Cash buffer is tight';
+
+  @override
+  String get alertDriverLiquiditySubtitle =>
+      'Savings or debt cover is low. The steps below rebuild your buffer.';
+
+  @override
+  String get alertDriverClimateDeficitTitle => 'Rainfall below normal';
+
+  @override
+  String get alertDriverClimateDeficitSubtitle =>
+      'Local rain is below normal — expect input prices to rise.';
+
+  @override
+  String get alertDriverClimateExcessTitle => 'Rainfall higher than usual';
+
+  @override
+  String get alertDriverClimateExcessSubtitle =>
+      'Heavier than usual rainfall — protect stored inputs.';
+
+  @override
+  String get alertDriverMarketTitle => 'Market prices moved against you';
+
+  @override
+  String get alertDriverMarketSubtitle =>
+      'Terms of trade have moved against your sector.';
+
+  @override
+  String get alertDriverNewBusinessTitle =>
+      'Fresh business — extra care needed';
+
+  @override
+  String get alertDriverNewBusinessSubtitle =>
+      'A newer business needs closer daily tracking.';
+
+  @override
+  String alertDriverWatchTitle(String month) {
+    return 'Watch out for $month';
+  }
+
+  @override
+  String get alertDriverGenericSubtitle =>
+      'Follow the steps below to stay on track.';
+
+  @override
+  String get alertMarkingNote =>
+      'Marking actions done here helps the ML model re-score your business next month.';
+
+  @override
   String planNote(String month, String amount) {
     return 'Do 1 & 2 and $month savings stay above $amount. The forecast updates live as you mark things done.';
   }
@@ -826,6 +884,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsAddBusiness => 'Add new business';
+
+  @override
+  String get settingsSeeReport => 'See report';
 
   @override
   String get settingsPreferences => 'Preferences';

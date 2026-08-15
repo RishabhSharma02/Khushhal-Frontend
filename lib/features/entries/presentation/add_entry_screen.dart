@@ -41,6 +41,7 @@ class AddEntryScreen extends StatefulWidget {
 
 class _AddEntryScreenState extends State<AddEntryScreen> {
   final TextEditingController _amount = TextEditingController();
+  final TextEditingController _otherLabel = TextEditingController();
 
   late EntryKind _kind = widget.editing?.kind ?? EntryKind.moneyIn;
   late EntryCategory _category = widget.editing?.category ?? EntryCategory.milkSale;
@@ -56,6 +57,7 @@ class _AddEntryScreenState extends State<AddEntryScreen> {
   @override
   void dispose() {
     _amount.dispose();
+    _otherLabel.dispose();
     super.dispose();
   }
 
@@ -236,6 +238,37 @@ class _AddEntryScreenState extends State<AddEntryScreen> {
                           ),
                       ],
                     ),
+                    if (_category == EntryCategory.other) ...<Widget>[
+                      const SizedBox(height: 10),
+                      TextField(
+                        controller: _otherLabel,
+                        maxLength: 40,
+                        decoration: InputDecoration(
+                          hintText: l10n.addEntryOtherHint,
+                          counterText: '',
+                          isDense: true,
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 10,
+                          ),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10),
+                            borderSide: const BorderSide(color: AppPalette.line),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10),
+                            borderSide: const BorderSide(color: AppPalette.line),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10),
+                            borderSide: const BorderSide(
+                              color: AppPalette.leaf,
+                              width: 1.5,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                     const SizedBox(height: 16),
                     Center(
                       child: Text(

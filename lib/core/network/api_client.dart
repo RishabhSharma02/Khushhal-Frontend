@@ -20,8 +20,10 @@ typedef OnlineProbe = bool Function();
 class ApiClient {
   ApiClient({Dio? dio, FirebaseAuth? auth, OnlineProbe? isOnline})
     : _dio = dio ?? Dio(),
-      _auth = auth,
-      _isOnline = isOnline {
+      _auth = auth {
+    // `isOnline` used to short-circuit requests when the connectivity
+    // monitor said we were offline; kept in the constructor signature so
+    // existing callers compile, but no longer consulted — see `_run`.
     _dio.options.baseUrl = AppEnv.apiBaseUrl;
     _dio.options.connectTimeout = const Duration(seconds: 10);
     _dio.options.receiveTimeout = const Duration(seconds: 30);
@@ -37,7 +39,6 @@ class ApiClient {
 
   final Dio _dio;
   final FirebaseAuth? _auth;
-  final OnlineProbe? _isOnline;
 
   Future<Map<String, dynamic>> getJson(String path, {Map<String, dynamic>? query}) async {
     return _unwrap(await _run(() => _dio.get<dynamic>(path, queryParameters: query)));
@@ -66,9 +67,12 @@ class ApiClient {
   }
 
   Future<Response<dynamic>> _run(Future<Response<dynamic>> Function() call) async {
-    // Short-circuit when we already know there is no connection. Callers get
-    // the same ApiException they would have got 10 seconds later.
-    if (_isOnline != null && !_isOnline()) throw ApiException.offline();
+    // The offline short-circuit used to live here as a fast-fail, but the
+    // `ConnectivityMonitor` probe misfires (Railway cold-starts, emulator
+    // radio mis-reporting, captive portals) can flip `isOnline` to false
+    // while the phone genuinely has network — turning every request into
+    // a spurious "no internet" error. Trust Dio to fail natively when the
+    // socket really is dead; the 10 s connect timeout is fast enough.
     try {
       return await call();
     } on DioException catch (e) {
