@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../app/demo_data.dart';
+import '../../../app/labels.dart';
+import '../../../app/model/business.dart';
 import '../../../app/model/insights.dart';
 import '../../../app/session.dart';
 import '../../../core/formatting.dart';
@@ -25,6 +27,7 @@ import '../../sync/presentation/sync_screen.dart';
 import 'widgets/business_pill.dart';
 import 'widgets/health_card.dart';
 import 'widgets/money_tiles.dart';
+import 'widgets/officer_card.dart';
 import 'widgets/watch_card.dart';
 
 /// The home tab in its three states.
@@ -77,13 +80,24 @@ class HomeScreen extends StatelessWidget {
             ),
             SyncChip(
               status: session.connectivity,
+              pendingCount: session.pendingEntryCount,
               onTap: () => _push(context, const SyncScreen()),
             ),
           ],
         ),
+        if (session.activeBusiness != null) ...<Widget>[
+          const SizedBox(height: 6),
+          _BusinessKindLine(business: session.activeBusiness!),
+        ],
+        const SizedBox(height: 12),
+        _OfflineDeviceCard(
+          pendingCount: session.pendingEntryCount,
+          onTap: () => _push(context, const SyncScreen()),
+        ),
         const SizedBox(height: 12),
         _OfflineBanner(count: session.pendingEntryCount),
         const SizedBox(height: 12),
+
         if (session.health != null)
           _OfflineHealthCard(health: session.health!)
         else
@@ -94,6 +108,10 @@ class HomeScreen extends StatelessWidget {
         MoneyTileGrid(
           onEditTap: () => _push(context, const SavingsLoanScreen()),
         ),
+        if (session.activeAssignedOfficer != null) ...<Widget>[
+          const SizedBox(height: 10),
+          OfficerCard(officer: session.activeAssignedOfficer!),
+        ],
         // Alerts are cached per business by InsightsRepository (see the
         // ApiException branch of fetchAll), so the last set the backend
         // raised while online is still readable here. Rendering them offline
@@ -150,8 +168,12 @@ class HomeScreen extends StatelessWidget {
             ),
           ],
         ),
-        if (hasMultipleBusinesses) ...<Widget>[
+        if (session.activeBusiness != null) ...<Widget>[
           const SizedBox(height: 6),
+          _BusinessKindLine(business: session.activeBusiness!),
+        ],
+        if (hasMultipleBusinesses) ...<Widget>[
+          const SizedBox(height: 4),
           Text(
             l10n.homeSwitchHint,
             style: const TextStyle(
@@ -191,6 +213,10 @@ class HomeScreen extends StatelessWidget {
         MoneyTileGrid(
           onEditTap: () => _push(context, const SavingsLoanScreen()),
         ),
+        if (session.activeAssignedOfficer != null) ...<Widget>[
+          const SizedBox(height: 10),
+          OfficerCard(officer: session.activeAssignedOfficer!),
+        ],
         // Every alert the backend raised is worth showing. A flagged risk
         // month is a bonus that sharpens the wording — most low- and
         // medium-risk businesses get alerts without one, and gating on it
@@ -312,6 +338,94 @@ class _MonthClosedBanner extends StatelessWidget {
   }
 }
 
+/// Segment (SHG / FPO / Own) + Sector under the business pill.
+class _BusinessKindLine extends StatelessWidget {
+  const _BusinessKindLine({required this.business});
+
+  final Business business;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = AppLocalizations.of(context)!;
+    return Text(
+      l10n.homeBusinessKindSector(
+        business.segment.label(l10n),
+        business.sector.label(l10n),
+      ),
+      style: const TextStyle(
+        fontSize: 12,
+        fontWeight: FontWeight.w600,
+        color: AppPalette.leaf,
+        height: 1.3,
+        letterSpacing: 0.2,
+      ),
+    );
+  }
+}
+
+/// Bold "device is offline" card with the remaining-sync count, shown at the
+/// top of Home whenever [ConnectivityStatus.offline].
+class _OfflineDeviceCard extends StatelessWidget {
+  const _OfflineDeviceCard({required this.pendingCount, required this.onTap});
+
+  final int pendingCount;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = AppLocalizations.of(context)!;
+    return Material(
+      color: AppPalette.amberWash,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(14),
+        side: const BorderSide(color: AppPalette.amberBorder, width: 1.5),
+      ),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(14),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          child: Row(
+            children: <Widget>[
+              const Icon(
+                Icons.cloud_off_rounded,
+                size: 20,
+                color: AppPalette.amberAccent,
+              ),
+              const SizedBox(width: 11),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Text(
+                      l10n.homeOfflineDeviceTitle,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: AppPalette.amberInk,
+                        height: 1.3,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      l10n.homeOfflineSyncPending(pendingCount),
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: AppPalette.amberMuted,
+                        height: 1.35,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 /// The amber "no network" note (1u).
 class _OfflineBanner extends StatelessWidget {
   const _OfflineBanner({required this.count});
@@ -353,7 +467,10 @@ class _OfflineHealthCard extends StatelessWidget {
     final AppLocalizations l10n = AppLocalizations.of(context)!;
     final (String headline, Color color) = switch (health.risk) {
       RiskLevel.low => (l10n.offlineHealthHeadline, AppPalette.forest),
-      RiskLevel.medium => (l10n.offlineHealthHeadlineMedium, AppPalette.amberInk),
+      RiskLevel.medium => (
+        l10n.offlineHealthHeadlineMedium,
+        AppPalette.amberInk,
+      ),
       RiskLevel.high => (l10n.offlineHealthHeadlineHigh, AppPalette.danger),
     };
 

@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../app/labels.dart';
 import '../../../app/model/business.dart';
 import '../../../core/theme/theme.dart';
 import '../../../core/widgets/gradient_cta_button.dart';
+import '../../../l10n/app_localizations.dart';
 import '../data/business_api.dart';
 import '../data/business_repository.dart';
 
@@ -86,6 +88,7 @@ class _EditBusinessSheetState extends State<EditBusinessSheet> {
   @override
   Widget build(BuildContext context) {
     final khushhal = Theme.of(context).extension<KhushhalColors>()!;
+    final AppLocalizations l10n = AppLocalizations.of(context)!;
     return Padding(
       padding: EdgeInsets.only(
         left: 20, right: 20, top: 12,
@@ -102,7 +105,36 @@ class _EditBusinessSheetState extends State<EditBusinessSheet> {
             ),
           ),
           const SizedBox(height: 16),
-          Text('Edit business', style: Theme.of(context).textTheme.titleLarge?.copyWith(color: khushhal.forest)),
+          Text(l10n.editBusinessTitle,
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(color: khushhal.forest)),
+          const SizedBox(height: 16),
+          _LockedRow(
+            label: l10n.editBusinessKindLabel,
+            value: widget.business.segment.label(l10n),
+          ),
+          const SizedBox(height: 8),
+          _LockedRow(
+            label: l10n.editBusinessSectorLabel,
+            value: widget.business.sector.label(l10n),
+          ),
+          const SizedBox(height: 6),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Icon(Icons.lock_outline_rounded, size: 14, color: AppPalette.hint),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  l10n.editBusinessLockedNote,
+                  style: const TextStyle(
+                    fontSize: 11.5,
+                    color: AppPalette.hint,
+                    height: 1.35,
+                  ),
+                ),
+              ),
+            ],
+          ),
           const SizedBox(height: 16),
           TextField(
             controller: _name,
@@ -156,4 +188,55 @@ class _EditBusinessSheetState extends State<EditBusinessSheet> {
         BusinessTenure.threeToTenYears => '3–10 years',
         BusinessTenure.tenPlus => '10+ years',
       };
+}
+
+/// Read-only pill for segment/sector on the edit sheet — greyed out to signal
+/// that the field cannot be changed.
+class _LockedRow extends StatelessWidget {
+  const _LockedRow({required this.label, required this.value});
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: AppPalette.mintNote,
+        border: Border.all(color: AppPalette.mintNoteBorder),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: const TextStyle(
+                    fontSize: 11.5,
+                    color: AppPalette.muted,
+                    height: 1.3,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  value,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: AppPalette.mintNoteInk,
+                    height: 1.3,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const Icon(Icons.lock_outline_rounded, size: 16, color: AppPalette.faint),
+        ],
+      ),
+    );
+  }
 }

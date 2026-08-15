@@ -200,6 +200,7 @@ class BusinessLocalDataSource {
                 loanInr: Value(
                   r.carriesMoney ? r.loanInr : (prior?.loanInr ?? 0),
                 ),
+                officerId: Value(r.officerId),
                 sortOrder: Value(i),
                 syncState: const Value(RowSyncState.synced),
                 localUpdatedAt: Value(DateTime.now()),
@@ -288,6 +289,7 @@ class BusinessLocalDataSource {
             yearsInOperation: Value(r.yearsInOperation),
             savingsInr: Value(savingsInr ?? r.savingsInr),
             loanInr: Value(loanInr ?? r.loanInr),
+            officerId: Value(r.officerId),
             sortOrder: Value(count),
             syncState: const Value(RowSyncState.synced),
             localUpdatedAt: Value(DateTime.now()),
@@ -366,6 +368,7 @@ class BusinessLocalDataSource {
       yearsInOperation: row.yearsInOperation,
       savingsInr: row.savingsInr,
       loanInr: row.loanInr,
+      officerId: row.officerId,
       latestSnapshot: snap == null
           ? null
           : MonthlyMoney(

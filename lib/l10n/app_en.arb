@@ -216,6 +216,47 @@
   "moneySeeCardCta": "See my health card",
 
   "homeSwitchHint": "Tap business name to switch",
+  "homeBusinessKindSector": "{segment} · {sector}",
+  "@homeBusinessKindSector": {
+    "description": "Sub-line under the business pill on home showing the segment (SHG/FPO/Own) and sector.",
+    "placeholders": {
+      "segment": { "type": "String", "example": "SHG" },
+      "sector": { "type": "String", "example": "Dairy" }
+    }
+  },
+  "homeOfficerCardTitle": "Your field officer",
+  "@homeOfficerCardTitle": {
+    "description": "Header on the small officer card above the health card on home."
+  },
+  "homeOfficerId": "Officer ID · {id}",
+  "@homeOfficerId": {
+    "description": "Officer identifier line on the home officer card.",
+    "placeholders": {
+      "id": { "type": "String", "example": "UP-SIT-0482" }
+    }
+  },
+  "homeOfficerCallTooltip": "Call officer",
+  "@homeOfficerCallTooltip": {
+    "description": "Tooltip on the call button of the officer card."
+  },
+  "homeOfficerCallFailed": "Could not open dialer for {phone}",
+  "@homeOfficerCallFailed": {
+    "description": "Snackbar when tel: intent cannot open.",
+    "placeholders": {
+      "phone": { "type": "String", "example": "+91 79879 56779" }
+    }
+  },
+  "homeOfflineDeviceTitle": "Device is offline",
+  "@homeOfflineDeviceTitle": {
+    "description": "Prominent line at the top of home when the device has no network."
+  },
+  "homeOfflineSyncPending": "{count, plural, =0{Nothing waiting to sync} =1{1 entry waiting to sync} other{{count} entries waiting to sync}}",
+  "@homeOfflineSyncPending": {
+    "description": "Sub-line under 'Device is offline' showing how many writes are queued.",
+    "placeholders": {
+      "count": { "type": "int", "example": "3" }
+    }
+  },
   "chipSynced": "Synced",
   "chipSyncing": "Syncing…",
   "chipOffline": "Offline",
@@ -406,6 +447,10 @@
     }
   },
   "forecastHeading": "Next 6 months of your money",
+  "forecastNetLabel": "Net cash flow",
+  "@forecastNetLabel": {
+    "description": "Legend for the forecast chart bars: money IN minus money OUT per month."
+  },
   "forecastInsightTitle": "In {month}, money OUT may be more than money IN.",
   "@forecastInsightTitle": {
     "placeholders": {
@@ -639,6 +684,23 @@
   "syncAutoNote": "Auto-syncs when network returns — you never need this screen. Uses about 50 KB a week; works on 2G.",
   "syncLastFull": "Last full sync",
   "syncNowCta": "Sync now",
+
+  "editBusinessTitle": "Edit business",
+  "@editBusinessTitle": {
+    "description": "Header on the business edit bottom sheet."
+  },
+  "editBusinessKindLabel": "Business kind",
+  "@editBusinessKindLabel": {
+    "description": "Row label showing the fixed segment (SHG/FPO/Own) on the edit sheet."
+  },
+  "editBusinessSectorLabel": "Sector",
+  "@editBusinessSectorLabel": {
+    "description": "Row label showing the fixed sector on the edit sheet."
+  },
+  "editBusinessLockedNote": "Kind and sector are fixed after setup — changing them would reset your health score.",
+  "@editBusinessLockedNote": {
+    "description": "Helper text on the edit sheet explaining why segment/sector are read-only."
+  },
 
   "settingsTitle": "Settings",
   "settingsEdit": "Edit",

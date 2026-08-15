@@ -320,6 +320,42 @@ class AppLocalizationsHi extends AppLocalizations {
   String get homeSwitchHint => 'व्यापार बदलने के लिए नाम पर टैप करें';
 
   @override
+  String homeBusinessKindSector(String segment, String sector) {
+    return '$segment · $sector';
+  }
+
+  @override
+  String get homeOfficerCardTitle => 'आपके फ़ील्ड अफ़सर';
+
+  @override
+  String homeOfficerId(String id) {
+    return 'अफ़सर ID · $id';
+  }
+
+  @override
+  String get homeOfficerCallTooltip => 'अफ़सर को कॉल करें';
+
+  @override
+  String homeOfficerCallFailed(String phone) {
+    return '$phone पर डायलर नहीं खुल पाया';
+  }
+
+  @override
+  String get homeOfflineDeviceTitle => 'डिवाइस ऑफ़लाइन है';
+
+  @override
+  String homeOfflineSyncPending(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count एंट्री सिंक होना बाक़ी हैं',
+      one: '1 एंट्री सिंक होना बाक़ी है',
+      zero: 'सिंक के लिए कुछ बाक़ी नहीं',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get chipSynced => 'सिंक हो गया';
 
   @override
@@ -561,6 +597,9 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get forecastHeading => 'आपके पैसे के अगले 6 महीने';
+
+  @override
+  String get forecastNetLabel => 'शुद्ध नकदी';
 
   @override
   String forecastInsightTitle(String month) {
@@ -871,6 +910,19 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get syncNowCta => 'अभी सिंक करें';
+
+  @override
+  String get editBusinessTitle => 'व्यापार बदलें';
+
+  @override
+  String get editBusinessKindLabel => 'व्यापार का प्रकार';
+
+  @override
+  String get editBusinessSectorLabel => 'क्षेत्र';
+
+  @override
+  String get editBusinessLockedNote =>
+      'प्रकार और क्षेत्र सेटअप के बाद तय हो जाते हैं — बदलने पर हेल्थ स्कोर रीसेट हो जाएगा।';
 
   @override
   String get settingsTitle => 'सेटिंग्स';

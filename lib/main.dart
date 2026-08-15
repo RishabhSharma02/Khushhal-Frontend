@@ -33,6 +33,7 @@ import 'features/insights/bloc/insights_cubit.dart';
 import 'features/insights/data/insights_repository.dart';
 import 'features/insights/insights_loader.dart';
 import 'features/locations/data/location_repository.dart';
+import 'features/officers/data/officer_repository.dart';
 import 'features/onboarding/domain/app_language.dart';
 import 'features/onboarding/presentation/onboarding_flow.dart';
 import 'features/setup/presentation/setup_flow.dart';
@@ -269,6 +270,9 @@ class _MyAppState extends State<MyApp> {
         RepositoryProvider<ProfileRepository>.value(
           value: deps.profileRepository,
         ),
+        RepositoryProvider<OfficerRepository>.value(
+          value: deps.officerRepository,
+        ),
         RepositoryProvider<SyncEngine>.value(value: deps.syncEngine),
         RepositoryProvider<OutboxDao>.value(value: deps.outbox),
         RepositoryProvider<AppDatabase>.value(value: deps.db),
@@ -321,6 +325,7 @@ class _MyAppState extends State<MyApp> {
 
   Widget _buildApp({required bool withAuthGate}) {
     return MaterialApp(
+      debugShowCheckedModeBanner: false,
       title: 'Khushhal',
       theme: AppTheme.light,
       darkTheme: AppTheme.dark,

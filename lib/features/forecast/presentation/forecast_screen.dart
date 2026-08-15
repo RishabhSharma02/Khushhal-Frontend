@@ -16,9 +16,9 @@ import 'alerts_screen.dart';
 
 /// The monthly forecast edition with what-if chips.
 ///
-/// One stamped edition per month: IN/OUT bars for six months, the flagged
-/// month outlined amber, one plain-words insight, and what-if chips that
-/// preview without replacing the official edition.
+/// One stamped edition per month: a net-cash-flow bar for six months, the
+/// flagged month outlined amber, one plain-words insight, and what-if chips
+/// that preview without replacing the official edition.
 class ForecastScreen extends StatefulWidget {
   /// Creates the screen.
   const ForecastScreen({super.key});
@@ -96,11 +96,9 @@ class _ForecastScreenState extends State<ForecastScreen> {
                         children: <Widget>[
                           Row(
                             children: <Widget>[
-                              _LegendSwatch(label: l10n.entryIn, filled: true),
-                              const SizedBox(width: 14),
                               _LegendSwatch(
-                                label: l10n.entryOut,
-                                filled: false,
+                                label: l10n.forecastNetLabel,
+                                filled: true,
                               ),
                             ],
                           ),
@@ -225,89 +223,118 @@ class _LegendSwatch extends StatelessWidget {
   }
 }
 
-/// The 110px grouped-bar chart: solid IN and outlined OUT per month.
+/// A 110px net-cash-flow chart: one bar per month around a zero baseline.
+/// Positive net (IN > OUT) grows up in leaf green; negative net grows down
+/// in amber. The flagged month keeps its amber outline.
 class _ForecastChart extends StatelessWidget {
   const _ForecastChart({required this.months});
 
   final List<ForecastMonth> months;
 
   static const double _height = 110;
+  static const double _halfHeight = _height / 2;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    // Normalise every month's cash-flow prediction against the largest
+    // magnitude in the window so the tallest bar reaches the chart edge
+    // without letting a runaway extreme flatten the rest.
+    double peak = 0;
+    for (final ForecastMonth m in months) {
+      final double abs = m.cfPred.abs();
+      if (abs > peak) peak = abs;
+    }
+    final double scale = peak == 0 ? 0 : 1 / peak;
+
+    return SizedBox(
       height: _height,
-      decoration: const BoxDecoration(
-        border: Border(
-          bottom: BorderSide(color: AppPalette.outline, width: 1.5),
-        ),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.end,
+      child: Stack(
         children: <Widget>[
-          for (final ForecastMonth month in months)
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 4),
-                child: Container(
-                  // The flagged month gets its amber frame; padding keeps
-                  // the bars clear of the frame line.
-                  padding: month.isRiskMonth
-                      ? const EdgeInsets.fromLTRB(2, 2, 2, 0)
-                      : EdgeInsets.zero,
-                  decoration: month.isRiskMonth
-                      ? BoxDecoration(
-                          border: Border.all(
-                            color: const Color(0xFFD99000),
-                            width: 1.5,
-                          ),
-                          borderRadius: const BorderRadius.vertical(
-                            top: Radius.circular(6),
-                          ),
-                        )
-                      : null,
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: <Widget>[
-                      Expanded(child: _bar(month, isIn: true)),
-                      const SizedBox(width: 3),
-                      Expanded(child: _bar(month, isIn: false)),
-                    ],
+          // Zero baseline runs across the middle so positive and negative
+          // months read against a fixed reference rather than the bottom of
+          // the card.
+          Positioned(
+            left: 0,
+            right: 0,
+            top: _halfHeight - 0.75,
+            child: Container(height: 1.5, color: AppPalette.outline),
+          ),
+          Row(
+            children: <Widget>[
+              for (final ForecastMonth month in months)
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                    child: _NetBar(month: month, scale: scale),
                   ),
                 ),
-              ),
-            ),
+            ],
+          ),
         ],
       ),
     );
   }
+}
 
-  Widget _bar(ForecastMonth month, {required bool isIn}) {
-    final double level = isIn ? month.inLevel : month.outLevel;
-    // The risk frame eats a little height; keep bars inside the chart.
-    final double height = (level * _height - (month.isRiskMonth ? 4 : 0)).clamp(
-      0,
-      _height,
+class _NetBar extends StatelessWidget {
+  const _NetBar({required this.month, required this.scale});
+
+  final ForecastMonth month;
+  final double scale;
+
+  @override
+  Widget build(BuildContext context) {
+    // Signed cash-flow prediction, normalised against the window's peak
+    // magnitude and clamped so an outlier cannot escape the card frame.
+    final double net = (month.cfPred * scale).clamp(-1.0, 1.0);
+    final bool positive = net >= 0;
+    final double magnitude = net.abs() * _ForecastChart._halfHeight;
+
+    final Color fill = positive ? AppPalette.leaf : AppPalette.amberAccent;
+
+    final Widget bar = Container(
+      height: magnitude,
+      decoration: BoxDecoration(
+        color: fill,
+        borderRadius: BorderRadius.vertical(
+          top: positive
+              ? const Radius.circular(3)
+              : Radius.zero,
+          bottom: positive
+              ? Radius.zero
+              : const Radius.circular(3),
+        ),
+      ),
     );
 
+    // Positive bars anchor to the middle baseline and grow up; negative
+    // bars anchor to the same baseline and grow down. A flexible spacer
+    // fills the unused half so the layout stays balanced across months.
+    final Widget stackedBar = Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        Expanded(
+          child: positive
+              ? Align(alignment: Alignment.bottomCenter, child: bar)
+              : const SizedBox.shrink(),
+        ),
+        Expanded(
+          child: positive
+              ? const SizedBox.shrink()
+              : Align(alignment: Alignment.topCenter, child: bar),
+        ),
+      ],
+    );
+
+    if (!month.isRiskMonth) return stackedBar;
+
     return Container(
-      height: height,
+      padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 2),
       decoration: BoxDecoration(
-        color: isIn
-            ? AppPalette.leaf
-            : month.isRiskMonth
-            ? AppPalette.amberWash
-            : AppPalette.onPrimary,
-        border: isIn
-            ? null
-            : Border.all(
-                color: month.isRiskMonth
-                    ? const Color(0xFFD99000)
-                    : const Color(0xFFA9C9B2),
-                width: 1.5,
-              ),
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(3)),
+        border: Border.all(color: const Color(0xFFD99000), width: 1.5),
+        borderRadius: BorderRadius.circular(6),
       ),
+      child: stackedBar,
     );
   }
 }

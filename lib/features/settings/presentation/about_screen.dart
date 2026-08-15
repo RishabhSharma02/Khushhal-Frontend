@@ -11,10 +11,10 @@ import '../../../core/widgets/page_backdrop.dart';
 import '../../../l10n/app_localizations.dart';
 
 /// The support number, as it is shown on screen.
-const String helplineDisplay = '+91 987654321';
+const String helplineDisplay = '+91 7987956779';
 
 /// The same number for the dialer.
-const String _helplineDial = '+91987654321';
+const String _helplineDial = '+917987956779';
 
 /// Opens the phone dialer on the helpline.
 ///

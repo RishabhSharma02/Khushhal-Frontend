@@ -64,6 +64,7 @@ class ForecastMonth {
   /// Creates a month of the forecast.
   const ForecastMonth({
     required this.month,
+    required this.cfPred,
     required this.inLevel,
     required this.outLevel,
     this.isRiskMonth = false,
@@ -72,10 +73,17 @@ class ForecastMonth {
   /// First day of the month shown.
   final DateTime month;
 
-  /// Money IN as a fraction of the chart height, 0–1.
+  /// Net cash flow predicted for the month, in rupees. Positive when the
+  /// model expects money IN to exceed money OUT; negative otherwise. This
+  /// is what the forecast chart plots — a single signed bar per month.
+  final double cfPred;
+
+  /// Money IN as a fraction of the chart height, 0–1. Kept for older
+  /// consumers; the chart now reads [cfPred] directly.
   final double inLevel;
 
-  /// Money OUT as a fraction of the chart height, 0–1.
+  /// Money OUT as a fraction of the chart height, 0–1. Kept for older
+  /// consumers; the chart now reads [cfPred] directly.
   final double outLevel;
 
   /// True for the month the model flags — outlined amber on the chart.

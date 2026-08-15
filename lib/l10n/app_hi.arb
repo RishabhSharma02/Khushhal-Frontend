@@ -110,6 +110,13 @@
   "moneySeeCardCta": "मेरा हेल्थ कार्ड देखें",
 
   "homeSwitchHint": "व्यापार बदलने के लिए नाम पर टैप करें",
+  "homeBusinessKindSector": "{segment} · {sector}",
+  "homeOfficerCardTitle": "आपके फ़ील्ड अफ़सर",
+  "homeOfficerId": "अफ़सर ID · {id}",
+  "homeOfficerCallTooltip": "अफ़सर को कॉल करें",
+  "homeOfficerCallFailed": "{phone} पर डायलर नहीं खुल पाया",
+  "homeOfflineDeviceTitle": "डिवाइस ऑफ़लाइन है",
+  "homeOfflineSyncPending": "{count, plural, =0{सिंक के लिए कुछ बाक़ी नहीं} =1{1 एंट्री सिंक होना बाक़ी है} other{{count} एंट्री सिंक होना बाक़ी हैं}}",
   "chipSynced": "सिंक हो गया",
   "chipSyncing": "सिंक हो रहा है…",
   "chipOffline": "ऑफ़लाइन",
@@ -179,6 +186,7 @@
 
   "forecastMadeOn": "{date} को बना · अगला अनुमान {next}",
   "forecastHeading": "आपके पैसे के अगले 6 महीने",
+  "forecastNetLabel": "शुद्ध नकदी",
   "forecastInsightTitle": "{month} में पैसा गया, पैसा आया से ज़्यादा हो सकता है।",
   "forecastInsightWhy": "अनुमान है कि उस महीने पैसा गया, पैसा आया से ऊपर रहेगा। आज आपके पास {amount} की बचत है — सहारा वही बनेगी।",
   "forecastNoRiskTitle": "अगले 6 महीनों में कोई तंग महीना नहीं दिख रहा।",
@@ -268,6 +276,11 @@
   "syncAutoNote": "नेटवर्क आते ही अपने आप सिंक होता है — यह स्क्रीन खोलने की ज़रूरत नहीं। हफ़्ते में करीब 50 KB लगता है; 2G पर भी चलता है।",
   "syncLastFull": "पिछला पूरा सिंक",
   "syncNowCta": "अभी सिंक करें",
+
+  "editBusinessTitle": "व्यापार बदलें",
+  "editBusinessKindLabel": "व्यापार का प्रकार",
+  "editBusinessSectorLabel": "क्षेत्र",
+  "editBusinessLockedNote": "प्रकार और क्षेत्र सेटअप के बाद तय हो जाते हैं — बदलने पर हेल्थ स्कोर रीसेट हो जाएगा।",
 
   "settingsTitle": "सेटिंग्स",
   "settingsEdit": "बदलें",

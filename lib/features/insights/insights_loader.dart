@@ -3,12 +3,14 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../app/model/assigned_officer.dart';
 import '../../app/model/ledger.dart';
 import '../../app/session.dart';
 import '../../core/sync/sync_engine.dart';
 import '../businesses/data/business_local_datasource.dart';
 import '../businesses/data/business_repository.dart';
 import '../entries/data/ledger_repository.dart';
+import '../officers/data/officer_repository.dart';
 import 'bloc/insights_cubit.dart';
 
 /// Silent widget that keeps live insights + business list flowing into the
@@ -134,6 +136,46 @@ class _InsightsLoaderState extends State<InsightsLoader> {
       _rows.map((LocalBusinessRecord r) => r.serverId).toList(growable: false),
       serverConfirmed: _serverConfirmed,
     );
+
+    _hydrateOfficers(session);
+  }
+
+  /// Fills in the officer contact card for every business that has one.
+  ///
+  /// Runs after the session's business list is refreshed so the Home card
+  /// shows up as soon as the officer endpoint replies, and stays hidden for
+  /// businesses that have no officer assigned.
+  void _hydrateOfficers(AppSession session) {
+    final OfficerRepository repo;
+    try {
+      repo = context.read<OfficerRepository>();
+    } catch (_) {
+      return;
+    }
+
+    final List<int?> ids = session.backendBusinessIds;
+    final List<int?> officerIds = session.businesses
+        .map((b) => b.officerId)
+        .toList(growable: false);
+    for (int i = 0; i < ids.length && i < officerIds.length; i++) {
+      final int? businessId = ids[i];
+      final int? officerId = officerIds[i];
+      if (businessId == null) continue;
+      if (officerId == null) {
+        session.applyAssignedOfficer(businessId, null);
+        continue;
+      }
+      final AssignedOfficer? cached = repo.peek(officerId);
+      if (cached != null) {
+        session.applyAssignedOfficer(businessId, cached);
+        continue;
+      }
+      // ignore: discarded_futures
+      repo.fetch(officerId).then((AssignedOfficer? officer) {
+        if (!mounted || officer == null) return;
+        SessionScope.of(context).applyAssignedOfficer(businessId, officer);
+      });
+    }
   }
 
   void _maybeFetchInsights(BuildContext context, int? businessId) {

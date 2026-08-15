@@ -48,6 +48,7 @@ class RemoteBusiness {
     this.savingsInr = 0,
     this.loanInr = 0,
     this.carriesMoney = true,
+    this.officerId,
     this.latestSnapshot,
   });
 
@@ -71,6 +72,10 @@ class RemoteBusiness {
   /// zero. Callers use this to leave the cached figures alone rather than
   /// overwriting the user's own numbers with an absent field.
   final bool carriesMoney;
+
+  /// Backend id of the field officer assigned to this business, when the
+  /// server has one. Null on unassigned businesses.
+  final int? officerId;
 
   /// The most recent monthly baseline the backend has for this business —
   /// usually the setup-wizard row. Used to seed Home's money tiles before
@@ -105,6 +110,7 @@ class RemoteBusiness {
       loanInr: (json['loan_inr'] as num?)?.toInt() ?? 0,
       carriesMoney:
           json['savings_inr'] != null || json['loan_inr'] != null,
+      officerId: (json['officer_id'] as num?)?.toInt(),
       latestSnapshot: snap,
     );
   }
@@ -127,6 +133,7 @@ class RemoteBusiness {
           ),
       savingsInr: savingsInr,
       loanInr: loanInr,
+      officerId: officerId,
     );
   }
 }

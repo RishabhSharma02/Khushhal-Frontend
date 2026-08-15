@@ -120,6 +120,7 @@ class InsightsLocalDataSource {
         .map(
           (r) => ForecastMonth(
             month: DateTime(newest.year, newest.month + r.horizon),
+            cfPred: r.cfPred,
             inLevel: r.inLevel,
             outLevel: r.outLevel,
             isRiskMonth: r.isRiskMonth,

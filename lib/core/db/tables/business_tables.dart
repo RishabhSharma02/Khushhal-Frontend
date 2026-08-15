@@ -49,6 +49,12 @@ class LocalBusinesses extends Table with SyncableRow {
 
   IntColumn get loanInr => integer().withDefault(const Constant(0))();
 
+  /// Backend id of the field officer assigned to this business, when the
+  /// server has one. Null on unassigned businesses; when set, the app pulls
+  /// the officer's contact card from `GET /officers/{id}` and shows it on
+  /// Home.
+  IntColumn get officerId => integer().nullable()();
+
   /// Preserves the server's list order so the business switcher pill does not
   /// reshuffle between a cached read and a fresh pull.
   IntColumn get sortOrder => integer().withDefault(const Constant(0))();

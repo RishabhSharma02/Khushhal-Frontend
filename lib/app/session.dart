@@ -4,6 +4,7 @@ library;
 import 'package:flutter/widgets.dart';
 
 import '../core/sync/sync_status.dart';
+import 'model/assigned_officer.dart';
 import 'model/business.dart';
 import 'model/insights.dart';
 import 'model/ledger.dart';
@@ -81,6 +82,11 @@ class AppSession extends ChangeNotifier {
   /// The business every screen currently shows.
   Business? get activeBusiness =>
       _businesses.isEmpty ? null : _businesses[_activeBusinessIndex];
+
+  /// Field officer linked to the active business, or null when the business
+  /// has none. Home hides the officer card and the "Talk to officer" button
+  /// hides its CTA in that case.
+  AssignedOfficer? get activeAssignedOfficer => activeBusiness?.assignedOfficer;
 
   /// Switches the active business (the name pill on home).
   void selectBusiness(int index) {
@@ -192,6 +198,17 @@ class AppSession extends ChangeNotifier {
     _byBusiness.clear();
     _activeBusinessIndex = 0;
     _businessesFetched = false;
+    notifyListeners();
+  }
+
+  /// Fills in the officer contact card for one business after
+  /// `GET /officers/{id}` returns. Home reads the result via
+  /// [activeAssignedOfficer] and rebuilds when this notifies.
+  void applyAssignedOfficer(int businessBackendId, AssignedOfficer? officer) {
+    final int idx = _backendBusinessIds.indexOf(businessBackendId);
+    if (idx < 0 || idx >= _businesses.length) return;
+    if (_businesses[idx].assignedOfficer == officer) return;
+    _businesses[idx] = _businesses[idx].copyWith(assignedOfficer: officer);
     notifyListeners();
   }
 

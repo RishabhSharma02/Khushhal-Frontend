@@ -75,6 +75,7 @@ class BusinessRepository {
             yearsInOperation: 0,
             savingsInr: r.business.savingsInr,
             loanInr: r.business.loanInr,
+            officerId: r.business.officerId,
             latestSnapshot: r.business.monthly,
           ),
         )

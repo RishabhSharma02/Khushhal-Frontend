@@ -668,6 +668,48 @@ abstract class AppLocalizations {
   /// **'Tap business name to switch'**
   String get homeSwitchHint;
 
+  /// Sub-line under the business pill on home showing the segment (SHG/FPO/Own) and sector.
+  ///
+  /// In en, this message translates to:
+  /// **'{segment} · {sector}'**
+  String homeBusinessKindSector(String segment, String sector);
+
+  /// Header on the small officer card above the health card on home.
+  ///
+  /// In en, this message translates to:
+  /// **'Your field officer'**
+  String get homeOfficerCardTitle;
+
+  /// Officer identifier line on the home officer card.
+  ///
+  /// In en, this message translates to:
+  /// **'Officer ID · {id}'**
+  String homeOfficerId(String id);
+
+  /// Tooltip on the call button of the officer card.
+  ///
+  /// In en, this message translates to:
+  /// **'Call officer'**
+  String get homeOfficerCallTooltip;
+
+  /// Snackbar when tel: intent cannot open.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not open dialer for {phone}'**
+  String homeOfficerCallFailed(String phone);
+
+  /// Prominent line at the top of home when the device has no network.
+  ///
+  /// In en, this message translates to:
+  /// **'Device is offline'**
+  String get homeOfflineDeviceTitle;
+
+  /// Sub-line under 'Device is offline' showing how many writes are queued.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{Nothing waiting to sync} =1{1 entry waiting to sync} other{{count} entries waiting to sync}}'**
+  String homeOfflineSyncPending(int count);
+
   /// No description provided for @chipSynced.
   ///
   /// In en, this message translates to:
@@ -1063,6 +1105,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Next 6 months of your money'**
   String get forecastHeading;
+
+  /// Legend for the forecast chart bars: money IN minus money OUT per month.
+  ///
+  /// In en, this message translates to:
+  /// **'Net cash flow'**
+  String get forecastNetLabel;
 
   /// No description provided for @forecastInsightTitle.
   ///
@@ -1561,6 +1609,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Sync now'**
   String get syncNowCta;
+
+  /// Header on the business edit bottom sheet.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit business'**
+  String get editBusinessTitle;
+
+  /// Row label showing the fixed segment (SHG/FPO/Own) on the edit sheet.
+  ///
+  /// In en, this message translates to:
+  /// **'Business kind'**
+  String get editBusinessKindLabel;
+
+  /// Row label showing the fixed sector on the edit sheet.
+  ///
+  /// In en, this message translates to:
+  /// **'Sector'**
+  String get editBusinessSectorLabel;
+
+  /// Helper text on the edit sheet explaining why segment/sector are read-only.
+  ///
+  /// In en, this message translates to:
+  /// **'Kind and sector are fixed after setup — changing them would reset your health score.'**
+  String get editBusinessLockedNote;
 
   /// No description provided for @settingsTitle.
   ///

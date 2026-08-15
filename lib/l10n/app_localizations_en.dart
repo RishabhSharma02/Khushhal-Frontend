@@ -320,6 +320,42 @@ class AppLocalizationsEn extends AppLocalizations {
   String get homeSwitchHint => 'Tap business name to switch';
 
   @override
+  String homeBusinessKindSector(String segment, String sector) {
+    return '$segment · $sector';
+  }
+
+  @override
+  String get homeOfficerCardTitle => 'Your field officer';
+
+  @override
+  String homeOfficerId(String id) {
+    return 'Officer ID · $id';
+  }
+
+  @override
+  String get homeOfficerCallTooltip => 'Call officer';
+
+  @override
+  String homeOfficerCallFailed(String phone) {
+    return 'Could not open dialer for $phone';
+  }
+
+  @override
+  String get homeOfflineDeviceTitle => 'Device is offline';
+
+  @override
+  String homeOfflineSyncPending(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count entries waiting to sync',
+      one: '1 entry waiting to sync',
+      zero: 'Nothing waiting to sync',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get chipSynced => 'Synced';
 
   @override
@@ -561,6 +597,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get forecastHeading => 'Next 6 months of your money';
+
+  @override
+  String get forecastNetLabel => 'Net cash flow';
 
   @override
   String forecastInsightTitle(String month) {
@@ -872,6 +911,19 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get syncNowCta => 'Sync now';
+
+  @override
+  String get editBusinessTitle => 'Edit business';
+
+  @override
+  String get editBusinessKindLabel => 'Business kind';
+
+  @override
+  String get editBusinessSectorLabel => 'Sector';
+
+  @override
+  String get editBusinessLockedNote =>
+      'Kind and sector are fixed after setup — changing them would reset your health score.';
 
   @override
   String get settingsTitle => 'Settings';

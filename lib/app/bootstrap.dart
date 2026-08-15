@@ -30,6 +30,8 @@ import '../features/insights/data/insights_repository.dart';
 import '../features/locations/data/location_local_datasource.dart';
 import '../features/locations/data/location_remote_datasource.dart';
 import '../features/locations/data/location_repository.dart';
+import '../features/officers/data/officer_remote_datasource.dart';
+import '../features/officers/data/officer_repository.dart';
 import '../features/settings/data/language_prefs.dart';
 
 /// Everything `main()` builds once and hands to the widget tree.
@@ -52,6 +54,7 @@ class AppDependencies {
     required this.insightsRepository,
     required this.locationRepository,
     required this.profileRepository,
+    required this.officerRepository,
     required this.mpinRepository,
     required this.languagePrefs,
     required this.legacyLedgerOutbox,
@@ -68,6 +71,7 @@ class AppDependencies {
   final InsightsRepository insightsRepository;
   final LocationRepository locationRepository;
   final ProfileRepository profileRepository;
+  final OfficerRepository officerRepository;
   final MpinRepository mpinRepository;
   final LanguagePrefs languagePrefs;
 
@@ -101,6 +105,7 @@ class AppDependencies {
     final insightsRemote = InsightsRemoteDataSource(apiClient);
     final locationLocal = LocationLocalDataSource(db);
     final locationRemote = LocationRemoteDataSource(apiClient);
+    final officerRemote = OfficerRemoteDataSource(apiClient);
 
     // States and districts ship with the app, so the location step works on a
     // device that has never reached the backend.
@@ -182,6 +187,7 @@ class AppDependencies {
         remote: profileRemote,
         outbox: outbox,
       ),
+      officerRepository: OfficerRepository(officerRemote),
       mpinRepository: MpinRepository(),
       languagePrefs: await LanguagePrefs.open(),
       legacyLedgerOutbox: legacyOutbox,

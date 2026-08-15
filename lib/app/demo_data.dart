@@ -80,17 +80,18 @@ abstract final class DemoData {
   /// The six-month forecast (1q): three months of history, the flagged risk
   /// month, then two recovering months.
   static final List<ForecastMonth> forecast = <ForecastMonth>[
-    ForecastMonth(month: DateTime(2026, 8, 1), inLevel: .60, outLevel: .50),
-    ForecastMonth(month: DateTime(2026, 9, 1), inLevel: .65, outLevel: .52),
-    ForecastMonth(month: DateTime(2026, 10, 1), inLevel: .75, outLevel: .55),
+    ForecastMonth(month: DateTime(2026, 8, 1), cfPred: 10000, inLevel: .60, outLevel: .50),
+    ForecastMonth(month: DateTime(2026, 9, 1), cfPred: 13000, inLevel: .65, outLevel: .52),
+    ForecastMonth(month: DateTime(2026, 10, 1), cfPred: 20000, inLevel: .75, outLevel: .55),
     ForecastMonth(
       month: DateTime(2026, 11, 1),
+      cfPred: -22000,
       inLevel: .40,
       outLevel: .62,
       isRiskMonth: true,
     ),
-    ForecastMonth(month: DateTime(2026, 12, 1), inLevel: .80, outLevel: .56),
-    ForecastMonth(month: DateTime(2027, 1, 1), inLevel: .85, outLevel: .58),
+    ForecastMonth(month: DateTime(2026, 12, 1), cfPred: 24000, inLevel: .80, outLevel: .56),
+    ForecastMonth(month: DateTime(2027, 1, 1), cfPred: 27000, inLevel: .85, outLevel: .58),
   ];
 
   /// Savings the forecast expects November to bottom out at.

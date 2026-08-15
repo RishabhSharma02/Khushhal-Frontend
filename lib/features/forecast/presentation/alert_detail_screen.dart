@@ -19,10 +19,6 @@ import '../../insights/bloc/insights_cubit.dart';
 import '../../insights/data/insights_api.dart';
 import '../../insights/data/insights_repository.dart';
 
-// TODO: replace with the actual assigned field-officer phone once the
-// backend exposes a per-user contact endpoint.
-const String _fieldOfficerPhone = '+917987956779';
-
 /// The tight-month plan pulled straight from `GET /alerts/{id}`.
 ///
 /// Pushed from HomeScreen watch card or AlertsScreen. If [alertId] is
@@ -136,11 +132,14 @@ class _AlertDetailScreenState extends State<AlertDetailScreen> {
   }
 
   Future<void> _callOfficer() async {
-    final uri = Uri.parse('tel:$_fieldOfficerPhone');
+    final AppLocalizations l10n = AppLocalizations.of(context)!;
+    final String? phone = SessionScope.of(context).activeAssignedOfficer?.mobile;
+    if (phone == null) return;
+    final Uri uri = Uri.parse('tel:$phone');
     if (!await launchUrl(uri)) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Could not open dialer for $_fieldOfficerPhone')),
+        SnackBar(content: Text(l10n.homeOfficerCallFailed(phone))),
       );
     }
   }
@@ -163,6 +162,8 @@ class _AlertDetailScreenState extends State<AlertDetailScreen> {
     final headerMonth = alert != null
         ? _monthLabel(context, alert)
         : (l10n.brandName);
+    final bool hasOfficer =
+        SessionScope.of(context).activeAssignedOfficer != null;
 
     return Scaffold(
       body: PageBackdrop(
@@ -183,12 +184,14 @@ class _AlertDetailScreenState extends State<AlertDetailScreen> {
                         )
                       : _buildBody(context, l10n, alert)),
             ),
-            const SizedBox(height: 12),
-            SecondaryCtaButton(
-              label: l10n.talkToOfficerCta,
-              icon: Icons.support_agent_rounded,
-              onPressed: _callOfficer,
-            ),
+            if (hasOfficer) ...<Widget>[
+              const SizedBox(height: 12),
+              SecondaryCtaButton(
+                label: l10n.talkToOfficerCta,
+                icon: Icons.support_agent_rounded,
+                onPressed: _callOfficer,
+              ),
+            ],
           ],
         ),
       ),

@@ -3,6 +3,8 @@ library;
 
 import 'package:flutter/foundation.dart';
 
+import 'assigned_officer.dart';
+
 /// Who runs the business — "I am a…" on design 1k.
 enum BusinessSegment {
   /// Self-help group.
@@ -84,6 +86,8 @@ class Business {
     required this.monthly,
     this.savingsInr = 0,
     this.loanInr = 0,
+    this.officerId,
+    this.assignedOfficer,
   });
 
   /// Name typed on design 1l — the only typing in the whole setup.
@@ -113,6 +117,15 @@ class Business {
   /// fills it in later.
   final int loanInr;
 
+  /// Backend id of the officer assigned to this business. Null when none is
+  /// assigned; when set, the app fetches contact details from
+  /// `GET /officers/{id}` and fills [assignedOfficer].
+  final int? officerId;
+
+  /// Field officer assigned to this business. Null when the backend has not
+  /// yet reported one; UI falls back to [kDefaultAssignedOfficer].
+  final AssignedOfficer? assignedOfficer;
+
   /// A copy with the fields Settings' edit sheet can change replaced.
   ///
   /// Segment and sector are deliberately absent: changing either invalidates
@@ -124,6 +137,8 @@ class Business {
     MonthlyMoney? monthly,
     int? savingsInr,
     int? loanInr,
+    int? officerId,
+    AssignedOfficer? assignedOfficer,
   }) {
     return Business(
       name: name ?? this.name,
@@ -134,6 +149,8 @@ class Business {
       monthly: monthly ?? this.monthly,
       savingsInr: savingsInr ?? this.savingsInr,
       loanInr: loanInr ?? this.loanInr,
+      officerId: officerId ?? this.officerId,
+      assignedOfficer: assignedOfficer ?? this.assignedOfficer,
     );
   }
 }

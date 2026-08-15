@@ -112,6 +112,7 @@ class RemoteForecast {
       final month = DateTime(base.year, base.month + m.horizon, 1);
       return ForecastMonth(
         month: month,
+        cfPred: m.cfPred,
         inLevel: m.inLevel,
         outLevel: m.outLevel,
         isRiskMonth: m.isRiskMonth,

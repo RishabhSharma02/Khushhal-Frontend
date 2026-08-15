@@ -1062,6 +1062,17 @@ class $LocalBusinessesTable extends LocalBusinesses
     requiredDuringInsert: false,
     defaultValue: const Constant(0),
   );
+  static const VerificationMeta _officerIdMeta = const VerificationMeta(
+    'officerId',
+  );
+  @override
+  late final GeneratedColumn<int> officerId = GeneratedColumn<int>(
+    'officer_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _sortOrderMeta = const VerificationMeta(
     'sortOrder',
   );
@@ -1090,6 +1101,7 @@ class $LocalBusinessesTable extends LocalBusinesses
     yearsInOperation,
     savingsInr,
     loanInr,
+    officerId,
     sortOrder,
   ];
   @override
@@ -1204,6 +1216,12 @@ class $LocalBusinessesTable extends LocalBusinesses
         loanInr.isAcceptableOrUnknown(data['loan_inr']!, _loanInrMeta),
       );
     }
+    if (data.containsKey('officer_id')) {
+      context.handle(
+        _officerIdMeta,
+        officerId.isAcceptableOrUnknown(data['officer_id']!, _officerIdMeta),
+      );
+    }
     if (data.containsKey('sort_order')) {
       context.handle(
         _sortOrderMeta,
@@ -1277,6 +1295,10 @@ class $LocalBusinessesTable extends LocalBusinesses
         DriftSqlType.int,
         data['${effectivePrefix}loan_inr'],
       )!,
+      officerId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}officer_id'],
+      ),
       sortOrder: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}sort_order'],
@@ -1333,6 +1355,12 @@ class LocalBusiness extends DataClass implements Insertable<LocalBusiness> {
   final int savingsInr;
   final int loanInr;
 
+  /// Backend id of the field officer assigned to this business, when the
+  /// server has one. Null on unassigned businesses; when set, the app pulls
+  /// the officer's contact card from `GET /officers/{id}` and shows it on
+  /// Home.
+  final int? officerId;
+
   /// Preserves the server's list order so the business switcher pill does not
   /// reshuffle between a cached read and a fresh pull.
   final int sortOrder;
@@ -1351,6 +1379,7 @@ class LocalBusiness extends DataClass implements Insertable<LocalBusiness> {
     required this.yearsInOperation,
     required this.savingsInr,
     required this.loanInr,
+    this.officerId,
     required this.sortOrder,
   });
   @override
@@ -1378,6 +1407,9 @@ class LocalBusiness extends DataClass implements Insertable<LocalBusiness> {
     map['years_in_operation'] = Variable<int>(yearsInOperation);
     map['savings_inr'] = Variable<int>(savingsInr);
     map['loan_inr'] = Variable<int>(loanInr);
+    if (!nullToAbsent || officerId != null) {
+      map['officer_id'] = Variable<int>(officerId);
+    }
     map['sort_order'] = Variable<int>(sortOrder);
     return map;
   }
@@ -1402,6 +1434,9 @@ class LocalBusiness extends DataClass implements Insertable<LocalBusiness> {
       yearsInOperation: Value(yearsInOperation),
       savingsInr: Value(savingsInr),
       loanInr: Value(loanInr),
+      officerId: officerId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(officerId),
       sortOrder: Value(sortOrder),
     );
   }
@@ -1428,6 +1463,7 @@ class LocalBusiness extends DataClass implements Insertable<LocalBusiness> {
       yearsInOperation: serializer.fromJson<int>(json['yearsInOperation']),
       savingsInr: serializer.fromJson<int>(json['savingsInr']),
       loanInr: serializer.fromJson<int>(json['loanInr']),
+      officerId: serializer.fromJson<int?>(json['officerId']),
       sortOrder: serializer.fromJson<int>(json['sortOrder']),
     );
   }
@@ -1451,6 +1487,7 @@ class LocalBusiness extends DataClass implements Insertable<LocalBusiness> {
       'yearsInOperation': serializer.toJson<int>(yearsInOperation),
       'savingsInr': serializer.toJson<int>(savingsInr),
       'loanInr': serializer.toJson<int>(loanInr),
+      'officerId': serializer.toJson<int?>(officerId),
       'sortOrder': serializer.toJson<int>(sortOrder),
     };
   }
@@ -1470,6 +1507,7 @@ class LocalBusiness extends DataClass implements Insertable<LocalBusiness> {
     int? yearsInOperation,
     int? savingsInr,
     int? loanInr,
+    Value<int?> officerId = const Value.absent(),
     int? sortOrder,
   }) => LocalBusiness(
     serverId: serverId.present ? serverId.value : this.serverId,
@@ -1486,6 +1524,7 @@ class LocalBusiness extends DataClass implements Insertable<LocalBusiness> {
     yearsInOperation: yearsInOperation ?? this.yearsInOperation,
     savingsInr: savingsInr ?? this.savingsInr,
     loanInr: loanInr ?? this.loanInr,
+    officerId: officerId.present ? officerId.value : this.officerId,
     sortOrder: sortOrder ?? this.sortOrder,
   );
   LocalBusiness copyWithCompanion(LocalBusinessesCompanion data) {
@@ -1516,6 +1555,7 @@ class LocalBusiness extends DataClass implements Insertable<LocalBusiness> {
           ? data.savingsInr.value
           : this.savingsInr,
       loanInr: data.loanInr.present ? data.loanInr.value : this.loanInr,
+      officerId: data.officerId.present ? data.officerId.value : this.officerId,
       sortOrder: data.sortOrder.present ? data.sortOrder.value : this.sortOrder,
     );
   }
@@ -1537,6 +1577,7 @@ class LocalBusiness extends DataClass implements Insertable<LocalBusiness> {
           ..write('yearsInOperation: $yearsInOperation, ')
           ..write('savingsInr: $savingsInr, ')
           ..write('loanInr: $loanInr, ')
+          ..write('officerId: $officerId, ')
           ..write('sortOrder: $sortOrder')
           ..write(')'))
         .toString();
@@ -1558,6 +1599,7 @@ class LocalBusiness extends DataClass implements Insertable<LocalBusiness> {
     yearsInOperation,
     savingsInr,
     loanInr,
+    officerId,
     sortOrder,
   );
   @override
@@ -1578,6 +1620,7 @@ class LocalBusiness extends DataClass implements Insertable<LocalBusiness> {
           other.yearsInOperation == this.yearsInOperation &&
           other.savingsInr == this.savingsInr &&
           other.loanInr == this.loanInr &&
+          other.officerId == this.officerId &&
           other.sortOrder == this.sortOrder);
 }
 
@@ -1596,6 +1639,7 @@ class LocalBusinessesCompanion extends UpdateCompanion<LocalBusiness> {
   final Value<int> yearsInOperation;
   final Value<int> savingsInr;
   final Value<int> loanInr;
+  final Value<int?> officerId;
   final Value<int> sortOrder;
   final Value<int> rowid;
   const LocalBusinessesCompanion({
@@ -1613,6 +1657,7 @@ class LocalBusinessesCompanion extends UpdateCompanion<LocalBusiness> {
     this.yearsInOperation = const Value.absent(),
     this.savingsInr = const Value.absent(),
     this.loanInr = const Value.absent(),
+    this.officerId = const Value.absent(),
     this.sortOrder = const Value.absent(),
     this.rowid = const Value.absent(),
   });
@@ -1631,6 +1676,7 @@ class LocalBusinessesCompanion extends UpdateCompanion<LocalBusiness> {
     this.yearsInOperation = const Value.absent(),
     this.savingsInr = const Value.absent(),
     this.loanInr = const Value.absent(),
+    this.officerId = const Value.absent(),
     this.sortOrder = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : clientId = Value(clientId),
@@ -1653,6 +1699,7 @@ class LocalBusinessesCompanion extends UpdateCompanion<LocalBusiness> {
     Expression<int>? yearsInOperation,
     Expression<int>? savingsInr,
     Expression<int>? loanInr,
+    Expression<int>? officerId,
     Expression<int>? sortOrder,
     Expression<int>? rowid,
   }) {
@@ -1671,6 +1718,7 @@ class LocalBusinessesCompanion extends UpdateCompanion<LocalBusiness> {
       if (yearsInOperation != null) 'years_in_operation': yearsInOperation,
       if (savingsInr != null) 'savings_inr': savingsInr,
       if (loanInr != null) 'loan_inr': loanInr,
+      if (officerId != null) 'officer_id': officerId,
       if (sortOrder != null) 'sort_order': sortOrder,
       if (rowid != null) 'rowid': rowid,
     });
@@ -1691,6 +1739,7 @@ class LocalBusinessesCompanion extends UpdateCompanion<LocalBusiness> {
     Value<int>? yearsInOperation,
     Value<int>? savingsInr,
     Value<int>? loanInr,
+    Value<int?>? officerId,
     Value<int>? sortOrder,
     Value<int>? rowid,
   }) {
@@ -1709,6 +1758,7 @@ class LocalBusinessesCompanion extends UpdateCompanion<LocalBusiness> {
       yearsInOperation: yearsInOperation ?? this.yearsInOperation,
       savingsInr: savingsInr ?? this.savingsInr,
       loanInr: loanInr ?? this.loanInr,
+      officerId: officerId ?? this.officerId,
       sortOrder: sortOrder ?? this.sortOrder,
       rowid: rowid ?? this.rowid,
     );
@@ -1761,6 +1811,9 @@ class LocalBusinessesCompanion extends UpdateCompanion<LocalBusiness> {
     if (loanInr.present) {
       map['loan_inr'] = Variable<int>(loanInr.value);
     }
+    if (officerId.present) {
+      map['officer_id'] = Variable<int>(officerId.value);
+    }
     if (sortOrder.present) {
       map['sort_order'] = Variable<int>(sortOrder.value);
     }
@@ -1787,6 +1840,7 @@ class LocalBusinessesCompanion extends UpdateCompanion<LocalBusiness> {
           ..write('yearsInOperation: $yearsInOperation, ')
           ..write('savingsInr: $savingsInr, ')
           ..write('loanInr: $loanInr, ')
+          ..write('officerId: $officerId, ')
           ..write('sortOrder: $sortOrder, ')
           ..write('rowid: $rowid')
           ..write(')'))
@@ -7980,6 +8034,7 @@ typedef $$LocalBusinessesTableCreateCompanionBuilder =
       Value<int> yearsInOperation,
       Value<int> savingsInr,
       Value<int> loanInr,
+      Value<int?> officerId,
       Value<int> sortOrder,
       Value<int> rowid,
     });
@@ -7999,6 +8054,7 @@ typedef $$LocalBusinessesTableUpdateCompanionBuilder =
       Value<int> yearsInOperation,
       Value<int> savingsInr,
       Value<int> loanInr,
+      Value<int?> officerId,
       Value<int> sortOrder,
       Value<int> rowid,
     });
@@ -8080,6 +8136,11 @@ class $$LocalBusinessesTableFilterComposer
 
   ColumnFilters<int> get loanInr => $composableBuilder(
     column: $table.loanInr,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get officerId => $composableBuilder(
+    column: $table.officerId,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -8168,6 +8229,11 @@ class $$LocalBusinessesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<int> get officerId => $composableBuilder(
+    column: $table.officerId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<int> get sortOrder => $composableBuilder(
     column: $table.sortOrder,
     builder: (column) => ColumnOrderings(column),
@@ -8237,6 +8303,9 @@ class $$LocalBusinessesTableAnnotationComposer
   GeneratedColumn<int> get loanInr =>
       $composableBuilder(column: $table.loanInr, builder: (column) => column);
 
+  GeneratedColumn<int> get officerId =>
+      $composableBuilder(column: $table.officerId, builder: (column) => column);
+
   GeneratedColumn<int> get sortOrder =>
       $composableBuilder(column: $table.sortOrder, builder: (column) => column);
 }
@@ -8288,6 +8357,7 @@ class $$LocalBusinessesTableTableManager
                 Value<int> yearsInOperation = const Value.absent(),
                 Value<int> savingsInr = const Value.absent(),
                 Value<int> loanInr = const Value.absent(),
+                Value<int?> officerId = const Value.absent(),
                 Value<int> sortOrder = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => LocalBusinessesCompanion(
@@ -8305,6 +8375,7 @@ class $$LocalBusinessesTableTableManager
                 yearsInOperation: yearsInOperation,
                 savingsInr: savingsInr,
                 loanInr: loanInr,
+                officerId: officerId,
                 sortOrder: sortOrder,
                 rowid: rowid,
               ),
@@ -8324,6 +8395,7 @@ class $$LocalBusinessesTableTableManager
                 Value<int> yearsInOperation = const Value.absent(),
                 Value<int> savingsInr = const Value.absent(),
                 Value<int> loanInr = const Value.absent(),
+                Value<int?> officerId = const Value.absent(),
                 Value<int> sortOrder = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => LocalBusinessesCompanion.insert(
@@ -8341,6 +8413,7 @@ class $$LocalBusinessesTableTableManager
                 yearsInOperation: yearsInOperation,
                 savingsInr: savingsInr,
                 loanInr: loanInr,
+                officerId: officerId,
                 sortOrder: sortOrder,
                 rowid: rowid,
               ),
